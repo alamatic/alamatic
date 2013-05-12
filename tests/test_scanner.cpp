@@ -199,6 +199,40 @@ blah6
     ASSERT_TRUE(test_scanner(test, expected));
 }
 
+TEST(TestScanner, Keywords) {
+
+    const char * test = "accept const for from func if import in require var while\n";
+
+    ExpectedToken expected[] = {
+        { TOK_ACCEPT, "accept" },
+        { TOK_CONST, "const" },
+        { TOK_FOR, "for" },
+        { TOK_FROM, "from" },
+        { TOK_FUNC, "func" },
+        { TOK_IF, "if" },
+        { TOK_IMPORT, "import" },
+        { TOK_IN, "in" },
+        { TOK_REQUIRE, "require" },
+        { TOK_VAR, "var" },
+        { TOK_WHILE, "while" },
+        { TOK_NEWLINE, "" },
+        { 0, 0 }
+    };
+
+    ASSERT_TRUE(test_scanner(test, expected));
+    ASSERT_TRUE(TOK_ACCEPT & TOK_IDENT);
+    ASSERT_TRUE(TOK_CONST & TOK_IDENT);
+    ASSERT_TRUE(TOK_FOR & TOK_IDENT);
+    ASSERT_TRUE(TOK_FROM & TOK_IDENT);
+    ASSERT_TRUE(TOK_FUNC & TOK_IDENT);
+    ASSERT_TRUE(TOK_IF & TOK_IDENT);
+    ASSERT_TRUE(TOK_IMPORT & TOK_IDENT);
+    ASSERT_TRUE(TOK_IN & TOK_IDENT);
+    ASSERT_TRUE(TOK_REQUIRE & TOK_IDENT);
+    ASSERT_TRUE(TOK_WHILE & TOK_IDENT);
+
+}
+
 TEST(TestScanner, Punctuation) {
 
     const char * test = ": = , | & ^ == != < <= > >= * / % ~ - +\n";
