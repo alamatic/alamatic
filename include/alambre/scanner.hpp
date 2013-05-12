@@ -29,7 +29,8 @@ enum TokenIds {
     TOK_ACCEPT,
     TOK_IMPORT,
     TOK_FROM,
-    TOK_IN
+    TOK_IN,
+    TOK_DOC_COMMENT
 };
 
 struct BracketOpen {
@@ -175,6 +176,7 @@ struct alaLexer : lex::lexer<Lexer> {
     lex::token_def<> bracket;
     lex::token_def<> space;
     lex::token_def<> keyword;
+    lex::token_def<> comment;
     ScannerState state;
 
     alaLexer() :
@@ -183,6 +185,7 @@ struct alaLexer : lex::lexer<Lexer> {
         newline("\n"),
         space(" +"),
         bracket("(\\{|\\}|\\[|\\]|\\(|\\))"),
+        comment("#.*$"),
         keyword("(accept|const|for|from|func|if|import|in|require|var|while)") {
 
         using boost::phoenix::bind;
@@ -211,6 +214,7 @@ struct alaLexer : lex::lexer<Lexer> {
             ident |
             newline [handle_newline(this->state)] |
             bracket [bind(&alaLexer::handle_bracket, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
+            comment [bind(&alaLexer::handle_comment, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             space [bind(&alaLexer::handle_whitespace, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)]
         );
 
@@ -320,6 +324,28 @@ struct alaLexer : lex::lexer<Lexer> {
                 break;
         }
 
+    }
+
+    void handle_comment(const char*& start, const char*& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, unsigned int& token_id) {
+
+        // We have two kinds of comments. Normal comments are just
+        // skipped by the tokenizer altogether, but documentation comments
+        // (which open with #: rather than just plain #) actually enter the
+        // token stream and are attached to the AST nodes for the declarations
+        // they precede to enable the documentation generator to work.
+
+        int len = std::distance(start, end);
+
+        if (len > 1 && start[1] == ':') {
+            // It's a doc comment.
+            // Don't include the leading symbols in the token value.
+            start += 2;
+            token_id = TOK_DOC_COMMENT;
+        }
+        else {
+            // It's a normal comment, so just skip it.
+            pass = lex::pass_flags::pass_ignore;
+        }
     }
 
 };

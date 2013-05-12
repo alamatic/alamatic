@@ -148,3 +148,53 @@ blah9
 
     ASSERT_TRUE(test_scanner(test, expected));
 }
+
+TEST(TestScanner, Comments) {
+
+    const char * test = R"(
+# this is a plain old comment that should be ignored (including these brackets)
+blah1
+
+#: this is a single-line doc comment
+blah2
+
+#: this is a multi-line doc comment
+#: that should appear as three separate
+#: tokens in the token stream.
+blah3
+
+blah4 # this is an end-of-line comment
+
+blah5 #: this is an end-of-line doc comment
+
+blah6
+)";
+
+    ExpectedToken expected[] = {
+        { TOK_NEWLINE, "" }, // comment is ignored but still generates newline
+        { TOK_IDENT, "blah1" },
+        { TOK_NEWLINE, "" },
+        { TOK_DOC_COMMENT, " this is a single-line doc comment" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah2" },
+        { TOK_NEWLINE, "" },
+        { TOK_DOC_COMMENT, " this is a multi-line doc comment" },
+        { TOK_NEWLINE, "" },
+        { TOK_DOC_COMMENT, " that should appear as three separate" },
+        { TOK_NEWLINE, "" },
+        { TOK_DOC_COMMENT, " tokens in the token stream." },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah3" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah4" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah5" },
+        { TOK_DOC_COMMENT, " this is an end-of-line doc comment" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah6" },
+        { TOK_NEWLINE, "" },
+        { 0, 0 }
+    };
+
+    ASSERT_TRUE(test_scanner(test, expected));
+}
