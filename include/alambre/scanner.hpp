@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <iterator>
+#include <stack>
 
 using namespace std;
 namespace lex = boost::spirit::lex;
@@ -30,38 +31,163 @@ enum TokenIds {
     TOK_IN
 };
 
+struct BracketOpen {
+    char type;
+    int count;
+};
+
+class handle_indentation {
+  public:
+    BracketOpen& bracket_open;
+    std::stack<int>& indents;
+
+    handle_indentation(BracketOpen& bracket_open_, std::stack<int>& indents_) : bracket_open(bracket_open_), indents(indents_) {}
+
+    template <typename Iterator, typename IdType, typename Context>
+    void operator()(Iterator& start, Iterator& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, IdType& token_id, Context& ctx) {
+
+        // If the last character is a newline then we've found a blank
+        // line, which doesn't count for indentation-detecting purposes.
+        if (*(end - 1) == '\n') {
+            // Make the trailing newline visible for further matching.
+            end--;
+
+            // Skip this token.
+            pass = lex::pass_flags::pass_ignore;
+
+            ctx.set_state_name("MAIN");
+            return;
+        }
+
+        if (*(end - 1) != ' ') {
+            // Back up one so we don't eat the final non-space character.
+            end--;
+        }
+
+        // If we have a bracket open, treat leading whitespace just like
+        // any other whitespace.
+        if (this->bracket_open.count > 0) {
+            pass = lex::pass_flags::pass_ignore;
+            ctx.set_state_name("MAIN");
+            return;
+        }
+
+        int next = std::distance(start, end);
+        int current = this->indents.top();
+        if (next == current) {
+            pass = lex::pass_flags::pass_ignore;
+        }
+        else if (next > current) {
+            this->indents.push(next);
+            token_id = TOK_INDENT;
+        }
+        else {
+            this->indents.pop();
+            int previous = this->indents.top();
+            if (next > previous) {
+                // FIXME: This should actually fail the entire
+                // lexing process, but it actually ends up just skipping
+                // the current token. At the very least we should actually
+                // emit an error here so we don't end up raising a dumb
+                // error at parse time.
+                pass = lex::pass_flags::pass_fail;
+            }
+            else {
+                token_id = TOK_OUTDENT;
+                // force a re-read of this token now that we've popped
+                // the stack... this way we'll keep generating OUTDENT
+                // tokens until we're lined up with an earlier indent.
+                end = start;
+                // We intentionally don't switch back to MAIN in this case,
+                // because we want to keep matching the same whitespace.
+                return;
+            }
+        }
+
+        ctx.set_state_name("MAIN");
+
+    }
+};
+
+class handle_newline {
+  public:
+    BracketOpen& bracket_open;
+    std::stack<int>& indents;
+
+    handle_newline(BracketOpen& bracket_open_, std::stack<int>& indents_) : bracket_open(bracket_open_), indents(indents_) {}
+
+    template <typename Iterator, typename IdType, typename Context>
+    void operator()(Iterator& start, Iterator& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, IdType& token_id, Context& ctx) {
+
+        // If we've reached the end of the input, pop off all of the open
+        // indents before we finish.
+        // FIXME: Doing this here means that we fail in a weird way if the
+        // input doesn't end with a newline, because the OUTDENT tokens
+        // never get emitted.
+        if (end == ctx.get_eoi()) {
+            // Pop off all of the open indents before we finish.
+            if (this->indents.top() > 0) {
+                this->indents.pop();
+                // Reset the end so we'll re-parse this final newline
+                // repeatedly until the indents stack is empty.
+                end = start;
+                token_id = TOK_OUTDENT;
+                return;
+            }
+        }
+
+        pass = lex::pass_flags::pass_ignore;
+        ctx.set_state_name("INITIAL");
+
+    }
+};
+
 template <typename Lexer>
 struct alaLexer : lex::lexer<Lexer> {
 
   public:
 
+    lex::token_def<> indentation;
     lex::token_def<std::string> ident;
     lex::token_def<> newline;
     lex::token_def<> bracket;
     lex::token_def<> space;
     lex::token_def<> keyword;
-    int indent_level;
-    char bracket_open_type;
-    int bracket_open_count;
+    BracketOpen bracket_open;
+    std::stack<int> indents;
 
     alaLexer() :
-        indent_level(0),
+        indentation(" *[^ ]"),
         ident("[a-zA-Z0-9_]+", TOK_IDENT),
-        newline("\n *[^ ]"),
-        space("[ \n]+"),
+        newline("\n"),
+        space(" +"),
         bracket("(\\{|\\}|\\[|\\]|\\(|\\))"),
         keyword("(if|for|while|func|var|const|require|accept|import|from|in)") {
 
         using boost::phoenix::bind;
         using boost::phoenix::ref;
 
-        this->bracket_open_count = 0;
-        this->bracket_open_type = '\0';
+        this->bracket_open.count = 0;
+        this->bracket_open.type = '\0';
 
+        // We always start at indent position zero.
+        this->indents.push(0);
+
+        // The INITIAL state is the indentation-detecting state, where we'll
+        // slurp up any initial whitespace, handle any indentation changes, and
+        // then switch to the MAIN state defined below, where the interesting
+        // stuff happens.
         this->self = (
+            indentation [handle_indentation(this->bracket_open, this->indents)]
+        );
+
+        // The MAIN state is where we recognize a line of "visible" language
+        // tokens, switching back to the INITIAL state when we reach the
+        // end of the line.
+        this->self("MAIN") = (
             keyword [bind(&alaLexer::handle_keyword, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             ident |
-            newline [bind(&alaLexer::handle_leading_whitespace, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
+            newline [handle_newline(this->bracket_open, this->indents)] |
             bracket [bind(&alaLexer::handle_bracket, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             space [bind(&alaLexer::handle_whitespace, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)]
         );
@@ -124,48 +250,10 @@ struct alaLexer : lex::lexer<Lexer> {
 
     }
 
-
     void handle_whitespace(const char*& start, const char*& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, unsigned int& token_id) {
 
         pass = lex::pass_flags::pass_ignore;
 
-    }
-
-    void handle_leading_whitespace(const char*& start, const char*& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, unsigned int& token_id) {
-
-        // If the last character is a newline then we've found a blank
-        // line, which doesn't count for indentation-detecting purposes.
-        if (*(end - 1) == '\n') {
-            // Make the trailing newline visible for further matching.
-            end--;
-
-            // Skip this token.
-            pass = lex::pass_flags::pass_ignore;
-
-            return;
-        }
-
-        if (*(end - 1) != ' ') {
-            // Back up one so we don't eat the final non-space character.
-            end--;
-        }
-
-        // If we have a bracket open, treat leading whitespace just like
-        // any other whitespace.
-        if (this->bracket_open_count > 0) {
-            pass = lex::pass_flags::pass_ignore;
-            return;
-        }
-
-        int amount = end - start - 2;
-        if (amount > this->indent_level) {
-            this->indent_level = amount;
-            token_id = TOK_INDENT;
-        }
-        else if (amount < this->indent_level) {
-            this->indent_level = amount;
-            token_id = TOK_OUTDENT;
-        }
     }
 
     void handle_bracket(const char*& start, const char*& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, unsigned int& token_id) {
@@ -180,31 +268,31 @@ struct alaLexer : lex::lexer<Lexer> {
             case '(':
             case '{':
             case '[':
-                if (this->bracket_open_count == 0) {
-                    this->bracket_open_type = bracket_type;
+                if (this->bracket_open.count == 0) {
+                    this->bracket_open.type = bracket_type;
                 }
-                if (this->bracket_open_type == bracket_type) {
-                    this->bracket_open_count++;
+                if (this->bracket_open.type == bracket_type) {
+                    this->bracket_open.count++;
                 }
                 break;
             case ')':
-                if (this->bracket_open_type == '(') {
-                    if (--this->bracket_open_count == 0) {
-                        this->bracket_open_type = '\0';
+                if (this->bracket_open.type == '(') {
+                    if (--this->bracket_open.count == 0) {
+                        this->bracket_open.type = '\0';
                     }
                 }
                 break;
             case '}':
-                if (this->bracket_open_type == '{') {
-                    if (--this->bracket_open_count == 0) {
-                        this->bracket_open_type = '\0';
+                if (this->bracket_open.type == '{') {
+                    if (--this->bracket_open.count == 0) {
+                        this->bracket_open.type = '\0';
                     }
                 }
                 break;
             case ']':
-                if (this->bracket_open_type == '[') {
-                    if (--this->bracket_open_count == 0) {
-                        this->bracket_open_type = '\0';
+                if (this->bracket_open.type == '[') {
+                    if (--this->bracket_open.count == 0) {
+                        this->bracket_open.type = '\0';
                     }
                 }
                 break;
@@ -213,4 +301,3 @@ struct alaLexer : lex::lexer<Lexer> {
     }
 
 };
-
