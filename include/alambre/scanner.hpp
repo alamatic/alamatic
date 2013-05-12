@@ -162,7 +162,7 @@ struct alaLexer : lex::lexer<Lexer> {
         newline("\n"),
         space(" +"),
         bracket("(\\{|\\}|\\[|\\]|\\(|\\))"),
-        keyword("(if|for|while|func|var|const|require|accept|import|from|in)") {
+        keyword("(accept|const|for|from|func|if|import|in|require|var|while)") {
 
         using boost::phoenix::bind;
         using boost::phoenix::ref;
@@ -198,6 +198,14 @@ struct alaLexer : lex::lexer<Lexer> {
 
         switch (start[0]) {
 
+            case 'a':
+                token_id = TOK_ACCEPT;
+                break;
+
+            case 'c':
+                token_id = TOK_CONST;
+                break;
+
             case 'f':
                 switch (start[1]) {
                     case 'o':
@@ -212,26 +220,6 @@ struct alaLexer : lex::lexer<Lexer> {
                 }
                 break;
 
-            case 'w':
-                token_id = TOK_WHILE;
-                break;
-
-            case 'v':
-                token_id = TOK_VAR;
-                break;
-
-            case 'c':
-                token_id = TOK_CONST;
-                break;
-
-            case 'r':
-                token_id = TOK_REQUIRE;
-                break;
-
-            case 'a':
-                token_id = TOK_ACCEPT;
-                break;
-
             case 'i':
                 switch (start[1]) {
                     case 'm':
@@ -244,6 +232,18 @@ struct alaLexer : lex::lexer<Lexer> {
                         token_id = TOK_IF;
                         break;
                 }
+                break;
+
+            case 'r':
+                token_id = TOK_REQUIRE;
+                break;
+
+            case 'v':
+                token_id = TOK_VAR;
+                break;
+
+            case 'w':
+                token_id = TOK_WHILE;
                 break;
 
         }
