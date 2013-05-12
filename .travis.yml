@@ -1,0 +1,5 @@
+language: cpp
+script: "make test"
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq -y libgtest-dev google-mock gcc-avr avr-libc libsdl1.2-dev
