@@ -36,12 +36,16 @@ struct BracketOpen {
     int count;
 };
 
+struct ScannerState {
+    std::stack<int> indents;
+    BracketOpen bracket_open;
+};
+
 class handle_indentation {
   public:
-    BracketOpen& bracket_open;
-    std::stack<int>& indents;
+    ScannerState& state;
 
-    handle_indentation(BracketOpen& bracket_open_, std::stack<int>& indents_) : bracket_open(bracket_open_), indents(indents_) {}
+    handle_indentation(ScannerState& state_) : state(state_) {}
 
     template <typename Iterator, typename IdType, typename Context>
     void operator()(Iterator& start, Iterator& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, IdType& token_id, Context& ctx) {
@@ -66,24 +70,24 @@ class handle_indentation {
 
         // If we have a bracket open, treat leading whitespace just like
         // any other whitespace.
-        if (this->bracket_open.count > 0) {
+        if (this->state.bracket_open.count > 0) {
             pass = lex::pass_flags::pass_ignore;
             ctx.set_state_name("MAIN");
             return;
         }
 
         int next = std::distance(start, end);
-        int current = this->indents.top();
+        int current = this->state.indents.top();
         if (next == current) {
             pass = lex::pass_flags::pass_ignore;
         }
         else if (next > current) {
-            this->indents.push(next);
+            this->state.indents.push(next);
             token_id = TOK_INDENT;
         }
         else {
-            this->indents.pop();
-            int previous = this->indents.top();
+            this->state.indents.pop();
+            int previous = this->state.indents.top();
             if (next > previous) {
                 // FIXME: This should actually fail the entire
                 // lexing process, but it actually ends up just skipping
@@ -111,10 +115,9 @@ class handle_indentation {
 
 class handle_newline {
   public:
-    BracketOpen& bracket_open;
-    std::stack<int>& indents;
+    ScannerState& state;
 
-    handle_newline(BracketOpen& bracket_open_, std::stack<int>& indents_) : bracket_open(bracket_open_), indents(indents_) {}
+    handle_newline(ScannerState& state_) : state(state_) {}
 
     template <typename Iterator, typename IdType, typename Context>
     void operator()(Iterator& start, Iterator& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, IdType& token_id, Context& ctx) {
@@ -126,8 +129,8 @@ class handle_newline {
         // never get emitted.
         if (end == ctx.get_eoi()) {
             // Pop off all of the open indents before we finish.
-            if (this->indents.top() > 0) {
-                this->indents.pop();
+            if (this->state.indents.top() > 0) {
+                this->state.indents.pop();
                 // Reset the end so we'll re-parse this final newline
                 // repeatedly until the indents stack is empty.
                 end = start;
@@ -153,8 +156,7 @@ struct alaLexer : lex::lexer<Lexer> {
     lex::token_def<> bracket;
     lex::token_def<> space;
     lex::token_def<> keyword;
-    BracketOpen bracket_open;
-    std::stack<int> indents;
+    ScannerState state;
 
     alaLexer() :
         indentation(" *[^ ]"),
@@ -167,18 +169,18 @@ struct alaLexer : lex::lexer<Lexer> {
         using boost::phoenix::bind;
         using boost::phoenix::ref;
 
-        this->bracket_open.count = 0;
-        this->bracket_open.type = '\0';
-
+        // No brackets open initially, of course.
+        this->state.bracket_open.count = 0;
+        this->state.bracket_open.type = '\0';
         // We always start at indent position zero.
-        this->indents.push(0);
+        this->state.indents.push(0);
 
         // The INITIAL state is the indentation-detecting state, where we'll
         // slurp up any initial whitespace, handle any indentation changes, and
         // then switch to the MAIN state defined below, where the interesting
         // stuff happens.
         this->self = (
-            indentation [handle_indentation(this->bracket_open, this->indents)]
+            indentation [handle_indentation(this->state)]
         );
 
         // The MAIN state is where we recognize a line of "visible" language
@@ -187,7 +189,7 @@ struct alaLexer : lex::lexer<Lexer> {
         this->self("MAIN") = (
             keyword [bind(&alaLexer::handle_keyword, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             ident |
-            newline [handle_newline(this->bracket_open, this->indents)] |
+            newline [handle_newline(this->state)] |
             bracket [bind(&alaLexer::handle_bracket, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             space [bind(&alaLexer::handle_whitespace, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)]
         );
@@ -268,31 +270,31 @@ struct alaLexer : lex::lexer<Lexer> {
             case '(':
             case '{':
             case '[':
-                if (this->bracket_open.count == 0) {
-                    this->bracket_open.type = bracket_type;
+                if (this->state.bracket_open.count == 0) {
+                    this->state.bracket_open.type = bracket_type;
                 }
-                if (this->bracket_open.type == bracket_type) {
-                    this->bracket_open.count++;
+                if (this->state.bracket_open.type == bracket_type) {
+                    this->state.bracket_open.count++;
                 }
                 break;
             case ')':
-                if (this->bracket_open.type == '(') {
-                    if (--this->bracket_open.count == 0) {
-                        this->bracket_open.type = '\0';
+                if (this->state.bracket_open.type == '(') {
+                    if (--this->state.bracket_open.count == 0) {
+                        this->state.bracket_open.type = '\0';
                     }
                 }
                 break;
             case '}':
-                if (this->bracket_open.type == '{') {
-                    if (--this->bracket_open.count == 0) {
-                        this->bracket_open.type = '\0';
+                if (this->state.bracket_open.type == '{') {
+                    if (--this->state.bracket_open.count == 0) {
+                        this->state.bracket_open.type = '\0';
                     }
                 }
                 break;
             case ']':
-                if (this->bracket_open.type == '[') {
-                    if (--this->bracket_open.count == 0) {
-                        this->bracket_open.type = '\0';
+                if (this->state.bracket_open.type == '[') {
+                    if (--this->state.bracket_open.count == 0) {
+                        this->state.bracket_open.type = '\0';
                     }
                 }
                 break;
