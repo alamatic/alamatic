@@ -18,7 +18,38 @@ enum TokenIds {
     TOK_INDENT = 256,
     TOK_OUTDENT,
     TOK_NEWLINE, // a newline that *doesn't* indent or outdent
-    TOK_IDENT,
+    TOK_DOC_COMMENT,
+    TOK_COLON,
+    TOK_ASSIGN,
+    TOK_COMMA,
+
+    TOK_TYPE_OP = 0b100000000000,
+    TOK_TYPE_BINARY_OP = 0b101000000000,
+    TOK_LOGICAL_OR,
+    TOK_LOGICAL_AND,
+    TOK_BITWISE_OR,
+    TOK_BITWISE_AND,
+    TOK_BITWISE_XOR,
+    TOK_EQUAL,
+    TOK_NOT_EQUAL,
+    TOK_LESS_THAN,
+    TOK_LESS_THAN_EQUAL,
+    TOK_GREATER_THAN,
+    TOK_GREATER_THAN_EQUAL,
+    TOK_STAR,
+    TOK_SLASH,
+    TOK_PERCENT,
+
+    TOK_TYPE_UNARY_OP = 0b110000000000,
+    TOK_LOGICAL_NOT,
+    TOK_BITWISE_NOT,
+
+    // The following are both unary and binary
+    TOK_TYPE_BOTH_OP = 0b111000000000,
+    TOK_MINUS,
+    TOK_PLUS,
+
+    TOK_IDENT = 0b1000000000000,
     TOK_IF,
     TOK_FOR,
     TOK_WHILE,
@@ -29,8 +60,8 @@ enum TokenIds {
     TOK_ACCEPT,
     TOK_IMPORT,
     TOK_FROM,
-    TOK_IN,
-    TOK_DOC_COMMENT
+    TOK_IN
+
 };
 
 struct BracketOpen {
