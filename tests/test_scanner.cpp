@@ -105,3 +105,46 @@ TEST(TestScanner, IndentOutdent) {
 
     ASSERT_TRUE(test_scanner(test, expected));
 }
+
+TEST(TestScanner, Brackets) {
+    // Tests that we don't get indent, outdent and newline tokens
+    // while inside brackets.
+
+    const char * test = R"(blah1 {
+    blah2
+} blah3
+blah4 (
+    {blah5}
+    blah6
+) blah7 [
+    blah8
+]
+blah9
+)";
+
+    ExpectedToken expected[] = {
+        { TOK_IDENT, "blah1" },
+        { '{', "{" },
+        { TOK_IDENT, "blah2" },
+        { '}', "}" },
+        { TOK_IDENT, "blah3" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah4" },
+        { '(', "(" },
+        { '{', "{" },
+        { TOK_IDENT, "blah5" },
+        { '}', "}" },
+        { TOK_IDENT, "blah6" },
+        { ')', ")" },
+        { TOK_IDENT, "blah7" },
+        { '[', "[" },
+        { TOK_IDENT, "blah8" },
+        { ']', "]" },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah9" },
+        { TOK_NEWLINE, "" },
+        { 0, 0 }
+    };
+
+    ASSERT_TRUE(test_scanner(test, expected));
+}
