@@ -208,6 +208,7 @@ struct alaLexer : lex::lexer<Lexer> {
     lex::token_def<> space;
     lex::token_def<> keyword;
     lex::token_def<> comment;
+    lex::token_def<> punct;
     ScannerState state;
 
     alaLexer() :
@@ -217,7 +218,8 @@ struct alaLexer : lex::lexer<Lexer> {
         space(" +"),
         bracket("(\\{|\\}|\\[|\\]|\\(|\\))"),
         comment("#.*$"),
-        keyword("(accept|const|for|from|func|if|import|in|require|var|while)") {
+        keyword("(accept|const|for|from|func|if|import|in|require|var|while)"),
+        punct("(\\||&|\\^|==?|!=|<=?|>=?|\\*|\\/|%|~|\\+|-|:|,)") {
 
         using boost::phoenix::bind;
         using boost::phoenix::ref;
@@ -242,6 +244,7 @@ struct alaLexer : lex::lexer<Lexer> {
         // end of the line.
         this->self("MAIN") = (
             keyword [bind(&alaLexer::handle_keyword, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
+            punct [bind(&alaLexer::handle_punct, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             ident |
             newline [handle_newline(this->state)] |
             bracket [bind(&alaLexer::handle_bracket, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
@@ -301,6 +304,98 @@ struct alaLexer : lex::lexer<Lexer> {
 
             case 'w':
                 token_id = TOK_WHILE;
+                break;
+
+        }
+
+    }
+
+    void handle_punct(const char*& start, const char*& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, unsigned int& token_id) {
+
+        switch (start[0]) {
+
+            case '|':
+                token_id = TOK_BITWISE_OR;
+                break;
+
+            case '&':
+                token_id = TOK_BITWISE_AND;
+                break;
+
+            case '^':
+                token_id = TOK_BITWISE_XOR;
+                break;
+
+            case '=':
+
+                switch (start[1]) {
+                    case '=':
+                        token_id = TOK_EQUAL;
+                        break;
+                    default:
+                        token_id = TOK_ASSIGN;
+                        break;
+                }
+                break;
+
+            case '!':
+                token_id = TOK_NOT_EQUAL;
+                break;
+
+            case '<':
+
+                switch (start[1]) {
+                    case '=':
+                        token_id = TOK_LESS_THAN_EQUAL;
+                        break;
+                    default:
+                        token_id = TOK_LESS_THAN;
+                        break;
+                }
+                break;
+
+            case '>':
+
+                switch (start[1]) {
+                    case '=':
+                        token_id = TOK_GREATER_THAN_EQUAL;
+                        break;
+                    default:
+                        token_id = TOK_GREATER_THAN;
+                        break;
+                }
+                break;
+
+            case '*':
+                token_id = TOK_STAR;
+                break;
+
+            case '/':
+                token_id = TOK_SLASH;
+                break;
+
+            case '%':
+                token_id = TOK_PERCENT;
+                break;
+
+            case '~':
+                token_id = TOK_BITWISE_NOT;
+                break;
+
+            case '+':
+                token_id = TOK_PLUS;
+                break;
+
+            case '-':
+                token_id = TOK_MINUS;
+                break;
+
+            case ':':
+                token_id = TOK_COLON;
+                break;
+
+            case ',':
+                token_id = TOK_COMMA;
                 break;
 
         }

@@ -198,3 +198,58 @@ blah6
 
     ASSERT_TRUE(test_scanner(test, expected));
 }
+
+TEST(TestScanner, Punctuation) {
+
+    const char * test = ": = , | & ^ == != < <= > >= * / % ~ - +\n";
+
+    ExpectedToken expected[] = {
+        { TOK_COLON, ":" },
+        { TOK_ASSIGN, "=" },
+        { TOK_COMMA, "," },
+        { TOK_BITWISE_OR, "|" },
+        { TOK_BITWISE_AND, "&" },
+        { TOK_BITWISE_XOR, "^" },
+        { TOK_EQUAL, "==" },
+        { TOK_NOT_EQUAL, "!=" },
+        { TOK_LESS_THAN, "<" },
+        { TOK_LESS_THAN_EQUAL, "<=" },
+        { TOK_GREATER_THAN, ">" },
+        { TOK_GREATER_THAN_EQUAL, ">=" },
+        { TOK_STAR, "*" },
+        { TOK_SLASH, "/" },
+        { TOK_PERCENT, "%" },
+        { TOK_BITWISE_NOT, "~" },
+        { TOK_MINUS, "-" },
+        { TOK_PLUS, "+" },
+        { TOK_NEWLINE, "" },
+        { 0, 0 }
+    };
+
+    ASSERT_TRUE(test_scanner(test, expected));
+
+    ASSERT_TRUE(! (TOK_COLON & TOK_TYPE_OP));
+    ASSERT_TRUE(! (TOK_ASSIGN & TOK_TYPE_OP));
+    ASSERT_TRUE(! (TOK_COMMA & TOK_TYPE_OP));
+    ASSERT_TRUE(TOK_BITWISE_OR & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_BITWISE_AND & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_BITWISE_XOR & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_EQUAL & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_NOT_EQUAL & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_LESS_THAN & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_LESS_THAN_EQUAL & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_GREATER_THAN & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_GREATER_THAN_EQUAL & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_STAR & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_SLASH & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_PERCENT & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_BITWISE_NOT & TOK_TYPE_UNARY_OP);
+    ASSERT_TRUE(TOK_MINUS & TOK_TYPE_BOTH_OP);
+    ASSERT_TRUE(TOK_PLUS & TOK_TYPE_BOTH_OP);
+    ASSERT_TRUE(TOK_TYPE_OP & TOK_TYPE_BINARY_OP);
+    ASSERT_TRUE(TOK_TYPE_OP & TOK_TYPE_UNARY_OP);
+    ASSERT_TRUE(TOK_TYPE_OP & TOK_TYPE_BOTH_OP);
+    ASSERT_TRUE((TOK_TYPE_BINARY_OP & TOK_TYPE_UNARY_OP) == TOK_TYPE_OP);
+    ASSERT_TRUE((TOK_TYPE_BINARY_OP | TOK_TYPE_UNARY_OP) == TOK_TYPE_BOTH_OP);
+
+}
