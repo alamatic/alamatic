@@ -72,6 +72,7 @@ TEST(TestScanner, IndentOutdent) {
     const char * test = R"(blah1
     blah2
         blah3
+        blah3a
             blah4
                 blah5
             blah6
@@ -80,20 +81,25 @@ TEST(TestScanner, IndentOutdent) {
 
     ExpectedToken expected[] = {
         { TOK_IDENT, "blah1" },
-        { TOK_INDENT, "    " },
+        { TOK_INDENT, "" },
         { TOK_IDENT, "blah2" },
-        { TOK_INDENT, "        " },
+        { TOK_INDENT, "" },
         { TOK_IDENT, "blah3" },
-        { TOK_INDENT, "            " },
+        { TOK_NEWLINE, "" },
+        { TOK_IDENT, "blah3a" },
+        { TOK_INDENT, "" },
         { TOK_IDENT, "blah4" },
-        { TOK_INDENT, "                " },
+        { TOK_INDENT, "" },
         { TOK_IDENT, "blah5" },
         { TOK_OUTDENT, "" },
+        { TOK_NEWLINE, "" },
         { TOK_IDENT, "blah6" },
         { TOK_OUTDENT, "" },
         { TOK_OUTDENT, "" },
+        { TOK_NEWLINE, "" },
         { TOK_IDENT, "blah7" },
         { TOK_OUTDENT, "" },
+        { TOK_NEWLINE, "" },
         { 0, 0 }
     };
 

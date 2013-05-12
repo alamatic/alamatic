@@ -17,6 +17,7 @@ namespace lex = boost::spirit::lex;
 enum TokenIds {
     TOK_INDENT = 256,
     TOK_OUTDENT,
+    TOK_NEWLINE, // a newline that *doesn't* indent or outdent
     TOK_IDENT,
     TOK_IF,
     TOK_FOR,
@@ -37,6 +38,7 @@ struct BracketOpen {
 };
 
 struct ScannerState {
+    bool seen_one_indent;
     std::stack<int> indents;
     BracketOpen bracket_open;
 };
@@ -79,11 +81,23 @@ class handle_indentation {
         int next = std::distance(start, end);
         int current = this->state.indents.top();
         if (next == current) {
-            pass = lex::pass_flags::pass_ignore;
+            if (this->state.seen_one_indent) {
+                token_id = TOK_NEWLINE;
+                // don't generate a value for this token
+                start = end;
+            }
+            else {
+                // Ignore the first "newline" we see, since it's actually
+                // just the indentation at the start of the file.
+                pass = lex::pass_flags::pass_ignore;
+                this->state.seen_one_indent = true;
+            }
         }
         else if (next > current) {
             this->state.indents.push(next);
             token_id = TOK_INDENT;
+            // don't generate a value for this token
+            start = end;
         }
         else {
             this->state.indents.pop();
@@ -137,6 +151,11 @@ class handle_newline {
                 token_id = TOK_OUTDENT;
                 return;
             }
+            else {
+                token_id = TOK_NEWLINE;
+                start = end;
+                return;
+            }
         }
 
         pass = lex::pass_flags::pass_ignore;
@@ -169,6 +188,7 @@ struct alaLexer : lex::lexer<Lexer> {
         using boost::phoenix::bind;
         using boost::phoenix::ref;
 
+        this->state.seen_one_indent = false;
         // No brackets open initially, of course.
         this->state.bracket_open.count = 0;
         this->state.bracket_open.type = '\0';
