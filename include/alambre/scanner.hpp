@@ -22,6 +22,7 @@ enum TokenIds {
     TOK_COLON,
     TOK_ASSIGN,
     TOK_COMMA,
+    TOK_STRING,
 
     TOK_TYPE_OP = 0b100000000000,
     TOK_TYPE_BINARY_OP = 0b101000000000,
@@ -196,6 +197,52 @@ class handle_newline {
     }
 };
 
+class handle_string_literal {
+  public:
+    ScannerState& state;
+
+    handle_string_literal(ScannerState& state_) : state(state_) {}
+
+    template <typename Iterator, typename IdType, typename Context>
+    void operator()(Iterator& start, Iterator& end, BOOST_SCOPED_ENUM(lex::pass_flags)& pass, IdType& token_id, Context& ctx) {
+
+        // This one's funky in that the lexer just recognizes the opening "
+        // before calling into this function, and then it's up to us to
+        // shift the "end" interator along until we either reach the end
+        // of the literal (in which case we'll emit a string token) or
+        // we reach the end of the string (in which case we'll fail).
+
+        bool escaped = false;
+
+        while (end != ctx.get_eoi()) {
+
+            if (escaped) {
+                escaped = false;
+            }
+            else {
+                if (*end == '"') {
+                    // Push the end over one more character so that
+                    // the string will include the closing quote.
+                    ++end;
+
+                    token_id = TOK_STRING;
+                    return;
+                }
+                else if (*end == '\\') {
+                    escaped = true;
+                }
+            }
+
+            ++end;
+        }
+
+        // If we fall out here then we hit EOF before we finished,
+        // so this is an error.
+        pass = lex::pass_flags::pass_fail;
+
+    }
+};
+
 template <typename Lexer>
 struct alaLexer : lex::lexer<Lexer> {
 
@@ -209,6 +256,7 @@ struct alaLexer : lex::lexer<Lexer> {
     lex::token_def<> keyword;
     lex::token_def<> comment;
     lex::token_def<> punct;
+    lex::token_def<> string_begin;
     ScannerState state;
 
     alaLexer() :
@@ -219,7 +267,8 @@ struct alaLexer : lex::lexer<Lexer> {
         bracket("(\\{|\\}|\\[|\\]|\\(|\\))"),
         comment("#.*$"),
         keyword("(accept|const|for|from|func|if|import|in|require|var|while)"),
-        punct("(\\||&|\\^|==?|!=|<=?|>=?|\\*|\\/|%|~|\\+|-|:|,)") {
+        punct("(\\||&|\\^|==?|!=|<=?|>=?|\\*|\\/|%|~|\\+|-|:|,)"),
+        string_begin("\\\"") {
 
         using boost::phoenix::bind;
         using boost::phoenix::ref;
@@ -247,6 +296,7 @@ struct alaLexer : lex::lexer<Lexer> {
             punct [bind(&alaLexer::handle_punct, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             ident |
             newline [handle_newline(this->state)] |
+            string_begin [handle_string_literal(this->state)] |
             bracket [bind(&alaLexer::handle_bracket, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             comment [bind(&alaLexer::handle_comment, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)] |
             space [bind(&alaLexer::handle_whitespace, this, lex::_start, lex::_end, lex::_pass, lex::_tokenid)]

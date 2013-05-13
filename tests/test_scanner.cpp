@@ -287,3 +287,18 @@ TEST(TestScanner, Punctuation) {
     ASSERT_TRUE((TOK_TYPE_BINARY_OP | TOK_TYPE_UNARY_OP) == TOK_TYPE_BOTH_OP);
 
 }
+
+TEST(TestScanner, StringLiterals) {
+
+    const char * test = R"("" "hello" "\"Hi\", she said." "\\"\n)";
+
+    ExpectedToken expected[] = {
+        { TOK_STRING, R"("")"},
+        { TOK_STRING, R"("hello")"},
+        { TOK_STRING, R"("\"Hi\", she said.")"},
+        { TOK_STRING, R"("\\")"},
+        { 0, 0 }
+    };
+
+    ASSERT_TRUE(test_scanner(test, expected));
+}
