@@ -1,0 +1,81 @@
+
+import util.compilation
+import buses.gpio
+
+
+interesting_defines = [
+    "__AVR_ARCH__",
+    "SPSR",
+]
+for port in range('A', 'F'):
+    for pin in range(0, 8):
+        interesting_defines.append("PIN" + port + str(pin))
+
+const defined = compilation.check_defined(interesting_defines)
+
+
+# FIXME: Need to think about this decorator concept some more... want to make sure it
+# propagates the signature of the wrapped function by default but allow overriding
+# it when necessary, but also want to ensure we don't endure an extra method call at
+# runtime when the decorator can be executed entirely at compile time...
+decorator check_defined(port_symbol as str):
+    if not defined.__AVR_ARCH__:
+        compilation.error(
+            "systems.avr can only be used when building for an AVR target"
+        )
+    if not defined{port_symbol}:
+        compilation.error(
+            "The current target AVR does not support " + port_symbol
+        )
+    # Call the wrapped function, passing through the caller's parameters unmodified
+    # This isn't particularly elegant... should find a better way to express this.
+    wrapped.pass_through()
+
+
+class GpioPin(gpio.GpioPin):
+    const port as char
+    const pin as uint8
+
+    constructor(self.port, self.pin)
+
+    property port_symbol as str:
+        get:
+            return "PORT" + self.port
+
+    property ddr_symbol as str:
+        get:
+            return "DDR" + self.port
+
+    @check_defined(self.port_symbol)
+    func set():
+        # {% ... %} evaluates its contents expecting a string, and pastes in that string
+        # {$ ... $} gets replaced by a C equivalent of the given expression
+        inline C:
+            {% self.get_port_symbol() %} |= (1 << {$ self.pin $});
+
+    @check_defined(self.port_symbol)
+    func clear():
+        inline C:
+            {% self.get_port_symbol() %} &= ~(1 << {$ self.pin $});
+
+    func write(value as gpio.PinValue):
+        if value == HIGH:
+            self.set()
+        else:
+            self.clear()
+
+
+class AvrSystem:
+    # Dynamically generate accessors for each of the possible GPIO pins. Not all of these
+    # will work on every part; we'll check what the caller uses at compile time and fail
+    # if the current target doesn't have the relevant port.
+    # (Doing it at call time means that we can always generate the full symbol table
+    # to enable doc generation and other such tooling needs that don't actually run code)
+    for port in range('A', 'F'):
+        for pin in range(0, 8):
+            # FIXME: How can I dynamically generate a docstring for this thing?
+            const {str(port) + str(pin)} = GpioPin(port, pin)
+
+
+const system = AvrSystem()
+

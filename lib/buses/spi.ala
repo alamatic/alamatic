@@ -1,0 +1,81 @@
+
+import buses.gpio
+import util.delay
+import util.compilation
+
+
+enum BitOrder:
+    LSB_FIRST = 1
+    MSB_FIRST = 2
+
+
+#: Represents an SPI bus.
+#:
+#: The SPI *bus* represents the shared data and clock signals of the bus.
+#: A particular device on the bus also has a slave select signal, which
+#: is represented by the SpiChannel wrapper class.
+#:
+#: This is a generic interface that could be used for both master and
+#: slave SPI roles depending on the selected implementation.
+#:
+#: This interface does not provide a mechanism to control the data rate
+#: or a specific pulsing behavior of the SPI bus. An implementation may
+#: provide a way to customize these details, or they may be fixed.
+interface SpiBus:
+    func shift(input as uint, order as BitOrder) as typeof(input)
+
+
+#: A simple implementation of an SPI master in terms of GPIO pins.
+class SoftwareSpiMasterBus(SpiBus):
+
+    const clock_pin as gpio.GpioPin
+    const output_pin as gpio.GpioPin
+    const input_pin as gpio.GpioPin
+    const pulse_delay as delay.Delay
+
+    constructor(self.clock_pin,
+                self.output_pin=gpio.dummy_pin,
+                self.input_pin=gpio.dummy_pin,
+                self.pulse_delay=delay.null_delay):
+
+        if self.input_pin == gpio.dummy_pin and self.output_pin == gpio.dummy_pin:
+            compilation.warn(
+                "SoftwareSpiMasterBus is useless unless you set at least one of "
+                "input_pin and output_pin."
+            )
+
+        self.clock_pin.set_direction(OUTPUT)
+        self.output_pin.set_direction(OUTPUT)
+        self.input_pin.set_direction(INPUT)
+
+    func shift(input as uint, const order as BitOrder) as typeof(input):
+        var result = 0 as typeof(input)
+        for i in range(0, input.bits):
+
+            # Don't generate the writing code if the input pin is a dummy, since we'll
+            # just be writing to dummy state anyway.
+
+            if self.output_pin != gpio.dummy_pin:
+                if order == LSB_FIRST:
+                    self.output_pin.write(
+                        HIGH if (value & (1 << i)) != 0 else LOW
+                    )
+                else:
+                    self.output_pin.write(
+                        HIGH if (value & (1 << (7 - i)) != 0 else LOW
+                    )
+
+            self.clock_pin.set()
+            self.pulse_delay.wait()
+            self.clock_pin.clear()
+
+            # Don't generate the reading code if the input pin is a dummy,
+            # since we know it'll just return 0 every time.
+            if self.input_pin != gpio.dummy_pin:
+                if order == LSB_FIRST:
+                    result = result | (self.input_pin.read() << (1 << i));
+                else:
+                    result = result | (self.input_pin.read() << (1 << (7 - i)));
+
+        return result
+
