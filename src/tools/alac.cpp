@@ -1,5 +1,5 @@
 
-#include <alambre/scanner.hpp>
+#include <alamatic/scanner.hpp>
 
 int main(int argc, char **argv) {
 

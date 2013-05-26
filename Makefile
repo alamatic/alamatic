@@ -4,10 +4,10 @@ OBJ_DIR=obj
 INCLUDE_DIR=include
 BIN_DIR=bin
 BIN_SUFFIX=
-SOURCE_FILES=$(shell find src/alambre -type f -name '*.cpp')
+SOURCE_FILES=$(shell find src/alamatic -type f -name '*.cpp')
 HEADER_FILES=$(shell find $(INCLUDE_DIR) -type f -name '*.hpp')
 TOOL_SOURCE_FILES=$(shell find src/tools -type f -name '*.cpp')
-OBJ_FILES=$(patsubst src/alambre/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_FILES))
+OBJ_FILES=$(patsubst src/alamatic/%.cpp,$(OBJ_DIR)/%.o,$(SOURCE_FILES))
 BIN_FILES=$(patsubst src/tools/%.cpp,$(BIN_DIR)/%$(BIN_SUFFIX),$(TOOL_SOURCE_FILES))
 CXX_OPTS := -std=gnu++0x
 
@@ -17,7 +17,7 @@ GTEST_ROOT=/usr/src/gtest
 
 all: $(BIN_FILES)
 
-$(OBJ_DIR)/%.o: src/alambre/%.cpp $(OBJ_DIR) $(HEADER_FILES) Makefile
+$(OBJ_DIR)/%.o: src/alamatic/%.cpp $(OBJ_DIR) $(HEADER_FILES) Makefile
 	@mkdir -p $(@D)
 	$(CXX) -I$(INCLUDE_DIR) -O3 $(CXX_OPTS) -c $< -o $@
 

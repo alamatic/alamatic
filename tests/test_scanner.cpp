@@ -1,5 +1,5 @@
 
-#include <alambre/scanner.hpp>
+#include <alamatic/scanner.hpp>
 #include "gtest/gtest.h"
 #include <stdio.h>
 #include <string.h>
