@@ -5,6 +5,7 @@ from plex import (
     Rep1,
     Range,
     Any,
+    AnyBut,
     Eof,
     State,
     Str,
@@ -90,8 +91,20 @@ class Scanner(plex.Scanner):
         Str("0b") + Rep1(digit)
     )
 
+    string_literal = (
+        Str('"') + Rep(
+            (Str("\\") + (
+                # Not all of these escapes are valid, but we'll handle that
+                # at parsing time so we can show a nice error message rather
+                # than just a token mismatch.
+                Any("abcdefghijklmnopqrstuvwxyz\\\"")
+            )) | AnyBut("\\\"")
+        ) + Str('"')
+    )
+
     lexicon = plex.Lexicon([
         (decimal_or_octal_number | hex_number | binary_number, 'NUMBER'),
+        (string_literal, 'STRINGLIT'),
         (Any("({["), handle_open_bracket),
         (Any(")}]"), handle_close_bracket),
         ((Str("\n") | Eof), handle_newline),

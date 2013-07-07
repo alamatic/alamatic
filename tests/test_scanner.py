@@ -12,6 +12,8 @@ def NUMBER(val):
     return ('NUMBER', str(val))
 def LIT(val):
     return (val, val)
+def STRINGLIT(val):
+    return ('STRINGLIT', str(val))
 
 
 class TestScanner(unittest.TestCase):
@@ -234,3 +236,40 @@ class TestScanner(unittest.TestCase):
         # the scanner supports identifier tokens, but they're errors for now.
         self.assertTokenError("12af", 1, 2)
         self.assertTokenError("0b11af", 1, 4)
+
+    def test_stringlit(self):
+        self.assertTokens(
+            " ".join([
+                '"abc"',
+                '""',
+                r'"\n"',
+                r'"\r"',
+                r'"\t"',
+                r'"\e"',
+                r'"\""',
+                r'"\x12"',
+                r'"\xab"',
+                r'"\xAB"',
+                r'"\xaB"',
+                r'"\x"',
+                r'"\q"',
+                r'"\a"',
+            ]),
+            [
+                STRINGLIT('"abc"'),
+                STRINGLIT('""'),
+                STRINGLIT(r'"\n"'),
+                STRINGLIT(r'"\r"'),
+                STRINGLIT(r'"\t"'),
+                STRINGLIT(r'"\e"'),
+                STRINGLIT(r'"\""'),
+                STRINGLIT(r'"\x12"'),
+                STRINGLIT(r'"\xab"'),
+                STRINGLIT(r'"\xAB"'),
+                STRINGLIT(r'"\xaB"'),
+                STRINGLIT(r'"\x"'),
+                STRINGLIT(r'"\q"'),
+                STRINGLIT(r'"\a"'),
+                NEWLINE,
+            ]
+        )
