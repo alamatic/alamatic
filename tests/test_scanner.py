@@ -133,3 +133,6 @@ class TestScanner(unittest.TestCase):
                 LIT('('),
             ]
         )
+        # An empty string still yields a virtual newline.
+        self.assertTokens("", [ NEWLINE ])
+        self.assertTokens("    ", [ INDENT, NEWLINE, OUTDENT ])
