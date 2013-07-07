@@ -135,15 +135,100 @@ class Scanner(plex.Scanner):
         self.indents = [0]
         self.bracket_count = 0
         self.begin('indent')
+        self.peeked = None
 
-    # plex generates the "None" token representing EOF *before* it runs
-    # the eof method (despite assertions in the manual to the contrary)
-    # so we just have our own EOF token and ignore the one plex provides.
     def read(self):
-        result = plex.Scanner.read(self)
-        if result[0] is None:
-            result = plex.Scanner.read(self)
+        result = self.peek()
+        self.peeked = None
         return result
+
+    def peek(self):
+        if self.peeked is None:
+            self.peeked = plex.Scanner.read(self)
+            # Skip Plex's generated "EOF" token (where the type is None)
+            # since we have our own explicit EOF token.
+            if self.peeked[0] is None:
+                self.peeked = plex.Scanner.read(self)
+        return self.peeked
+
+    def next_is_punct(self, symbol):
+        token = self.peek()
+        return (token[0] == symbol and token[1] == symbol)
+
+    def next_is_keyword(self, name):
+        token = self.peek()
+        return (token[0] == "IDENT" and token[1] == name)
+
+    def next_is_newline(self):
+        return (self.peek()[0] == "NEWLINE")
+
+    def next_is_indent(self):
+        return (self.peek()[0] == "INDENT")
+
+    def next_is_outdent(self):
+        return (self.peek()[0] == "OUTDENT")
+
+    def require_punct(self, symbol):
+        if not self.next_is_punct(symbol):
+            raise UnexpectedTokenError(
+                "Expected %r but got %r" % (
+                    symbol, self.token_display_name(self.peek())
+                ),
+                self.position(),
+            )
+        return self.read()
+
+    def require_keyword(self, name):
+        if not self.next_is_keyword(name):
+            raise UnexpectedTokenError(
+                "Expected %r but got %r" % (
+                    name, self.token_display_name(self.peek())
+                ),
+                self.position(),
+            )
+        return self.read()
+
+    def require_indent(self):
+        if not self.next_is_indent():
+            raise UnexpectedTokenError(
+                "Expected indent but got %r" % (
+                    self.token_display_name(self.peek())
+                ),
+                self.position(),
+            )
+        return self.read()
+
+    def require_outdent(self):
+        if not self.next_is_outdent():
+            raise UnexpectedTokenError(
+                "Expected outdent but got %r" % (
+                    self.token_display_name(self.peek())
+                ),
+                self.position(),
+            )
+        return self.read()
+
+    def require_newline(self):
+        if not self.next_is_newline():
+            raise UnexpectedTokenError(
+                "Expected newline but got %r" % (
+                    self.token_display_name(self.peek())
+                ),
+                self.position(),
+            )
+        return self.read()
+
+    def token_display_name(self, token):
+        if token[0] == "NEWLINE":
+            return "newline"
+        elif token[0] == "INDENT":
+            return "indent"
+        elif token[0] == "OUTDENT":
+            return "outdent"
+        elif token[0] == "EOF":
+            return "end of file"
+        else:
+            return token[1]
 
 
 class IndentationError(Exception):
@@ -152,5 +237,13 @@ class IndentationError(Exception):
             self, "Inconsistent indentation at %s line %i" % (
                 position[0], position[1],
             )
+        )
+        self.position = position
+
+
+class UnexpectedTokenError(Exception):
+    def __init__(self, message, position):
+        Exception.__init__(
+            self, message,
         )
         self.position = position

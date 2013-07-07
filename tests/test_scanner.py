@@ -1,7 +1,7 @@
 
 import unittest
 from StringIO import StringIO
-from alamatic.scanner import Scanner, IndentationError
+from alamatic.scanner import Scanner, IndentationError, UnexpectedTokenError
 from plex.errors import UnrecognizedInput
 
 
@@ -368,3 +368,74 @@ class TestScanner(unittest.TestCase):
                 OUTDENT,
             ]
         )
+
+    def test_parser_interface(self):
+        inp = "    if a == b"
+        stream = StringIO(inp)
+        scanner = Scanner(stream)
+
+        # indent
+        self.assertEqual(scanner.peek(), INDENT)
+        self.assertTrue(scanner.next_is_indent())
+        self.assertEqual(scanner.read(), INDENT)
+
+        # if
+        self.assertEqual(scanner.peek(), IDENT("if"))
+        self.assertTrue(scanner.next_is_keyword("if"))
+        self.assertFalse(scanner.next_is_keyword("else"))
+        self.assertFalse(scanner.next_is_punct("if"))
+        self.assertEqual(scanner.require_keyword("if"), IDENT("if"))
+        self.assertRaises(
+            UnexpectedTokenError,
+            lambda : scanner.require_newline(),
+        )
+        self.assertRaises(
+            UnexpectedTokenError,
+            lambda : scanner.require_indent(),
+        )
+        self.assertRaises(
+            UnexpectedTokenError,
+            lambda : scanner.require_outdent(),
+        )
+
+        # a
+        self.assertEqual(scanner.peek(), IDENT("a"))
+        self.assertEqual(scanner.read(), IDENT("a"))
+        self.assertRaises(
+            UnexpectedTokenError,
+            lambda : scanner.require_keyword("if"),
+        )
+
+        # ==
+        self.assertEqual(scanner.peek(), PUNCT("=="))
+        self.assertFalse(scanner.next_is_keyword("=="))
+        self.assertTrue(scanner.next_is_punct("=="))
+        self.assertFalse(scanner.next_is_punct("="))
+        self.assertEqual(scanner.require_punct("=="), PUNCT("=="))
+
+        # b
+        self.assertEqual(scanner.peek(), IDENT("b"))
+        self.assertFalse(scanner.next_is_newline())
+        self.assertFalse(scanner.next_is_indent())
+        self.assertFalse(scanner.next_is_outdent())
+        self.assertEqual(scanner.read(), IDENT("b"))
+
+        # implied newline
+        self.assertEqual(scanner.peek(), NEWLINE)
+        self.assertTrue(scanner.next_is_newline())
+        self.assertFalse(scanner.next_is_outdent())
+        self.assertEqual(scanner.require_newline(), NEWLINE)
+
+        # outdent
+        self.assertEqual(scanner.peek(), OUTDENT)
+        self.assertTrue(scanner.next_is_outdent())
+        self.assertEqual(scanner.read(), OUTDENT)
+
+        # eof
+        self.assertEqual(scanner.peek(), ('EOF', ''))
+        self.assertFalse(scanner.next_is_newline())
+        self.assertFalse(scanner.next_is_indent())
+        self.assertFalse(scanner.next_is_outdent())
+        self.assertFalse(scanner.next_is_punct("="))
+        self.assertFalse(scanner.next_is_keyword("else"))
+        self.assertEqual(scanner.read(), ('EOF', ''))
