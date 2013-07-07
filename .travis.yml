@@ -4,4 +4,7 @@ python:
 install:
   - "pip install -U pip"
   - "pip install -e . --use-mirrors"
+  # FIXME: It'd be better not to duplicate the dependencies in here,
+  # since they're already in setup.py. :(
+  - "pip install --use-mirrors plex"
 script: nosetests
