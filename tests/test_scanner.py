@@ -10,12 +10,12 @@ INDENT = ('INDENT', '')
 OUTDENT = ('OUTDENT', '')
 def NUMBER(val):
     return ('NUMBER', str(val))
-def LIT(val):
-    return (val, val)
 def STRINGLIT(val):
     return ('STRINGLIT', str(val))
 def IDENT(val):
     return ('IDENT', str(val))
+def PUNCT(val):
+    return (str(val), str(val))
 
 
 class TestScanner(unittest.TestCase):
@@ -119,22 +119,22 @@ class TestScanner(unittest.TestCase):
         self.assertTokens(
             "(\n    1)\n[\n    1]\n{\n    1}\n    (",
             [
-                LIT('('),
+                PUNCT('('),
                 NUMBER(1),
-                LIT(')'),
+                PUNCT(')'),
                 NEWLINE,
-                LIT('['),
+                PUNCT('['),
                 NUMBER(1),
-                LIT(']'),
+                PUNCT(']'),
                 NEWLINE,
-                LIT('{'),
+                PUNCT('{'),
                 NUMBER(1),
-                LIT('}'),
+                PUNCT('}'),
                 NEWLINE,
                 INDENT,
                 # We shouldn't see closing indent or newline
                 # if we end with a bracket open.
-                LIT('('),
+                PUNCT('('),
             ]
         )
         # An empty string still yields a virtual newline.
@@ -295,6 +295,32 @@ class TestScanner(unittest.TestCase):
                 IDENT("ABC"),
                 IDENT("aBc"),
                 IDENT("Abc"),
+                NEWLINE,
+            ]
+        )
+
+    def test_punct(self):
+        self.assertTokens(
+            "| & ^ = < > * / % ~ + - : , == != <= >=",
+            [
+                PUNCT("|"),
+                PUNCT("&"),
+                PUNCT("^"),
+                PUNCT("="),
+                PUNCT("<"),
+                PUNCT(">"),
+                PUNCT("*"),
+                PUNCT("/"),
+                PUNCT("%"),
+                PUNCT("~"),
+                PUNCT("+"),
+                PUNCT("-"),
+                PUNCT(":"),
+                PUNCT(","),
+                PUNCT("=="),
+                PUNCT("!="),
+                PUNCT("<="),
+                PUNCT(">="),
                 NEWLINE,
             ]
         )

@@ -106,6 +106,14 @@ class Scanner(plex.Scanner):
         (letter | Str("_")) + Rep(letter | Str("_") | digit)
     )
 
+    punct = (
+        Any("|&^=<>*/%~+-:,") |
+        Str("==") |
+        Str("!=") |
+        Str("<=") |
+        Str(">=")
+    )
+
     lexicon = plex.Lexicon([
         (decimal_or_octal_number | hex_number | binary_number, 'NUMBER'),
         (string_literal, 'STRINGLIT'),
@@ -113,6 +121,7 @@ class Scanner(plex.Scanner):
         (Any("({["), handle_open_bracket),
         (Any(")}]"), handle_close_bracket),
         ((Str("\n") | Eof), handle_newline),
+        (punct, TEXT),
         (Rep1(Str(' ')), IGNORE),
         State('indent', [
             (Rep(Str(" ")) + Opt(Str("\n")), handle_indentation),
