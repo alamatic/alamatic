@@ -151,6 +151,10 @@ class Scanner(plex.Scanner):
                 self.peeked = plex.Scanner.read(self)
         return self.peeked
 
+    def position(self):
+        self.peek()
+        return plex.Scanner.position(self)
+
     def next_is_punct(self, symbol):
         token = self.peek()
         return (token[0] == symbol and token[1] == symbol)

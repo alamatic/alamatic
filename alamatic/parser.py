@@ -20,7 +20,6 @@ def parse_module(state, stream, name, filename):
 
 
 def p_statement(state, scanner):
-    scanner.peek()
     pos = scanner.position()
 
     if scanner.next_is_newline():
