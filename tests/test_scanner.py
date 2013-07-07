@@ -324,3 +324,47 @@ class TestScanner(unittest.TestCase):
                 NEWLINE,
             ]
         )
+
+    def test_realistic(self):
+        self.assertTokens(
+            "\n"
+            "if foo == 2:\n"
+            "    baz(\"foo is 2!\")\n"
+            "else:\n"
+            "    bar(\n"
+            "        12.3E+2,\n"
+            "        0xef,\n"
+            "        True,\n"
+            "    )",
+            [
+                NEWLINE,
+                IDENT("if"),
+                IDENT("foo"),
+                PUNCT("=="),
+                NUMBER("2"),
+                PUNCT(":"),
+                NEWLINE,
+                INDENT,
+                IDENT("baz"),
+                PUNCT("("),
+                STRINGLIT('"foo is 2!"'),
+                PUNCT(")"),
+                NEWLINE,
+                OUTDENT,
+                IDENT("else"),
+                PUNCT(":"),
+                NEWLINE,
+                INDENT,
+                IDENT("bar"),
+                PUNCT("("),
+                NUMBER("12.3E+2"),
+                PUNCT(","),
+                NUMBER("0xef"),
+                PUNCT(","),
+                IDENT("True"),
+                PUNCT(","),
+                PUNCT(")"),
+                NEWLINE,
+                OUTDENT,
+            ]
+        )
