@@ -14,6 +14,8 @@ def LIT(val):
     return (val, val)
 def STRINGLIT(val):
     return ('STRINGLIT', str(val))
+def IDENT(val):
+    return ('IDENT', str(val))
 
 
 class TestScanner(unittest.TestCase):
@@ -232,10 +234,16 @@ class TestScanner(unittest.TestCase):
             ]
         )
 
-        # These will need to become a success condition with two tokens once
-        # the scanner supports identifier tokens, but they're errors for now.
-        self.assertTokenError("12af", 1, 2)
-        self.assertTokenError("0b11af", 1, 4)
+        self.assertTokens("12af", [
+            NUMBER("12"),
+            IDENT("af"),
+            NEWLINE,
+        ])
+        self.assertTokens("0b11af", [
+            NUMBER("0b11"),
+            IDENT("af"),
+            NEWLINE,
+        ])
 
     def test_stringlit(self):
         self.assertTokens(
@@ -270,6 +278,23 @@ class TestScanner(unittest.TestCase):
                 STRINGLIT(r'"\x"'),
                 STRINGLIT(r'"\q"'),
                 STRINGLIT(r'"\a"'),
+                NEWLINE,
+            ]
+        )
+
+    def test_ident(self):
+        self.assertTokens(
+            "abc a123 ab1b _foo _1234 foo_bar ABC aBc Abc",
+            [
+                IDENT("abc"),
+                IDENT("a123"),
+                IDENT("ab1b"),
+                IDENT("_foo"),
+                IDENT("_1234"),
+                IDENT("foo_bar"),
+                IDENT("ABC"),
+                IDENT("aBc"),
+                IDENT("Abc"),
                 NEWLINE,
             ]
         )

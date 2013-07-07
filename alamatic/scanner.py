@@ -102,9 +102,14 @@ class Scanner(plex.Scanner):
         ) + Str('"')
     )
 
+    ident = (
+        (letter | Str("_")) + Rep(letter | Str("_") | digit)
+    )
+
     lexicon = plex.Lexicon([
         (decimal_or_octal_number | hex_number | binary_number, 'NUMBER'),
         (string_literal, 'STRINGLIT'),
+        (ident, 'IDENT'),
         (Any("({["), handle_open_bracket),
         (Any(")}]"), handle_close_bracket),
         ((Str("\n") | Eof), handle_newline),
