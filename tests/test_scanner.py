@@ -433,6 +433,7 @@ class TestScanner(unittest.TestCase):
 
         # eof
         self.assertEqual(scanner.peek(), ('EOF', ''))
+        self.assertTrue(scanner.next_is_eof())
         self.assertFalse(scanner.next_is_newline())
         self.assertFalse(scanner.next_is_indent())
         self.assertFalse(scanner.next_is_outdent())

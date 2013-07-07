@@ -168,6 +168,9 @@ class Scanner(plex.Scanner):
     def next_is_outdent(self):
         return (self.peek()[0] == "OUTDENT")
 
+    def next_is_eof(self):
+        return (self.peek()[0] == "EOF")
+
     def require_punct(self, symbol):
         if not self.next_is_punct(symbol):
             raise UnexpectedTokenError(
