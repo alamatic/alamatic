@@ -63,8 +63,35 @@ class Scanner(plex.Scanner):
         if self.indents[-1] != new_level:
             raise IndentationError(self.position())
 
+    digit = Range("09")
+    letter = Range("azAZ")
+    decimal_or_octal_number = (
+        (
+            Rep1(digit) + Opt(
+                Str(".") + Rep1(digit)
+            )
+        ) + Opt(
+            Str("E") + Any("+-") + Rep1(digit)
+        )
+    )
+    hex_number = (
+        # We actually slurp up all letters even though only a-f are valid
+        # here, so that "0xfg" will parse as a single token that we can
+        # report an explicit error for, rather than parsing as "0xf", "g"
+        # that will probably just manifest as an unexpected token.
+        Str("0x") + Rep1(Range("09azAZ"))
+    )
+    binary_number = (
+        # Slurp up all decimal digits even though only 0 and 1 are valid
+        # here, because otherwise "0b02" gets parsed as "0b0", "2" and
+        # that would cause a confusing error at parse time; this way we
+        # can fail when the parser tries to make sense of the whole number
+        # and thus emit a sensible error message.
+        Str("0b") + Rep1(digit)
+    )
+
     lexicon = plex.Lexicon([
-        (Rep1(Range("09")), 'INTEGER'),
+        (decimal_or_octal_number | hex_number | binary_number, 'NUMBER'),
         (Any("({["), handle_open_bracket),
         (Any(")}]"), handle_close_bracket),
         ((Str("\n") | Eof), handle_newline),
