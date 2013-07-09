@@ -1,6 +1,7 @@
 
 from alamatic.scanner import Scanner
 from alamatic.ast import *
+from alamatic.compilelogging import pos_link, CompilerError
 
 
 def parse_module(state, stream, name, filename):
@@ -23,12 +24,16 @@ def p_statement(state, scanner):
         scanner.read()
         return None
 
-    # FIXME: Just a stub until we actually fill out the set of ast nodes
-    # for statements.
-    while not scanner.next_is_newline():
-        scanner.read()
-    scanner.require_newline()
-    stmt = Statement()
-    stmt.position = pos
-    return stmt
+    peek = scanner.peek()
+    if peek[0] == "IDENT":
+        ident = peek[1]
+        if ident == "pass":
+            scanner.read()
+            return PassStatement(pos)
 
+    else:
+        raise CompilerError(
+            "Can't start a statement with ",
+            scanner.token_display_name(scanner.peek()),
+            " at ", pos_link(pos),
+        )

@@ -2,6 +2,9 @@
 class AstNode(object):
     position = None
 
+    def __init__(self, position):
+        self.position = position
+
 
 class Module(AstNode):
 
@@ -16,4 +19,8 @@ class Statement(AstNode):
 
 
 class Expression(AstNode):
+    pass
+
+
+class PassStatement(Statement):
     pass
