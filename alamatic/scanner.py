@@ -14,6 +14,8 @@ from plex import (
     IGNORE,
 )
 
+from alamatic.compilelogging import CompilerError, pos_link
+
 
 class Scanner(plex.Scanner):
 
@@ -128,9 +130,10 @@ class Scanner(plex.Scanner):
         ]),
     ])
 
-    def __init__(self, stream, name=None):
+    def __init__(self, state, stream, name=None):
         plex.Scanner.__init__(self, self.lexicon, stream=stream, name=name)
 
+        self.state = state
         self.seen_one_indent = False
         self.indents = [0]
         self.bracket_count = 0
@@ -178,40 +181,36 @@ class Scanner(plex.Scanner):
     def require_punct(self, symbol):
         if not self.next_is_punct(symbol):
             raise UnexpectedTokenError(
-                "Expected %r but got %r" % (
-                    symbol, self.token_display_name(self.peek())
-                ),
-                self.position(),
+                "Expected ", symbol,
+                " but got ", self.token_display_name(self.peek()),
+                " at ", pos_link(self.position()),
             )
         return self.read()
 
     def require_keyword(self, name):
         if not self.next_is_keyword(name):
             raise UnexpectedTokenError(
-                "Expected %r but got %r" % (
-                    name, self.token_display_name(self.peek())
-                ),
-                self.position(),
+                "Expected ", name,
+                " but got ", self.token_display_name(self.peek()),
+                " at ", pos_link(self.position()),
             )
         return self.read()
 
     def require_indent(self):
         if not self.next_is_indent():
             raise UnexpectedTokenError(
-                "Expected indent but got %r" % (
-                    self.token_display_name(self.peek())
-                ),
-                self.position(),
+                "Expected indent but got ",
+                self.token_display_name(self.peek()),
+                " at ", pos_link(self.position()),
             )
         return self.read()
 
     def require_outdent(self):
         if not self.next_is_outdent():
             raise UnexpectedTokenError(
-                "Expected outdent but got %r" % (
-                    self.token_display_name(self.peek())
-                ),
-                self.position(),
+                "Expected outdent but got ",
+                self.token_display_name(self.peek()),
+                " at ", pos_link(self.position()),
             )
         return self.read()
 
@@ -238,19 +237,16 @@ class Scanner(plex.Scanner):
             return token[1]
 
 
-class IndentationError(Exception):
+class IndentationError(CompilerError):
     def __init__(self, position):
-        Exception.__init__(
-            self, "Inconsistent indentation at %s line %i" % (
-                position[0], position[1],
+        self.position = position
+        CompilerError.__init__(
+            self, "Inconsistent indentation at ", pos_link(
+                position,
+                "%s line %i" % (position[0], position[1]),
             )
         )
-        self.position = position
 
 
-class UnexpectedTokenError(Exception):
-    def __init__(self, message, position):
-        Exception.__init__(
-            self, message,
-        )
-        self.position = position
+class UnexpectedTokenError(CompilerError):
+    pass

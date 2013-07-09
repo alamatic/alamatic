@@ -1,5 +1,7 @@
 
 import unittest
+from alamatic.compiler import CompileState
+from alamatic.compilelogging import ERROR
 from alamatic.parser import *
 from StringIO import StringIO
 
@@ -9,7 +11,7 @@ class TestParser(unittest.TestCase):
     def test_basics(self):
 
         # Empty module
-        state = ParseState()
+        state = CompileState()
         module = parse_module(
             state,
             StringIO(""),
@@ -21,7 +23,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(module.stmts, [])
 
         # Module with two simple statements
-        state = ParseState()
+        state = CompileState()
         module = parse_module(
             state,
             StringIO("foo = 1\n\nfoo = 2"),

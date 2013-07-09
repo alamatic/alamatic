@@ -3,12 +3,8 @@ from alamatic.scanner import Scanner
 from alamatic.ast import *
 
 
-class ParseState(object):
-    pass
-
-
 def parse_module(state, stream, name, filename):
-    scanner = Scanner(stream, filename)
+    scanner = Scanner(state, stream, filename)
 
     stmts = []
     while not scanner.next_is_eof():

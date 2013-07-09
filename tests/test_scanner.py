@@ -1,6 +1,7 @@
 
 import unittest
 from StringIO import StringIO
+from alamatic.compiler import CompileState
 from alamatic.scanner import Scanner, IndentationError, UnexpectedTokenError
 from plex.errors import UnrecognizedInput
 
@@ -21,8 +22,9 @@ def PUNCT(val):
 class TestScanner(unittest.TestCase):
 
     def assertTokens(self, inp, expected_tokens):
+        state = CompileState()
         stream = StringIO(inp)
-        scanner = Scanner(stream)
+        scanner = Scanner(state, stream)
         got_tokens = []
         while True:
             got_token = scanner.read()
@@ -36,8 +38,9 @@ class TestScanner(unittest.TestCase):
         )
 
     def assertScanError(self, inp, errtype, line, char):
+        state = CompileState()
         stream = StringIO(inp)
-        scanner = Scanner(stream)
+        scanner = Scanner(state, stream)
         try:
             while True:
                 got_token = scanner.read()
@@ -372,7 +375,8 @@ class TestScanner(unittest.TestCase):
     def test_parser_interface(self):
         inp = "    if a == b"
         stream = StringIO(inp)
-        scanner = Scanner(stream)
+        state = CompileState()
+        scanner = Scanner(state, stream)
 
         # indent
         self.assertEqual(scanner.peek(), INDENT)
