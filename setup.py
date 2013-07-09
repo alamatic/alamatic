@@ -7,4 +7,9 @@ setup(
     description="Programming language for embedded applications",
     packages=['alamatic'],
     requires=['plex(==2.0.0)'],
+    entry_points = {
+        'console_scripts': [
+            'alac = alamatic.tools:alac',
+        ],
+    },
 )
