@@ -9,7 +9,12 @@ def parse_module(state, stream, name, filename):
 
     stmts = []
     while not scanner.next_is_eof():
-        stmt = p_statement(state, scanner)
+        stmt = None
+        try:
+            stmt = p_statement(state, scanner)
+        except CompilerError, ex:
+            state.error(ex)
+            scanner.skip_statement()
         if stmt is not None:
             stmts.append(stmt)
 

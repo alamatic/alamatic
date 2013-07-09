@@ -224,6 +224,48 @@ class Scanner(plex.Scanner):
             )
         return self.read()
 
+    def skip_statement(self):
+        """
+        Attempt to skip the current statement.
+
+        This is used to implement error recovery in the parser. Will
+        suck tokens out of the stream until a NEWLINE is encountered,
+        and then eat the NEWLINE and return, leaving the scanner in
+        a state ready to read the start of the next line.
+
+        If you skip lines then the returned token stream probably
+        won't actually make sense, so this should only be used in conjunction
+        with logging an error during parse so that we won't actually try to
+        execute the program once parsing completes.
+
+        The tokenizer of course has a very limited sense of what "statement"
+        means, so this function won't always do something sensible on
+        very malformed input.
+        """
+        # This depends on the fact that the scanner emits a virtual
+        # newline just before the EOF, regardless of whether a newline
+        # is actually present.
+        while self.read()[0] != "NEWLINE":
+            pass
+
+        # If the following line introduces an indented block then we're
+        # still in the middle of a compound statement, so subsequent parsing
+        # would undoubtedly fail on the unexpected indent. To avoid this,
+        # we skip the entire block and resume scanning after it.
+        # This is not especially efficient, but we don't care because this
+        # only occurs in the event of a malformed program.
+        if self.next_is_indent():
+            indents = 1
+            self.read()
+            while True:
+                t = self.read()
+                if t[0] == "INDENT":
+                    indents = indents + 1
+                elif t[0] == "OUTDENT":
+                    indents = indents - 1
+                    if indents == 0:
+                        break
+
     def token_display_name(self, token):
         if token[0] == "NEWLINE":
             return "newline"
