@@ -136,6 +136,12 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_symbol_expression(self):
+        self.assertExprAst(
+            "baz",
+            ("SymbolExpression", ('baz',), []),
+        )
+
     def test_number_expressions(self):
         # Decimal integers
         self.assertExprAst(
