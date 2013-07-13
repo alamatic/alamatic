@@ -34,23 +34,22 @@ def p_statement(state, scanner):
         ident = peek[1]
         if ident == "pass":
             scanner.read()
-            return PassStatement(pos)
+            return PassStmt(pos)
         if ident == "break":
             scanner.read()
-            return BreakStatement(pos)
+            return BreakStmt(pos)
         if ident == "continue":
             scanner.read()
-            return ContinueStatement(pos)
+            return ContinueStmt(pos)
 
     expr = p_expression(state, scanner)
-    return ExpressionStatement(pos, expr)
+    return ExpressionStmt(pos, expr)
 
 
 def p_expression(state, scanner):
     peek = scanner.peek()
 
     return p_expr_term(state, scanner)
-    raise CompilerError("I don't know how to expression :(")
 
 
 def p_expr_term(state, scanner):
@@ -72,7 +71,7 @@ def p_expr_term(state, scanner):
 
     if peek[0] == "IDENT":
         scanner.read()
-        return SymbolExpression(pos, peek[1])
+        return SymbolExpr(pos, peek[1])
 
     raise CompilerError(
         "Can't start an expression with ",
@@ -139,8 +138,8 @@ def p_expr_number(state, scanner):
         )
 
     if type(value) in (int, long):
-        return IntegerLiteralExpression(pos, value)
+        return IntegerLiteralExpr(pos, value)
     else:
-        return FloatLiteralExpression(pos, value)
+        return FloatLiteralExpr(pos, value)
 
 

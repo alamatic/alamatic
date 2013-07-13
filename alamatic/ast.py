@@ -50,7 +50,7 @@ class Expression(AstNode):
     pass
 
 
-class ExpressionStatement(Statement):
+class ExpressionStmt(Statement):
 
     def __init__(self, position, expr):
         self.position = position
@@ -61,19 +61,19 @@ class ExpressionStatement(Statement):
         yield self.expr
 
 
-class PassStatement(Statement):
+class PassStmt(Statement):
     pass
 
 
-class BreakStatement(Statement):
+class BreakStmt(Statement):
     pass
 
 
-class ContinueStatement(Statement):
+class ContinueStmt(Statement):
     pass
 
 
-class SymbolExpression(Expression):
+class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):
         self.position = position
@@ -84,7 +84,7 @@ class SymbolExpression(Expression):
         yield self.symbol
 
 
-class LiteralExpression(Expression):
+class LiteralExpr(Expression):
 
     def __init__(self, position, value):
         self.position = position
@@ -95,8 +95,8 @@ class LiteralExpression(Expression):
         yield self.value
 
 
-class IntegerLiteralExpression(LiteralExpression):
+class IntegerLiteralExpr(LiteralExpr):
     pass
 
-class FloatLiteralExpression(LiteralExpression):
+class FloatLiteralExpr(LiteralExpr):
     pass
