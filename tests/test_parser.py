@@ -21,6 +21,28 @@ class TestParser(unittest.TestCase):
         )
         return module.stmts
 
+    def assertAst(self, inp, expected):
+        caller = inspect.stack()[1]
+        state = CompileState()
+        module = parse_module(
+            state,
+            StringIO(inp),
+            caller[3],
+            "%s:%i" % (caller[3], caller[2]),
+        )
+        got = self.ast_comparison_list(module)
+        self.assertEqual(got, expected)
+
+    def ast_comparison_list(self, root):
+        ret = []
+        for node in root.child_nodes:
+            ret.append((
+                type(node).__name__,
+                tuple(node.params),
+                self.ast_comparison_list(node),
+            ))
+        return ret
+
     def assertErrorsInStmts(self, inp, positions):
         caller = inspect.stack()[1]
         state = CompileState()
@@ -83,6 +105,9 @@ class TestParser(unittest.TestCase):
         )
 
     def test_pass_statement(self):
-        stmts = self.parse_stmts("pass")
-        self.assertEqual(len(stmts), 1)
-        self.assertEqual(type(stmts[0]), PassStatement)
+        self.assertAst(
+            "pass",
+            [
+                ("PassStatement", (), []),
+            ]
+        )
