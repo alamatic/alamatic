@@ -88,6 +88,43 @@ class ReturnStmt(Statement):
             yield self.expr
 
 
+class IfStmt(Statement):
+
+    def __init__(self, position, clauses):
+        self.position = position
+        self.clauses = clauses
+
+    @property
+    def child_nodes(self):
+        for clause in self.clauses:
+            yield clause
+
+
+class IfClause(AstNode):
+
+    def __init__(self, position, test_expr, stmts):
+        self.position = position
+        self.test_expr = test_expr
+        self.stmts = stmts
+
+    @property
+    def child_nodes(self):
+        yield self.test_expr
+        for stmt in self.stmts:
+            yield stmt
+
+
+class ElseClause(AstNode):
+
+    def __init__(self, position, stmts):
+        self.position = position
+        self.stmts = stmts
+
+    @property
+    def child_nodes(self):
+        return self.stmts
+
+
 class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):

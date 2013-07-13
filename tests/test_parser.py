@@ -160,6 +160,90 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_if_statement(self):
+        self.assertAst(
+            'if 1:\n'
+            '    pass',
+            [
+                ("IfStmt", (), [
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (1,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'if 1:\n'
+            '    pass\n'
+            'else:\n'
+            '    pass',
+            [
+                ("IfStmt", (), [
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (1,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("ElseClause", (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'if 1:\n'
+            '    pass\n'
+            'elif 2:\n'
+            '    pass\n'
+            'elif 3:\n'
+            '    pass',
+            [
+                ("IfStmt", (), [
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (1,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (2,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (3,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'if 1:\n'
+            '    pass\n'
+            'elif 2:\n'
+            '    pass\n'
+            'elif 3:\n'
+            '    pass\n'
+            'else:\n'
+            '    pass',
+            [
+                ("IfStmt", (), [
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (1,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (2,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("IfClause", (), [
+                        ('IntegerLiteralExpr', (3,), []),
+                        ('PassStmt', (), []),
+                    ]),
+                    ("ElseClause", (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",

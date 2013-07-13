@@ -53,9 +53,51 @@ def p_statement(state, scanner):
             if not scanner.next_is_newline():
                 expr = p_expression(state, scanner)
             return ReturnStmt(pos, expr)
+        if ident == "if":
+            return p_if_stmt(state, scanner)
 
     expr = p_expression(state, scanner)
     return ExpressionStmt(pos, expr)
+
+
+def p_if_stmt(state, scanner):
+    pos = scanner.position()
+
+    clauses = []
+
+    if_pos = scanner.position()
+    scanner.require_keyword("if")
+    if_expr = p_expression(state, scanner)
+    scanner.require_punct(":")
+    scanner.require_newline()
+    scanner.require_indent()
+    if_stmts = p_statements(state, scanner)
+    scanner.require_outdent()
+
+    clauses.append(IfClause(if_pos, if_expr, if_stmts))
+
+    while scanner.next_is_keyword("elif"):
+        elif_pos = scanner.position()
+        scanner.read()
+        elif_expr = p_expression(state, scanner)
+        scanner.require_punct(":")
+        scanner.require_newline()
+        scanner.require_indent()
+        elif_stmts = p_statements(state, scanner)
+        scanner.require_outdent()
+        clauses.append(IfClause(elif_pos, elif_expr, elif_stmts))
+
+    if scanner.next_is_keyword("else"):
+        else_pos = scanner.position()
+        scanner.read()
+        scanner.require_punct(":")
+        scanner.require_newline()
+        scanner.require_indent()
+        else_stmts = p_statements(state, scanner)
+        scanner.require_outdent()
+        clauses.append(ElseClause(else_pos, else_stmts))
+
+    return IfStmt(pos, clauses)
 
 
 def p_expression(state, scanner):
