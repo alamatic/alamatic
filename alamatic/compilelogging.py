@@ -12,6 +12,9 @@ class LogLine(object):
     def __unicode__(self):
         return self.as_string
 
+    def __str__(self):
+        return self.__unicode__().encode('utf-8')
+
     @property
     def as_string(self):
         return "".join((unicode(s) for s in self.parts))
@@ -81,3 +84,26 @@ class InMemoryCompileLogHandler(CompileLogHandler):
 
     def __call__(self, line):
         self.lines.append(line)
+
+
+class TerminalCompileLogHandler(CompileLogHandler):
+
+    def __init__(self, error_stream, out_stream=None):
+        if out_stream is None:
+            out_stream = error_stream
+        self.error_stream = error_stream
+        self.out_stream = out_stream
+
+    def __call__(self, line):
+        msg = str(line)
+        level = "???????"
+        stream = self.error_stream
+        if line.level == ERROR:
+            level = " ERROR "
+        if line.level == WARNING:
+            level = "WARNING"
+        if line.level == INFO:
+            level = " INFO  "
+            stream = self.out_stream
+
+        stream.write("[ %s ] %s\n" % (level, msg))
