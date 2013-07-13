@@ -35,7 +35,17 @@ def p_statement(state, scanner):
         if ident == "pass":
             scanner.read()
             return PassStatement(pos)
-
+        if ident == "break":
+            scanner.read()
+            return BreakStatement(pos)
+        if ident == "continue":
+            scanner.read()
+            return ContinueStatement(pos)
+        else:
+            raise CompilerError(
+                ident, " isn't a keyword and I don't support variables yet",
+                " at ", pos_link(pos),
+            )
     else:
         raise CompilerError(
             "Can't start a statement with ",

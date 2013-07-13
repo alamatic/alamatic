@@ -52,3 +52,11 @@ class Expression(AstNode):
 
 class PassStatement(Statement):
     pass
+
+
+class BreakStatement(Statement):
+    pass
+
+
+class ContinueStatement(Statement):
+    pass

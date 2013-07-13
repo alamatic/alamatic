@@ -111,3 +111,12 @@ class TestParser(unittest.TestCase):
                 ("PassStatement", (), []),
             ]
         )
+
+    def test_loop_control_statements(self):
+        self.assertAst(
+            "break\ncontinue",
+            [
+                ("BreakStatement", (), []),
+                ("ContinueStatement", (), []),
+            ]
+        )
