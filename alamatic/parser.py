@@ -7,8 +7,14 @@ from alamatic.compilelogging import pos_link, CompilerError
 def parse_module(state, stream, name, filename):
     scanner = Scanner(state, stream, filename)
 
+    stmts = p_statements(state, scanner, lambda s : s.next_is_eof())
+
+    return Module((filename, 1, 0), name, stmts)
+
+
+def p_statements(state, scanner, stop_test=lambda s : s.next_is_outdent()):
     stmts = []
-    while not scanner.next_is_eof():
+    while not stop_test(scanner):
         stmt = None
         try:
             stmt = p_statement(state, scanner)
@@ -18,7 +24,7 @@ def parse_module(state, stream, name, filename):
         if stmt is not None:
             stmts.append(stmt)
 
-    return Module((filename, 1, 0), name, stmts)
+    return stmts
 
 
 def p_statement(state, scanner):
