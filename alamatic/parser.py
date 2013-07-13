@@ -41,6 +41,12 @@ def p_statement(state, scanner):
         if ident == "continue":
             scanner.read()
             return ContinueStmt(pos)
+        if ident == "return":
+            scanner.read()
+            expr = None
+            if not scanner.next_is_newline():
+                expr = p_expression(state, scanner)
+            return ReturnStmt(pos, expr)
 
     expr = p_expression(state, scanner)
     return ExpressionStmt(pos, expr)

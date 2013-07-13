@@ -142,6 +142,24 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_return_statement(self):
+        # with expression
+        self.assertAst(
+            "return 1",
+            [
+                ("ReturnStmt", (), [
+                    ('IntegerLiteralExpr', (1,), []),
+                ]),
+            ]
+        )
+        # without expression
+        self.assertAst(
+            "return",
+            [
+                ("ReturnStmt", (), []),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",

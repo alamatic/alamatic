@@ -73,6 +73,18 @@ class ContinueStmt(Statement):
     pass
 
 
+class ReturnStmt(Statement):
+
+    def __init__(self, position, expr=None):
+        self.position = position
+        self.expr = expr
+
+    @property
+    def child_nodes(self):
+        if self.expr is not None:
+            yield self.expr
+
+
 class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):
