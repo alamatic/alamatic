@@ -13,6 +13,7 @@ from plex import (
     TEXT,
     IGNORE,
 )
+from plex.errors import UnrecognizedInput
 
 from alamatic.compilelogging import CompilerError, pos_link
 
@@ -139,6 +140,7 @@ class Scanner(plex.Scanner):
         self.bracket_count = 0
         self.begin('indent')
         self.peeked = None
+        self.peeking = False
 
     def read(self):
         result = self.peek()
@@ -147,15 +149,25 @@ class Scanner(plex.Scanner):
 
     def peek(self):
         if self.peeked is None:
-            self.peeked = plex.Scanner.read(self)
-            # Skip Plex's generated "EOF" token (where the type is None)
-            # since we have our own explicit EOF token.
-            if self.peeked[0] is None:
+            self.peeking = True
+            try:
                 self.peeked = plex.Scanner.read(self)
+                # Skip Plex's generated "EOF" token (where the type is None)
+                # since we have our own explicit EOF token.
+                if self.peeked[0] is None:
+                    self.peeked = plex.Scanner.read(self)
+            except UnrecognizedInput, ex:
+                raise UnexpectedTokenError(
+                    "Invalid token",
+                    " at ", pos_link(self.position())
+                )
+            finally:
+                self.peeking = False
         return self.peeked
 
     def position(self):
-        self.peek()
+        if not self.peeking:
+            self.peek()
         return plex.Scanner.position(self)
 
     def next_is_punct(self, symbol):
