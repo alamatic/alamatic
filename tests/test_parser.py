@@ -166,6 +166,18 @@ class TestParser(unittest.TestCase):
             ("SymbolExpr", ('baz',), []),
         )
 
+    def test_paren_expression(self):
+        # Parentheses just affect precedence during parsing... they
+        # don't actually show up explicitly as nodes in the parse tree.
+        self.assertExprAst(
+            "(1)",
+            ('IntegerLiteralExpr', (1,), []),
+        )
+        self.assertExprAst(
+            "((1))",
+            ('IntegerLiteralExpr', (1,), []),
+        )
+
     def test_number_expressions(self):
         # Decimal integers
         self.assertExprAst(
