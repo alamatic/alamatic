@@ -2,7 +2,11 @@
 import unittest
 import inspect
 from alamatic.compiler import CompileState
-from alamatic.compilelogging import ERROR
+from alamatic.compilelogging import (
+    ERROR,
+    LoggingCompileLogHandler,
+    InMemoryCompileLogHandler,
+)
 from alamatic.parser import *
 from alamatic.ast import *
 from StringIO import StringIO
@@ -23,7 +27,8 @@ class TestParser(unittest.TestCase):
 
     def assertAst(self, inp, expected):
         caller = inspect.stack()[1]
-        state = CompileState()
+        log_handler = LoggingCompileLogHandler()
+        state = CompileState(log_handler=log_handler)
         module = parse_module(
             state,
             StringIO(inp),
@@ -50,7 +55,8 @@ class TestParser(unittest.TestCase):
 
     def assertErrorsInStmts(self, inp, positions):
         caller = inspect.stack()[1]
-        state = CompileState()
+        log_handler = InMemoryCompileLogHandler()
+        state = CompileState(log_handler=log_handler)
         module = parse_module(
             state,
             StringIO(inp),
@@ -58,7 +64,7 @@ class TestParser(unittest.TestCase):
             "%s:%i" % (caller[3], caller[2]),
         )
         got_positions = []
-        for line in state.log_lines:
+        for line in log_handler.lines:
             if line.level == ERROR:
                 for position in line.positions_mentioned:
                     got_positions.append((position[1], position[2]))

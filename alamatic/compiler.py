@@ -6,6 +6,7 @@ from alamatic.compilelogging import (
     INFO,
     WARNING,
     ERROR,
+    CompileLogHandler,
 )
 
 
@@ -16,8 +17,8 @@ __all__ = [
 
 class CompileState(object):
 
-    def __init__(self):
-        self.log_lines = []
+    def __init__(self, log_handler=CompileLogHandler()):
+        self.log_handler = log_handler
         self.log_type_counts = {
             INFO: 0,
             WARNING: 0,
@@ -25,12 +26,14 @@ class CompileState(object):
         }
 
     def log(self, type, parts):
-        self.log_lines.append(LogLine(type, parts))
+        self.log_handler(LogLine(type, parts))
         self.log_type_counts[type] = self.log_type_counts[type] + 1
 
     def error(self, *parts):
         if type(parts[0]) is CompilerError:
-            self.log_lines.append(parts[0].log_line)
+            self.log_handler(parts[0].log_line)
+            level = parts[0].log_line.level
+            self.log_type_counts[level] = self.log_type_counts[level] + 1
         else:
             self.log(ERROR, parts)
 

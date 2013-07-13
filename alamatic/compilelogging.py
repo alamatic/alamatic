@@ -49,3 +49,35 @@ class CompilerError(Exception):
     def __init__(self, *log_parts):
         self.log_line = LogLine(ERROR, log_parts)
         Exception.__init__(self, self.log_line.as_string)
+
+
+class CompileLogHandler(object):
+    def __call__(self, line):
+        pass
+
+
+class LoggingCompileLogHandler(CompileLogHandler):
+
+    def __init__(self):
+        import logging
+        self.logger = logging.getLogger("alamatic.compilelogging")
+
+    def __call__(self, line):
+        msg = str(line)
+        # There's probably a less dumb way to do this if I actually
+        # bother to read the logging docs. But that's for later.
+        if line.level == ERROR:
+            self.logger.error(msg)
+        elif line.level == WARNING:
+            self.logger.warning(msg)
+        elif line.level == INFO:
+            self.logger.info(msg)
+
+
+class InMemoryCompileLogHandler(CompileLogHandler):
+
+    def __init__(self):
+        self.lines = []
+
+    def __call__(self, line):
+        self.lines.append(line)
