@@ -41,14 +41,106 @@ def p_statement(state, scanner):
         if ident == "continue":
             scanner.read()
             return ContinueStatement(pos)
-        else:
+
+    expr = p_expression(state, scanner)
+    return ExpressionStatement(pos, expr)
+
+
+def p_expression(state, scanner):
+    peek = scanner.peek()
+
+    return p_expr_term(state, scanner)
+    raise CompilerError("I don't know how to expression :(")
+
+
+def p_expr_term(state, scanner):
+    pos = scanner.position()
+
+    if scanner.next_is_punct("("):
+        scanner.read()
+        expr = p_expression(state, scanner)
+        scanner.require_punct(")")
+        return expr
+
+    peek = scanner.peek()
+
+    if peek[0] == "NUMBER":
+        return p_expr_number(state, scanner)
+
+    if peek[0] == "STRINGLIT":
+        return p_expr_string(state, scanner)
+
+    if peek[0] == "IDENT":
+        scanner.read()
+        return SymbolExpression(pos, peek[1])
+
+    raise CompilerError(
+        "Can't start an expression with ",
+        scanner.token_display_name(scanner.peek()),
+        " at ", pos_link(pos),
+    )
+
+
+def p_expr_number(state, scanner):
+    pos = scanner.position()
+
+    token = scanner.read()
+    if token[0] != "NUMBER":
+        raise CompilerError(
+            "Expected number but got ",
+            scanner.token_display_name(token),
+            " at ", pos_link(pos),
+        )
+
+    num_str = token[1]
+
+    if num_str.startswith("0x"):
+        try:
+            value = int(num_str[2:], 16)
+        except ValueError:
             raise CompilerError(
-                ident, " isn't a keyword and I don't support variables yet",
+                num_str[2:], " is not a valid hexadecimal number, "
+                " at ", pos_link(pos),
+            )
+    elif num_str.startswith("0b"):
+        try:
+            value = int(num_str[2:], 2)
+        except ValueError:
+            raise CompilerError(
+                num_str[2:], " is not a valid binary number, "
+                " at ", pos_link(pos),
+            )
+    elif num_str.startswith("0"):
+        try:
+            value = int(num_str[1:], 8)
+        except ValueError:
+            raise CompilerError(
+                num_str[1:], " is not a valid octal number, "
                 " at ", pos_link(pos),
             )
     else:
-        raise CompilerError(
-            "Can't start a statement with ",
-            scanner.token_display_name(scanner.peek()),
-            " at ", pos_link(pos),
+        # Try to parse it as a base-10 int, and if that fails
+        # try to parse as a float. If neither work, fail hard.
+        try:
+            value = int(num_str, 10)
+        except ValueError:
+            try:
+                value = float(num_str)
+            except ValueError:
+                raise CompilerError(
+                    num_str, " is not a valid number, "
+                    " at ", pos_link(pos),
+                )
+
+    if value is None:
+        # Should never happen
+        raise Exception(
+            "Failed to produce a value for number token " + num_str
         )
+
+    if type(value) in (int, long):
+        return IntegerLiteralExpression(pos, value)
+    else:
+        return FloatLiteralExpression(pos, value)
+
+

@@ -33,6 +33,11 @@ class TestParser(unittest.TestCase):
         got = self.ast_comparison_list(module)
         self.assertEqual(got, expected)
 
+    def assertExprAst(self, inp, expected):
+        self.assertAst(inp, [
+            ("ExpressionStatement", (), [expected]),
+        ])
+
     def ast_comparison_list(self, root):
         ret = []
         for node in root.child_nodes:
@@ -119,4 +124,87 @@ class TestParser(unittest.TestCase):
                 ("BreakStatement", (), []),
                 ("ContinueStatement", (), []),
             ]
+        )
+
+    def test_expression_statement(self):
+        self.assertAst(
+            "baz",
+            [
+                ("ExpressionStatement", (), [
+                    ('SymbolExpression', ('baz',), []),
+                ]),
+            ]
+        )
+
+    def test_number_expressions(self):
+        # Decimal integers
+        self.assertExprAst(
+            "1",
+            ("IntegerLiteralExpression", (1,), []),
+        )
+        self.assertExprAst(
+            "92",
+            ("IntegerLiteralExpression", (92,), []),
+        )
+        # Hex integers
+        self.assertExprAst(
+            "0x1",
+            ("IntegerLiteralExpression", (1,), []),
+        )
+        self.assertExprAst(
+            "0xff",
+            ("IntegerLiteralExpression", (255,), []),
+        )
+        self.assertErrorsInStmts(
+            "0xfg",
+            [
+                (1, 0),
+            ]
+        )
+        # Octal integers
+        self.assertExprAst(
+            "01",
+            ("IntegerLiteralExpression", (1,), []),
+        )
+        self.assertExprAst(
+            "010",
+            ("IntegerLiteralExpression", (8,), []),
+        )
+        self.assertErrorsInStmts(
+            "08",
+            [
+                (1, 0),
+            ]
+        )
+        # Binary integers
+        self.assertExprAst(
+            "0b1",
+            ("IntegerLiteralExpression", (1,), []),
+        )
+        self.assertExprAst(
+            "0b10",
+            ("IntegerLiteralExpression", (2,), []),
+        )
+        self.assertErrorsInStmts(
+            "0b02",
+            [
+                (1, 0),
+            ]
+        )
+        # Decimal floats
+        self.assertExprAst(
+            "1.0",
+            ("FloatLiteralExpression", (1.0,), []),
+        )
+        self.assertExprAst(
+            "92.2",
+            ("FloatLiteralExpression", (92.2,), []),
+        )
+        self.assertExprAst(
+            "1.0E+2",
+            ("FloatLiteralExpression", (100.0,), []),
+        )
+        self.assertExprAst(
+            "1.0E-1",
+            ("FloatLiteralExpression", (0.1,), []),
         )
