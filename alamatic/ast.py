@@ -25,6 +25,9 @@ class AstNode(object):
             for row in g:
                 yield row
 
+    def __repr__(self):
+        return "<alamatic.ast.%s>" % str(self)
+
 
 class Module(AstNode):
 
