@@ -232,7 +232,7 @@ class Scanner(plex.Scanner):
                 "Expected newline but got %r" % (
                     self.token_display_name(self.peek())
                 ),
-                self.position(),
+                " at ", pos_link(self.position()),
             )
         return self.read()
 
