@@ -125,6 +125,19 @@ class ElseClause(AstNode):
         return self.stmts
 
 
+class WhileStmt(AstNode):
+
+    def __init__(self, position, test_expr, stmts):
+        self.test_expr = test_expr
+        self.stmts = stmts
+
+    @property
+    def child_nodes(self):
+        yield self.test_expr
+        for stmt in self.stmts:
+            yield stmt
+
+
 class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):

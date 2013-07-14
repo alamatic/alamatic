@@ -27,6 +27,15 @@ def p_statements(state, scanner, stop_test=lambda s : s.next_is_outdent()):
     return stmts
 
 
+def p_indented_block(state, scanner):
+    scanner.require_punct(":")
+    scanner.require_newline()
+    scanner.require_indent()
+    stmts = p_statements(state, scanner)
+    scanner.require_outdent()
+    return stmts
+
+
 def p_statement(state, scanner):
     pos = scanner.position()
 
@@ -59,6 +68,11 @@ def p_statement(state, scanner):
             return ReturnStmt(pos, expr)
         if ident == "if":
             return p_if_stmt(state, scanner)
+        if ident == "while":
+            scanner.read()
+            expr = p_expression(state, scanner)
+            stmts = p_indented_block(state, scanner)
+            return WhileStmt(pos, expr, stmts)
 
     expr = p_expression(state, scanner)
     scanner.require_newline()
@@ -73,11 +87,7 @@ def p_if_stmt(state, scanner):
     if_pos = scanner.position()
     scanner.require_keyword("if")
     if_expr = p_expression(state, scanner)
-    scanner.require_punct(":")
-    scanner.require_newline()
-    scanner.require_indent()
-    if_stmts = p_statements(state, scanner)
-    scanner.require_outdent()
+    if_stmts = p_indented_block(state, scanner)
 
     clauses.append(IfClause(if_pos, if_expr, if_stmts))
 
@@ -85,21 +95,13 @@ def p_if_stmt(state, scanner):
         elif_pos = scanner.position()
         scanner.read()
         elif_expr = p_expression(state, scanner)
-        scanner.require_punct(":")
-        scanner.require_newline()
-        scanner.require_indent()
-        elif_stmts = p_statements(state, scanner)
-        scanner.require_outdent()
+        elif_stmts = p_indented_block(state, scanner)
         clauses.append(IfClause(elif_pos, elif_expr, elif_stmts))
 
     if scanner.next_is_keyword("else"):
         else_pos = scanner.position()
         scanner.read()
-        scanner.require_punct(":")
-        scanner.require_newline()
-        scanner.require_indent()
-        else_stmts = p_statements(state, scanner)
-        scanner.require_outdent()
+        else_stmts = p_indented_block(state, scanner)
         clauses.append(ElseClause(else_pos, else_stmts))
 
     return IfStmt(pos, clauses)

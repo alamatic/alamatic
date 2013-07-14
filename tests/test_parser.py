@@ -268,6 +268,20 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_while_statement(self):
+        self.assertAst(
+            'while 1:\n'
+            '    pass\n'
+            '    pass',
+            [
+                ("WhileStmt", (), [
+                    ('IntegerLiteralExpr', (1,), []),
+                    ('PassStmt', (), []),
+                    ('PassStmt', (), []),
+                ]),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",
