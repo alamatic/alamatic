@@ -107,3 +107,13 @@ class TerminalCompileLogHandler(CompileLogHandler):
             stream = self.out_stream
 
         stream.write("[ %s ] %s\n" % (level, msg))
+
+
+class MultiCompileLogHandler(CompileLogHandler):
+
+    def __init__(self, handlers):
+        self.handlers = handlers
+
+    def __call__(self, line):
+        for handler in self.handlers:
+            handler(line)
