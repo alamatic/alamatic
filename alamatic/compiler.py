@@ -30,7 +30,7 @@ class CompileState(object):
         self.log_type_counts[type] = self.log_type_counts[type] + 1
 
     def error(self, *parts):
-        if type(parts[0]) is CompilerError:
+        if isinstance(parts[0], CompilerError):
             self.log_handler(parts[0].log_line)
             level = parts[0].log_line.level
             self.log_type_counts[level] = self.log_type_counts[level] + 1
