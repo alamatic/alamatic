@@ -128,6 +128,7 @@ class ElseClause(AstNode):
 class WhileStmt(Statement):
 
     def __init__(self, position, test_expr, stmts):
+        self.position = position
         self.test_expr = test_expr
         self.stmts = stmts
 
@@ -142,6 +143,7 @@ class ForStmt(Statement):
 
     def __init__(self, position, target, source_expr, stmts):
         # target is either a variable declaration or an lvalue expression
+        self.position = position
         self.target = target
         self.source_expr = source_expr
         self.stmts = stmts
