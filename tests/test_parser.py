@@ -72,8 +72,6 @@ class TestParser(unittest.TestCase):
         got_positions = []
         for line in in_memory_log_handler.lines:
             if line.level == ERROR:
-                import logging
-                logging.debug(repr(line.parts))
                 for position in line.positions_mentioned:
                     got_positions.append((position[1], position[2]))
 
