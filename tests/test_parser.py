@@ -321,6 +321,60 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_data_decl_statement(self):
+        self.assertAst(
+            'var i',
+            [
+                ('DataDeclStmt', (), [
+                    ('VarDeclClause', ('i',), []),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'var i = 1',
+            [
+                ('DataDeclStmt', (), [
+                    ('VarDeclClause', ('i',), []),
+                    ('IntegerLiteralExpr', (1,), []),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'const i',
+            [
+                ('DataDeclStmt', (), [
+                    ('ConstDeclClause', ('i',), []),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'const i = 1',
+            [
+                ('DataDeclStmt', (), [
+                    ('ConstDeclClause', ('i',), []),
+                    ('IntegerLiteralExpr', (1,), []),
+                ]),
+            ]
+        )
+        self.assertErrorsInStmts(
+            "var i 1",
+            [
+                (1, 6),
+            ]
+        )
+        self.assertErrorsInStmts(
+            "var 1",
+            [
+                (1, 4),
+            ]
+        )
+        self.assertErrorsInStmts(
+            "var i = 1 2",
+            [
+                (1, 10),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",

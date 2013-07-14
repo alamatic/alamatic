@@ -75,6 +75,14 @@ def p_statement(state, scanner):
             return WhileStmt(pos, expr, stmts)
         if ident == "for":
             return p_for_stmt(state, scanner)
+        if ident == "var" or ident == "const":
+            decl = p_data_decl(state, scanner)
+            expr = None
+            if scanner.next_is_punct('='):
+                scanner.read()
+                expr = p_expression(state, scanner)
+            scanner.require_newline()
+            return DataDeclStmt(pos, decl, expr)
 
     expr = p_expression(state, scanner)
     scanner.require_newline()
@@ -242,8 +250,8 @@ def p_data_decl(state, scanner):
     if scanner.peek()[0] != "IDENT":
         raise CompilerError(
             "Expected declaration name but got ",
-            scanner.token_display_name(name_token),
-            " at ", pos_link(pos),
+            scanner.token_display_name(scanner.peek()),
+            " at ", pos_link(scanner.position()),
         )
 
     name = scanner.read()[1]

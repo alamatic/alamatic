@@ -156,6 +156,20 @@ class ForStmt(Statement):
             yield stmt
 
 
+class DataDeclStmt(Statement):
+
+    def __init__(self, position, decl, expr):
+        self.position = position
+        self.decl = decl
+        self.expr = expr
+
+    @property
+    def child_nodes(self):
+        yield self.decl
+        if self.expr is not None:
+            yield self.expr
+
+
 class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):
