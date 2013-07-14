@@ -165,3 +165,22 @@ class IntegerLiteralExpr(LiteralExpr):
 
 class FloatLiteralExpr(LiteralExpr):
     pass
+
+
+class DataDeclClause(AstNode):
+
+    def __init__(self, position, name):
+        self.position = position
+        self.name = name
+
+    @property
+    def params(self):
+        yield self.name
+
+
+class VarDeclClause(DataDeclClause):
+    pass
+
+
+class ConstDeclClause(DataDeclClause):
+    pass

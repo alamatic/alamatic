@@ -204,3 +204,29 @@ def p_expr_number(state, scanner):
         return FloatLiteralExpr(pos, value)
 
 
+def p_data_decl(state, scanner):
+    pos = scanner.position()
+
+    if scanner.next_is_keyword("var"):
+        decl_type = VarDeclClause
+    elif scanner.next_is_keyword("const"):
+        decl_type = ConstDeclClause
+    else:
+        raise CompilerError(
+            "Expected declaration but got ",
+            scanner.token_display_name(scanner.peek()),
+            " at ", pos_link(pos),
+        )
+
+    scanner.read()
+
+    if scanner.peek()[0] != "IDENT":
+        raise CompilerError(
+            "Expected declaration name but got ",
+            scanner.token_display_name(name_token),
+            " at ", pos_link(pos),
+        )
+
+    name = scanner.read()[1]
+
+    return decl_type(pos, name)
