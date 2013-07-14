@@ -130,6 +130,12 @@ class TestParser(unittest.TestCase):
                 ("PassStmt", (), []),
             ]
         )
+        self.assertErrorsInStmts(
+            "pass pass",
+            [
+                (1, 5),
+            ]
+        )
 
     def test_loop_control_statements(self):
         self.assertAst(

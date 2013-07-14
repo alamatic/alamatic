@@ -40,23 +40,28 @@ def p_statement(state, scanner):
         ident = peek[1]
         if ident == "pass":
             scanner.read()
+            scanner.require_newline()
             return PassStmt(pos)
         if ident == "break":
             scanner.read()
+            scanner.require_newline()
             return BreakStmt(pos)
         if ident == "continue":
             scanner.read()
+            scanner.require_newline()
             return ContinueStmt(pos)
         if ident == "return":
             scanner.read()
             expr = None
             if not scanner.next_is_newline():
                 expr = p_expression(state, scanner)
+            scanner.require_newline()
             return ReturnStmt(pos, expr)
         if ident == "if":
             return p_if_stmt(state, scanner)
 
     expr = p_expression(state, scanner)
+    scanner.require_newline()
     return ExpressionStmt(pos, expr)
 
 
