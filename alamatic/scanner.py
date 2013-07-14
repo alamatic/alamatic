@@ -278,6 +278,15 @@ class Scanner(plex.Scanner):
                     if indents == 0:
                         break
 
+        # As a further hack, detect if the following "statement" looks like
+        # an elif or else block, in which case skip those too or else we'll
+        # fail with a confusing error message trying to parse the sub-clause
+        # as a statement in its own right.
+        if self.next_is_keyword("elif") or self.next_is_keyword("else"):
+            # Probably shouldn't do this recursively but it'll only be
+            # a problem for if statements with many, many elif clauses.
+            self.skip_statement()
+
     def token_display_name(self, token):
         if token[0] == "NEWLINE":
             return "newline"

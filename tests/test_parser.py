@@ -123,6 +123,16 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+        # Block skipping with elif and else, which should
+        # also be skipped.
+        self.assertErrorsInStmts(
+            "==:\n    pass\n    ==\nelif 1:\n    ==\nelse:\n    ==\n==",
+            [
+                (1, 0),
+                (8, 0),
+            ]
+        )
+
     def test_pass_statement(self):
         self.assertAst(
             "pass",
