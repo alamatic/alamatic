@@ -280,6 +280,47 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_for_statement(self):
+        self.assertAst(
+            'for i in 1:\n'
+            '    pass\n'
+            '    pass',
+            [
+                ("ForStmt", (), [
+                    ('SymbolExpr', ("i",), []),
+                    ('IntegerLiteralExpr', (1,), []),
+                    ('PassStmt', (), []),
+                    ('PassStmt', (), []),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'for var i in 1:\n'
+            '    pass\n'
+            '    pass',
+            [
+                ("ForStmt", (), [
+                    ('VarDeclClause', ("i",), []),
+                    ('IntegerLiteralExpr', (1,), []),
+                    ('PassStmt', (), []),
+                    ('PassStmt', (), []),
+                ]),
+            ]
+        )
+        self.assertAst(
+            'for const i in 1:\n'
+            '    pass\n'
+            '    pass',
+            [
+                ("ForStmt", (), [
+                    ('ConstDeclClause', ("i",), []),
+                    ('IntegerLiteralExpr', (1,), []),
+                    ('PassStmt', (), []),
+                    ('PassStmt', (), []),
+                ]),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",

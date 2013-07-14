@@ -73,6 +73,8 @@ def p_statement(state, scanner):
             expr = p_expression(state, scanner)
             stmts = p_indented_block(state, scanner)
             return WhileStmt(pos, expr, stmts)
+        if ident == "for":
+            return p_for_stmt(state, scanner)
 
     expr = p_expression(state, scanner)
     scanner.require_newline()
@@ -105,6 +107,23 @@ def p_if_stmt(state, scanner):
         clauses.append(ElseClause(else_pos, else_stmts))
 
     return IfStmt(pos, clauses)
+
+
+def p_for_stmt(state, scanner):
+    pos = scanner.position()
+
+    scanner.require_keyword("for")
+    if scanner.next_is_keyword("var") or scanner.next_is_keyword("const"):
+        target = p_data_decl(state, scanner)
+    else:
+        target = p_expression(state, scanner)
+
+    scanner.require_keyword("in")
+    source_expr = p_expression(state, scanner)
+
+    stmts = p_indented_block(state, scanner)
+
+    return ForStmt(pos, target, source_expr, stmts)
 
 
 def p_expression(state, scanner):

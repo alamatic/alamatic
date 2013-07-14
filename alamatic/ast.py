@@ -138,6 +138,22 @@ class WhileStmt(AstNode):
             yield stmt
 
 
+class ForStmt(AstNode):
+
+    def __init__(self, position, target, source_expr, stmts):
+        # target is either a variable declaration or an lvalue expression
+        self.target = target
+        self.source_expr = source_expr
+        self.stmts = stmts
+
+    @property
+    def child_nodes(self):
+        yield self.target
+        yield self.source_expr
+        for stmt in self.stmts:
+            yield stmt
+
+
 class SymbolExpr(Expression):
 
     def __init__(self, position, symbol):
