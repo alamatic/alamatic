@@ -83,6 +83,10 @@ def p_statement(state, scanner):
                 expr = p_expression(state, scanner)
             scanner.require_newline()
             return DataDeclStmt(pos, decl, expr)
+        if ident == "func":
+            decl = p_func_decl(state, scanner)
+            stmts = p_indented_block(state, scanner)
+            return FuncDeclStmt(pos, decl, stmts)
 
     expr = p_expression(state, scanner)
     scanner.require_newline()
@@ -257,3 +261,48 @@ def p_data_decl(state, scanner):
     name = scanner.read()[1]
 
     return decl_type(pos, name)
+
+
+def p_func_decl(state, scanner):
+    pos = scanner.position()
+
+    scanner.require_keyword("func")
+
+    if scanner.peek()[0] != "IDENT":
+        raise CompilerError(
+            "Expected function name but got ",
+            scanner.token_display_name(scanner.peek()),
+            " at ", pos_link(scanner.position()),
+        )
+
+    name = scanner.read()[1]
+
+    params = []
+    scanner.require_punct("(")
+    if scanner.next_is_punct(")"):
+        scanner.read()
+    else:
+        while True:
+            if scanner.peek()[0] != "IDENT":
+                raise CompilerError(
+                    "Expected parameter name but got ",
+                    scanner.token_display_name(scanner.peek()),
+                    " at ", pos_link(scanner.position()),
+                )
+            arg_pos = scanner.position()
+            arg_name = scanner.read()[1]
+            arg_type_expr = None
+            if scanner.next_is_keyword("as"):
+                scanner.read()
+                arg_type_expr = p_expression(state, scanner)
+            params.append(ParamDeclClause(arg_pos, arg_name, arg_type_expr))
+
+            if scanner.next_is_punct(")"):
+                scanner.read()
+                break
+            scanner.require_punct(",")
+            if scanner.next_is_punct(")"):
+                scanner.read()
+                break
+
+    return FuncDeclClause(pos, name, params)

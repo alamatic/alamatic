@@ -375,6 +375,23 @@ class TestParser(unittest.TestCase):
             ]
         )
 
+    def test_func_decl_statement(self):
+        self.assertAst(
+            'func doot(a, b as foo):\n'
+            '    pass',
+            [
+                ('FuncDeclStmt', (), [
+                    ('FuncDeclClause', ('doot',), [
+                        ('ParamDeclClause', ('a',), []),
+                        ('ParamDeclClause', ('b',), [
+                            ('SymbolExpr', ('foo',), []),
+                        ]),
+                    ]),
+                    ('PassStmt', (), []),
+                ]),
+            ]
+        )
+
     def test_symbol_expression(self):
         self.assertExprAst(
             "baz",
