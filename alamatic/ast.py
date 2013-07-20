@@ -213,6 +213,28 @@ class FloatLiteralExpr(LiteralExpr):
     pass
 
 
+class BinaryOpExpr(Expression):
+
+    def __init__(self, position, lhs, op, rhs):
+        self.position = position
+        self.lhs = lhs
+        self.op = op
+        self.rhs = rhs
+
+    @property
+    def params(self):
+        yield self.op
+
+    @property
+    def child_nodes(self):
+        yield self.lhs
+        yield self.rhs
+
+
+class AssignExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

@@ -482,3 +482,23 @@ class TestParser(unittest.TestCase):
             "1.0E-1",
             ("FloatLiteralExpr", (0.1,), []),
         )
+
+    def test_assign_expressions(self):
+        self.assertAst(
+            "a = 1",
+            [
+                ("ExpressionStmt", (), [
+                    ('AssignExpr', ('=',), [
+                        ('SymbolExpr', ('a',), []),
+                        ('IntegerLiteralExpr', (1,), []),
+                    ]),
+                ]),
+            ],
+        )
+        # But chaining is not allowed
+        self.assertErrorsInStmts(
+            "a = b = 1",
+            [
+                (1, 6),
+            ]
+        )

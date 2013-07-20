@@ -88,7 +88,7 @@ def p_statement(state, scanner):
             stmts = p_indented_block(state, scanner)
             return FuncDeclStmt(pos, decl, stmts)
 
-    expr = p_expression(state, scanner)
+    expr = p_expression(state, scanner, allow_assign=True)
     scanner.require_newline()
     return ExpressionStmt(pos, expr)
 
@@ -138,10 +138,63 @@ def p_for_stmt(state, scanner):
     return ForStmt(pos, target, source_expr, stmts)
 
 
-def p_expression(state, scanner):
+def p_expression(state, scanner, allow_assign=False):
     peek = scanner.peek()
 
+    if allow_assign:
+        return p_expr_assign(state, scanner)
+    else:
+        # skip straight to logical or, which is the next operator in
+        # precedence order
+        return p_expr_logical_or(state, scanner)
+
+
+def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
+    this_parser = None
+    def this_parser(state, scanner):
+        pos = scanner.position()
+
+        lhs = next_parser(state, scanner)
+
+        peek = scanner.peek()
+        if peek[1] in operator_map:
+            operator = peek[1]
+            ast_class = operator_map[peek[1]]
+        else:
+            return lhs
+
+        # Eat the operator token, since we already dealt with it above.
+        scanner.read()
+
+        if allow_chain:
+            rhs = this_parser(state, scanner)
+        else:
+            rhs = next_parser(state, scanner)
+
+        return ast_class(pos, lhs, operator, rhs)
+
+    this_parser.__name__ = "p_expr_binary_" + name
+    return this_parser
+
+
+def p_expr_logical_or(state, scanner):
     return p_expr_term(state, scanner)
+
+
+p_expr_assign = make_p_expr_binary_op(
+    "p_expr_assign",
+    {
+        "=": AssignExpr,
+        "+=": AssignExpr,
+        "-=": AssignExpr,
+        "*=": AssignExpr,
+        "/=": AssignExpr,
+        "|=": AssignExpr,
+        "&=": AssignExpr,
+    },
+    p_expr_logical_or,
+    allow_chain=False,
+)
 
 
 def p_expr_term(state, scanner):
