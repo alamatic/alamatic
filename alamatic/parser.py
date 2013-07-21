@@ -217,7 +217,7 @@ def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
     return this_parser
 
 
-def p_expr_term(state, scanner):
+def p_expr_factor(state, scanner):
     pos = scanner.position()
 
     if scanner.next_is_punct("("):
@@ -250,7 +250,7 @@ p_expr_bitwise_not = make_p_expr_prefix_unary_op(
     {
         "~": BitwiseNotExpr,
     },
-    p_expr_term,
+    p_expr_factor,
 )
 
 
