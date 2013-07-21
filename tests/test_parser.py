@@ -16,8 +16,36 @@ from StringIO import StringIO
 class TestParser(unittest.TestCase):
 
     binary_operators = (
+        # These are in precedence order with lowest first.
+        # Blank lines represent actual changes in precedence, so
+        # these are grouped to show which operators actually have
+        # equal precedence.
         ("or", "LogicalOrExpr"),
+
         ("and", "LogicalAndExpr"),
+
+        #("is", "LogicalIsExpr"),
+        #("is not", "LogicalIsExpr"),
+        #("<", "ComparisonExpr"),
+        #("<=", "ComparisonExpr"),
+        #(">", "ComparisonExpr"),
+        #(">=", "ComparisonExpr"),
+        #("!=", "ComparisonExpr"),
+        #("==", "ComparisonExpr"),
+
+        #("|", "BitwiseOrExpr"),
+
+        #("&", "BitwiseAndExpr"),
+
+        #("<<", "ShiftExpr"),
+        #(">>", "ShiftExpr"),
+
+        #("+", "SumExpr"),
+        #("-", "SumExpr"),
+
+        #("*", "MultiplyExpr"),
+        #("/", "MultiplyExpr"),
+        #("%", "MultiplyExpr"),
     )
     unary_prefix_operators = (
         ("not", "LogicalNotExpr"),
