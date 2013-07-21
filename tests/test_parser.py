@@ -580,47 +580,61 @@ class TestParser(unittest.TestCase):
             ]),
         )
 
-    def test_binary_operators(self):
-        import logging
-        for op_map in self.binary_operators:
-            operator = op_map[0]
-            class_name = op_map[1]
-            logging.debug("in test_binary_operators testing %s", operator)
-            self.assertExprAst(
-                "a %s b" % operator,
-                (class_name, (operator,), [
-                    ('SymbolExpr', ('a',), []),
-                    ('SymbolExpr', ('b',), []),
-                ]),
-            )
-            self.assertExprAst(
-                "a %s b %s c" % (operator, operator),
-                (class_name, (operator,), [
-                    ('SymbolExpr', ('a',), []),
-                    (class_name, (operator,), [
-                        ('SymbolExpr', ('b',), []),
-                        ('SymbolExpr', ('c',), []),
-                    ]),
-                ]),
-            )
 
-    def test_unary_prefix_operators(self):
-        import logging
-        for op_map in self.unary_prefix_operators:
-            operator = op_map[0]
-            class_name = op_map[1]
-            logging.debug("in test_unary_prefix_operators testing %s", operator)
-            self.assertExprAst(
-                "%s a" % operator,
+# We generate an additional test function for each binary and unary
+# operator. These always follow the same pattern, so it's silly to hand-write
+# each of them, but we want to keep each one in its own test function
+# so we can see the status of each one in the test result report.
+
+def make_binary_op_func(operator, class_name):
+    def func(self):
+        self.assertExprAst(
+            "a %s b" % operator,
+            (class_name, (operator,), [
+                ('SymbolExpr', ('a',), []),
+                ('SymbolExpr', ('b',), []),
+            ]),
+        )
+        self.assertExprAst(
+            "a %s b %s c" % (operator, operator),
+            (class_name, (operator,), [
+                ('SymbolExpr', ('a',), []),
+                (class_name, (operator,), [
+                    ('SymbolExpr', ('b',), []),
+                    ('SymbolExpr', ('c',), []),
+                ]),
+            ]),
+        )
+    func.__name__ = "test_binary_" + operator
+    return func
+
+
+def make_unary_prefix_op_func(operator, class_name):
+    def func(self):
+        self.assertExprAst(
+            "%s a" % operator,
+            (class_name, (operator,), [
+                ('SymbolExpr', ('a',), []),
+            ]),
+        )
+        self.assertExprAst(
+            "%s %s a" % (operator, operator),
+            (class_name, (operator,), [
                 (class_name, (operator,), [
                     ('SymbolExpr', ('a',), []),
                 ]),
-            )
-            self.assertExprAst(
-                "%s %s a" % (operator, operator),
-                (class_name, (operator,), [
-                    (class_name, (operator,), [
-                        ('SymbolExpr', ('a',), []),
-                    ]),
-                ]),
-            )
+            ]),
+        )
+    func.__name__ = "test_unary_prefix_" + operator
+    return func
+
+
+for op_map in TestParser.binary_operators:
+    binary_op_func = make_binary_op_func(op_map[0], op_map[1])
+    setattr(TestParser, binary_op_func.__name__, binary_op_func)
+    del binary_op_func
+
+for op_map in TestParser.unary_prefix_operators:
+    unary_prefix_op_func = make_unary_prefix_op_func(op_map[0], op_map[1])
+    setattr(TestParser, unary_prefix_op_func.__name__, unary_prefix_op_func)
+    del unary_prefix_op_func
