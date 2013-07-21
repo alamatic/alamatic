@@ -538,3 +538,12 @@ class TestParser(unittest.TestCase):
             ],
             allow_assign=True,
         )
+
+    def test_assign_disallowed(self):
+        self.assertErrorsInExpr(
+            "a = 1",
+            [
+                (1, 2),
+            ],
+            allow_assign=False,
+        )
