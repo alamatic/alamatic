@@ -94,16 +94,22 @@ class TestParser(unittest.TestCase):
         )
         import logging
         got = self.ast_comparison_node(expr)
-        self.assertTrue(state.error_count == 0, "Errors during parse")
+        self.assertTrue(
+            state.error_count == 0,
+            "Errors during parse (see error log)",
+        )
         self.assertEqual(got, expected)
 
     def ast_comparison_list(self, root):
         ret = []
-        for node in root.child_nodes:
-            ret.append(self.ast_comparison_node(node))
+        if root is not None:
+            for node in root.child_nodes:
+                ret.append(self.ast_comparison_node(node))
         return ret
 
     def ast_comparison_node(self, node):
+        if node is None:
+            return None
         return (
             type(node).__name__,
             tuple(node.params),

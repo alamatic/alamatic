@@ -14,6 +14,7 @@ def parse_module(state, stream, name, filename):
 
 def parse_expression(state, stream, filename, allow_assign=False):
     scanner = Scanner(state, stream, filename, expression_only=True)
+    expr = None
     try:
         expr = p_expression(state, scanner, allow_assign=allow_assign)
         scanner.require_eof()
@@ -231,7 +232,7 @@ def p_expr_term(state, scanner):
         return SymbolExpr(pos, peek[1])
 
     raise CompilerError(
-        "Can't start an expression with ",
+        "Expected expression but found ",
         scanner.token_display_name(scanner.peek()),
         " at ", pos_link(pos),
     )
@@ -332,6 +333,7 @@ p_expr_logical_not = make_p_expr_prefix_unary_op(
     },
     p_expr_comparison,
 )
+
 
 p_expr_logical_and = make_p_expr_binary_op(
     "p_expr_logical_and",
