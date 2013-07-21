@@ -15,6 +15,10 @@ from StringIO import StringIO
 
 class TestParser(unittest.TestCase):
 
+    binary_operators = (
+        ("or", "LogicalOrExpr"),
+        ("and", "LogicalAndExpr"),
+    )
     def parse_stmts(self, inp):
         caller = inspect.stack()[1]
         state = CompileState()
@@ -548,45 +552,9 @@ class TestParser(unittest.TestCase):
             allow_assign=False,
         )
 
-    def test_logical_or_expression(self):
-        self.assertExprAst(
-            "a or b",
-            ('LogicalOrExpr', ('or',), [
-                ('SymbolExpr', ('a',), []),
-                ('SymbolExpr', ('b',), []),
-            ]),
-        )
-        self.assertExprAst(
-            "a or b or c",
-            ('LogicalOrExpr', ('or',), [
-                ('SymbolExpr', ('a',), []),
-                ('LogicalOrExpr', ('or',), [
-                    ('SymbolExpr', ('b',), []),
-                    ('SymbolExpr', ('c',), []),
-                ]),
-            ]),
-        )
-
-    def test_logical_and_expression(self):
-        self.assertExprAst(
-            "a and b",
-            ('LogicalAndExpr', ('and',), [
-                ('SymbolExpr', ('a',), []),
-                ('SymbolExpr', ('b',), []),
-            ]),
-        )
-        self.assertExprAst(
-            "a and b and c",
-            ('LogicalAndExpr', ('and',), [
-                ('SymbolExpr', ('a',), []),
-                ('LogicalAndExpr', ('and',), [
-                    ('SymbolExpr', ('b',), []),
-                    ('SymbolExpr', ('c',), []),
-                ]),
-            ]),
-        )
-
     def test_logical_operator_precedence(self):
+        # TODO: Generalize this to test everything in self.binary_operators,
+        # assuming that the list is in order of precedence.
         self.assertExprAst(
             "a or b and c",
             ('LogicalOrExpr', ('or',), [
@@ -607,3 +575,27 @@ class TestParser(unittest.TestCase):
                 ('SymbolExpr', ('c',), []),
             ]),
         )
+
+    def test_binary_operators(self):
+        import logging
+        for op_map in self.binary_operators:
+            operator = op_map[0]
+            class_name = op_map[1]
+            logging.debug("in test_binary_operators testing %s", operator)
+            self.assertExprAst(
+                "a %s b" % operator,
+                (class_name, (operator,), [
+                    ('SymbolExpr', ('a',), []),
+                    ('SymbolExpr', ('b',), []),
+                ]),
+            )
+            self.assertExprAst(
+                "a %s b %s c" % (operator, operator),
+                (class_name, (operator,), [
+                    ('SymbolExpr', ('a',), []),
+                    (class_name, (operator,), [
+                        ('SymbolExpr', ('b',), []),
+                        ('SymbolExpr', ('c',), []),
+                    ]),
+                ]),
+            )
