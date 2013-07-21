@@ -287,6 +287,14 @@ class MultiplyExpr(BinaryOpExpr):
     pass
 
 
+class SignExpr(UnaryOpExpr):
+    pass
+
+
+class BitwiseNotExpr(UnaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

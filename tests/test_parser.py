@@ -48,7 +48,13 @@ class TestParser(unittest.TestCase):
         ("%", "MultiplyExpr"),
     )
     unary_prefix_operators = (
+        # These are also in order of increasing precedence and grouped,
+        # just like the binary operators above.
         ("not", "LogicalNotExpr"),
+
+        ("+", "SignExpr"),
+        ("-", "SignExpr"),
+        ("~", "BitwiseNotExpr"),
     )
 
     def parse_stmts(self, inp):

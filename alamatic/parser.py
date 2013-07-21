@@ -237,6 +237,25 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_bitwise_not = make_p_expr_prefix_unary_op(
+    "p_expr_bitwise_not",
+    {
+        "~": BitwiseNotExpr,
+    },
+    p_expr_term,
+)
+
+
+p_expr_sign = make_p_expr_prefix_unary_op(
+    "p_expr_sign",
+    {
+        "-": SignExpr,
+        "+": SignExpr,
+    },
+    p_expr_bitwise_not,
+)
+
+
 p_expr_multiply = make_p_expr_binary_op(
     "p_expr_multiply",
     {
@@ -244,7 +263,7 @@ p_expr_multiply = make_p_expr_binary_op(
         "/": MultiplyExpr,
         "%": MultiplyExpr,
     },
-    p_expr_term,
+    p_expr_sign,
 )
 
 
