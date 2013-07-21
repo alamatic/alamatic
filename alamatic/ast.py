@@ -263,6 +263,10 @@ class LogicalAndExpr(BinaryOpExpr):
     pass
 
 
+class ComparisonExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

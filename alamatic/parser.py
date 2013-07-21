@@ -237,12 +237,32 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_comparison = make_p_expr_binary_op(
+    "p_expr_comparison",
+    {
+        # TODO: Implement these ones.
+        # (but "is not" will require a special case because it's
+        # the only operator that consists of two tokens)
+        #"is": LogicalIsExpr,
+        #"is not": LogicalIsExpr,
+
+        "<": ComparisonExpr,
+        "<=": ComparisonExpr,
+        ">": ComparisonExpr,
+        ">=": ComparisonExpr,
+        "!=": ComparisonExpr,
+        "==": ComparisonExpr,
+    },
+    p_expr_term,
+)
+
+
 p_expr_logical_not = make_p_expr_prefix_unary_op(
     "p_expr_logical_not",
     {
         "not": LogicalNotExpr,
     },
-    p_expr_term,
+    p_expr_comparison,
 )
 
 p_expr_logical_and = make_p_expr_binary_op(

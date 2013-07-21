@@ -26,12 +26,12 @@ class TestParser(unittest.TestCase):
 
         #("is", "LogicalIsExpr"),
         #("is not", "LogicalIsExpr"),
-        #("<", "ComparisonExpr"),
-        #("<=", "ComparisonExpr"),
-        #(">", "ComparisonExpr"),
-        #(">=", "ComparisonExpr"),
-        #("!=", "ComparisonExpr"),
-        #("==", "ComparisonExpr"),
+        ("<", "ComparisonExpr"),
+        ("<=", "ComparisonExpr"),
+        (">", "ComparisonExpr"),
+        (">=", "ComparisonExpr"),
+        ("!=", "ComparisonExpr"),
+        ("==", "ComparisonExpr"),
 
         #("|", "BitwiseOrExpr"),
 
