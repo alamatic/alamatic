@@ -275,6 +275,10 @@ class BitwiseAndExpr(BinaryOpExpr):
     pass
 
 
+class ShiftExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

@@ -237,12 +237,22 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_shift = make_p_expr_binary_op(
+    "p_expr_shift",
+    {
+        "<<": ShiftExpr,
+        ">>": ShiftExpr,
+    },
+    p_expr_term,
+)
+
+
 p_expr_bitwise_and = make_p_expr_binary_op(
     "p_expr_bitwise_and",
     {
         "&": BitwiseAndExpr,
     },
-    p_expr_term,
+    p_expr_shift,
 )
 
 

@@ -120,7 +120,9 @@ class Scanner(plex.Scanner):
         Str("*=") |
         Str("/=") |
         Str("|=") |
-        Str("&=")
+        Str("&=") |
+        Str("<<") |
+        Str(">>")
     )
 
     lexicon = plex.Lexicon([

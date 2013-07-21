@@ -37,8 +37,8 @@ class TestParser(unittest.TestCase):
 
         ("&", "BitwiseAndExpr"),
 
-        #("<<", "ShiftExpr"),
-        #(">>", "ShiftExpr"),
+        ("<<", "ShiftExpr"),
+        (">>", "ShiftExpr"),
 
         #("+", "SumExpr"),
         #("-", "SumExpr"),
