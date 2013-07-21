@@ -237,13 +237,34 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_multiply = make_p_expr_binary_op(
+    "p_expr_multiply",
+    {
+        "*": MultiplyExpr,
+        "/": MultiplyExpr,
+        "%": MultiplyExpr,
+    },
+    p_expr_term,
+)
+
+
+p_expr_sum = make_p_expr_binary_op(
+    "p_expr_sum",
+    {
+        "+": SumExpr,
+        "-": SumExpr,
+    },
+    p_expr_multiply,
+)
+
+
 p_expr_shift = make_p_expr_binary_op(
     "p_expr_shift",
     {
         "<<": ShiftExpr,
         ">>": ShiftExpr,
     },
-    p_expr_term,
+    p_expr_sum,
 )
 
 

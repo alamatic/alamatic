@@ -40,12 +40,12 @@ class TestParser(unittest.TestCase):
         ("<<", "ShiftExpr"),
         (">>", "ShiftExpr"),
 
-        #("+", "SumExpr"),
-        #("-", "SumExpr"),
+        ("+", "SumExpr"),
+        ("-", "SumExpr"),
 
-        #("*", "MultiplyExpr"),
-        #("/", "MultiplyExpr"),
-        #("%", "MultiplyExpr"),
+        ("*", "MultiplyExpr"),
+        ("/", "MultiplyExpr"),
+        ("%", "MultiplyExpr"),
     )
     unary_prefix_operators = (
         ("not", "LogicalNotExpr"),

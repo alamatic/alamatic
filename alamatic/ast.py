@@ -279,6 +279,14 @@ class ShiftExpr(BinaryOpExpr):
     pass
 
 
+class SumExpr(BinaryOpExpr):
+    pass
+
+
+class MultiplyExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):
