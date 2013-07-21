@@ -521,7 +521,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_assign_expressions(self):
-        for operator in ("="): #, "+=", "-=", "*=", "/=", "|=", "&="):
+        for operator in ("=", "+=", "-=", "*=", "/=", "|=", "&="):
             self.assertExprAst(
                 "a %s 1" % operator,
                 ('AssignExpr', (operator,), [
