@@ -235,6 +235,14 @@ class AssignExpr(BinaryOpExpr):
     pass
 
 
+class LogicalOrExpr(BinaryOpExpr):
+    pass
+
+
+class LogicalAndExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

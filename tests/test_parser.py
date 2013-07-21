@@ -547,3 +547,63 @@ class TestParser(unittest.TestCase):
             ],
             allow_assign=False,
         )
+
+    def test_logical_or_expression(self):
+        self.assertExprAst(
+            "a or b",
+            ('LogicalOrExpr', ('or',), [
+                ('SymbolExpr', ('a',), []),
+                ('SymbolExpr', ('b',), []),
+            ]),
+        )
+        self.assertExprAst(
+            "a or b or c",
+            ('LogicalOrExpr', ('or',), [
+                ('SymbolExpr', ('a',), []),
+                ('LogicalOrExpr', ('or',), [
+                    ('SymbolExpr', ('b',), []),
+                    ('SymbolExpr', ('c',), []),
+                ]),
+            ]),
+        )
+
+    def test_logical_and_expression(self):
+        self.assertExprAst(
+            "a and b",
+            ('LogicalAndExpr', ('and',), [
+                ('SymbolExpr', ('a',), []),
+                ('SymbolExpr', ('b',), []),
+            ]),
+        )
+        self.assertExprAst(
+            "a and b and c",
+            ('LogicalAndExpr', ('and',), [
+                ('SymbolExpr', ('a',), []),
+                ('LogicalAndExpr', ('and',), [
+                    ('SymbolExpr', ('b',), []),
+                    ('SymbolExpr', ('c',), []),
+                ]),
+            ]),
+        )
+
+    def test_logical_operator_precedence(self):
+        self.assertExprAst(
+            "a or b and c",
+            ('LogicalOrExpr', ('or',), [
+                ('SymbolExpr', ('a',), []),
+                ('LogicalAndExpr', ('and',), [
+                    ('SymbolExpr', ('b',), []),
+                    ('SymbolExpr', ('c',), []),
+                ]),
+            ]),
+        )
+        self.assertExprAst(
+            "a and b or c",
+            ('LogicalOrExpr', ('or',), [
+                ('LogicalAndExpr', ('and',), [
+                    ('SymbolExpr', ('a',), []),
+                    ('SymbolExpr', ('b',), []),
+                ]),
+                ('SymbolExpr', ('c',), []),
+            ]),
+        )

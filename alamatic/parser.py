@@ -187,26 +187,6 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
     return this_parser
 
 
-def p_expr_logical_or(state, scanner):
-    return p_expr_term(state, scanner)
-
-
-p_expr_assign = make_p_expr_binary_op(
-    "p_expr_assign",
-    {
-        "=": AssignExpr,
-        "+=": AssignExpr,
-        "-=": AssignExpr,
-        "*=": AssignExpr,
-        "/=": AssignExpr,
-        "|=": AssignExpr,
-        "&=": AssignExpr,
-    },
-    p_expr_logical_or,
-    allow_chain=False,
-)
-
-
 def p_expr_term(state, scanner):
     pos = scanner.position()
 
@@ -233,6 +213,40 @@ def p_expr_term(state, scanner):
         scanner.token_display_name(scanner.peek()),
         " at ", pos_link(pos),
     )
+
+
+p_expr_logical_and = make_p_expr_binary_op(
+    "p_expr_logical_and",
+    {
+        "and": LogicalAndExpr,
+    },
+    p_expr_term,
+)
+
+
+p_expr_logical_or = make_p_expr_binary_op(
+    "p_expr_logical_or",
+    {
+        "or": LogicalOrExpr,
+    },
+    p_expr_logical_and,
+)
+
+
+p_expr_assign = make_p_expr_binary_op(
+    "p_expr_assign",
+    {
+        "=": AssignExpr,
+        "+=": AssignExpr,
+        "-=": AssignExpr,
+        "*=": AssignExpr,
+        "/=": AssignExpr,
+        "|=": AssignExpr,
+        "&=": AssignExpr,
+    },
+    p_expr_logical_or,
+    allow_chain=False,
+)
 
 
 def p_expr_number(state, scanner):
