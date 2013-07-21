@@ -267,6 +267,14 @@ class ComparisonExpr(BinaryOpExpr):
     pass
 
 
+class BitwiseOrExpr(BinaryOpExpr):
+    pass
+
+
+class BitwiseAndExpr(BinaryOpExpr):
+    pass
+
+
 class DataDeclClause(AstNode):
 
     def __init__(self, position, name):

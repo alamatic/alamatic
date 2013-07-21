@@ -237,6 +237,24 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_bitwise_and = make_p_expr_binary_op(
+    "p_expr_bitwise_and",
+    {
+        "&": BitwiseAndExpr,
+    },
+    p_expr_term,
+)
+
+
+p_expr_bitwise_or = make_p_expr_binary_op(
+    "p_expr_bitwise_or",
+    {
+        "|": BitwiseOrExpr,
+    },
+    p_expr_bitwise_and,
+)
+
+
 p_expr_comparison = make_p_expr_binary_op(
     "p_expr_comparison",
     {
@@ -253,7 +271,7 @@ p_expr_comparison = make_p_expr_binary_op(
         "!=": ComparisonExpr,
         "==": ComparisonExpr,
     },
-    p_expr_term,
+    p_expr_bitwise_or,
 )
 
 

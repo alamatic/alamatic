@@ -33,9 +33,9 @@ class TestParser(unittest.TestCase):
         ("!=", "ComparisonExpr"),
         ("==", "ComparisonExpr"),
 
-        #("|", "BitwiseOrExpr"),
+        ("|", "BitwiseOrExpr"),
 
-        #("&", "BitwiseAndExpr"),
+        ("&", "BitwiseAndExpr"),
 
         #("<<", "ShiftExpr"),
         #(">>", "ShiftExpr"),
