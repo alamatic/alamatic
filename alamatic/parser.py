@@ -183,7 +183,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
 
         return ast_class(pos, lhs, operator, rhs)
 
-    this_parser.__name__ = "p_expr_binary_" + name
+    this_parser.__name__ = name
     return this_parser
 
 
