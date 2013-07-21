@@ -167,7 +167,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
         lhs = next_parser(state, scanner)
 
         peek = scanner.peek()
-        if peek[1] in operator_map:
+        if  peek[0] in ("IDENT", peek[1]) and peek[1] in operator_map:
             operator = peek[1]
             ast_class = operator_map[peek[1]]
         else:
