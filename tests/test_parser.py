@@ -633,7 +633,7 @@ def make_binary_op_func(operator, class_name):
                 ]),
             ]),
         )
-    func.__name__ = "test_binary_" + operator
+    func.__name__ = "test_binary_" + operator + "_expression"
     return func
 
 
@@ -653,7 +653,7 @@ def make_unary_prefix_op_func(operator, class_name):
                 ]),
             ]),
         )
-    func.__name__ = "test_unary_prefix_" + operator
+    func.__name__ = "test_unary_prefix_" + operator + "_expression"
     return func
 
 
