@@ -187,6 +187,28 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
     return this_parser
 
 
+def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
+    this_parser = None
+    def this_parser(state, scanner):
+        pos = scanner.position()
+
+        peek = scanner.peek()
+        if peek[0] in ("IDENT", peek[1]) and peek[1] in operator_map:
+            operator = peek[1]
+            ast_class = operator_map[peek[1]]
+            scanner.read()
+            # Try running ourselves again so that we can chain,
+            # like "not not a". Isn't incredibly useful but it ought to
+            # work anyway for consistency.
+            operand = this_parser(state, scanner)
+            return ast_class(pos, operand, operator)
+        else:
+            return next_parser(state, scanner)
+
+    this_parser.__name__ = name
+    return this_parser
+
+
 def p_expr_term(state, scanner):
     pos = scanner.position()
 
@@ -215,12 +237,20 @@ def p_expr_term(state, scanner):
     )
 
 
+p_expr_logical_not = make_p_expr_prefix_unary_op(
+    "p_expr_logical_not",
+    {
+        "not": LogicalNotExpr,
+    },
+    p_expr_term,
+)
+
 p_expr_logical_and = make_p_expr_binary_op(
     "p_expr_logical_and",
     {
         "and": LogicalAndExpr,
     },
-    p_expr_term,
+    p_expr_logical_not,
 )
 
 

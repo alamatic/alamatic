@@ -19,6 +19,10 @@ class TestParser(unittest.TestCase):
         ("or", "LogicalOrExpr"),
         ("and", "LogicalAndExpr"),
     )
+    unary_prefix_operators = (
+        ("not", "LogicalNotExpr"),
+    )
+
     def parse_stmts(self, inp):
         caller = inspect.stack()[1]
         state = CompileState()
@@ -596,6 +600,27 @@ class TestParser(unittest.TestCase):
                     (class_name, (operator,), [
                         ('SymbolExpr', ('b',), []),
                         ('SymbolExpr', ('c',), []),
+                    ]),
+                ]),
+            )
+
+    def test_unary_prefix_operators(self):
+        import logging
+        for op_map in self.unary_prefix_operators:
+            operator = op_map[0]
+            class_name = op_map[1]
+            logging.debug("in test_unary_prefix_operators testing %s", operator)
+            self.assertExprAst(
+                "%s a" % operator,
+                (class_name, (operator,), [
+                    ('SymbolExpr', ('a',), []),
+                ]),
+            )
+            self.assertExprAst(
+                "%s %s a" % (operator, operator),
+                (class_name, (operator,), [
+                    (class_name, (operator,), [
+                        ('SymbolExpr', ('a',), []),
                     ]),
                 ]),
             )

@@ -231,11 +231,31 @@ class BinaryOpExpr(Expression):
         yield self.rhs
 
 
+class UnaryOpExpr(Expression):
+
+    def __init__(self, position, operand, op):
+        self.position = position
+        self.operand = operand
+        self.op = op
+
+    @property
+    def params(self):
+        yield self.op
+
+    @property
+    def child_nodes(self):
+        yield self.operand
+
+
 class AssignExpr(BinaryOpExpr):
     pass
 
 
 class LogicalOrExpr(BinaryOpExpr):
+    pass
+
+
+class LogicalNotExpr(UnaryOpExpr):
     pass
 
 
