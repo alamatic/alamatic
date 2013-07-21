@@ -37,22 +37,36 @@ class TestParser(unittest.TestCase):
             "%s:%i" % (caller[3], caller[2]),
         )
         got = self.ast_comparison_list(module)
+        self.assertTrue(state.error_count == 0, "Errors during parse")
         self.assertEqual(got, expected)
 
-    def assertExprAst(self, inp, expected):
-        self.assertAst(inp, [
-            ("ExpressionStmt", (), [expected]),
-        ])
+    def assertExprAst(self, inp, expected, allow_assign=False):
+        caller = inspect.stack()[1]
+        log_handler = LoggingCompileLogHandler()
+        state = CompileState(log_handler=log_handler)
+        expr = parse_expression(
+            state,
+            StringIO(inp),
+            "%s:%i" % (caller[3], caller[2]),
+            allow_assign=allow_assign
+        )
+        import logging
+        got = self.ast_comparison_node(expr)
+        self.assertTrue(state.error_count == 0, "Errors during parse")
+        self.assertEqual(got, expected)
 
     def ast_comparison_list(self, root):
         ret = []
         for node in root.child_nodes:
-            ret.append((
-                type(node).__name__,
-                tuple(node.params),
-                self.ast_comparison_list(node),
-            ))
+            ret.append(self.ast_comparison_node(node))
         return ret
+
+    def ast_comparison_node(self, node):
+        return (
+            type(node).__name__,
+            tuple(node.params),
+            self.ast_comparison_list(node),
+        )
 
     def assertErrorsInStmts(self, inp, positions):
         caller = inspect.stack()[1]
@@ -68,6 +82,29 @@ class TestParser(unittest.TestCase):
             StringIO(inp),
             caller[3],
             "%s:%i" % (caller[3], caller[2]),
+        )
+        got_positions = []
+        for line in in_memory_log_handler.lines:
+            if line.level == ERROR:
+                for position in line.positions_mentioned:
+                    got_positions.append((position[1], position[2]))
+
+        self.assertEqual(got_positions, positions)
+
+    def assertErrorsInExpr(self, inp, positions, allow_assign=False):
+        caller = inspect.stack()[1]
+        in_memory_log_handler = InMemoryCompileLogHandler()
+        logging_log_handler = LoggingCompileLogHandler()
+        log_handler = MultiCompileLogHandler((
+            in_memory_log_handler,
+            logging_log_handler,
+        ))
+        state = CompileState(log_handler=log_handler)
+        expr = parse_expression(
+            state,
+            StringIO(inp),
+            "%s:%i" % (caller[3], caller[2]),
+            allow_assign=allow_assign,
         )
         got_positions = []
         for line in in_memory_log_handler.lines:
@@ -484,21 +521,20 @@ class TestParser(unittest.TestCase):
         )
 
     def test_assign_expressions(self):
-        self.assertAst(
-            "a = 1",
-            [
-                ("ExpressionStmt", (), [
-                    ('AssignExpr', ('=',), [
-                        ('SymbolExpr', ('a',), []),
-                        ('IntegerLiteralExpr', (1,), []),
-                    ]),
+        for operator in ("="): #, "+=", "-=", "*=", "/=", "|=", "&="):
+            self.assertExprAst(
+                "a %s 1" % operator,
+                ('AssignExpr', (operator,), [
+                    ('SymbolExpr', ('a',), []),
+                    ('IntegerLiteralExpr', (1,), []),
                 ]),
-            ],
-        )
+                allow_assign=True,
+            )
         # But chaining is not allowed
-        self.assertErrorsInStmts(
+        self.assertErrorsInExpr(
             "a = b = 1",
             [
                 (1, 6),
-            ]
+            ],
+            allow_assign=True,
         )

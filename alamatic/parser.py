@@ -12,6 +12,16 @@ def parse_module(state, stream, name, filename):
     return Module((filename, 1, 0), name, stmts)
 
 
+def parse_expression(state, stream, filename, allow_assign=False):
+    scanner = Scanner(state, stream, filename, expression_only=True)
+    try:
+        expr = p_expression(state, scanner, allow_assign=allow_assign)
+        scanner.require_eof()
+    except CompilerError, ex:
+        state.error(ex)
+    return expr
+
+
 def p_statements(state, scanner, stop_test=lambda s : s.next_is_outdent()):
     stmts = []
     while not stop_test(scanner):

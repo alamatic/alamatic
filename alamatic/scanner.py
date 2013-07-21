@@ -46,7 +46,7 @@ class Scanner(plex.Scanner):
         return text
 
     def handle_close_bracket(self, text):
-        if self.bracket_count > 0:
+        if self.bracket_count > self.min_bracket_count:
             self.bracket_count = self.bracket_count - 1
         return text
 
@@ -131,14 +131,21 @@ class Scanner(plex.Scanner):
         ]),
     ])
 
-    def __init__(self, state, stream, name=None):
+    def __init__(self, state, stream, name=None, expression_only=False):
         plex.Scanner.__init__(self, self.lexicon, stream=stream, name=name)
 
         self.state = state
         self.seen_one_indent = False
         self.indents = [0]
-        self.bracket_count = 0
-        self.begin('indent')
+        if expression_only:
+            # For parsing expressions we just pretend there's always
+            # one bracket open.
+            self.bracket_count = 1
+        else:
+            self.bracket_count = 0
+        self.min_bracket_count = self.bracket_count
+        if not expression_only:
+            self.begin('indent')
         self.peeked = None
         self.peeking = False
 
@@ -230,6 +237,16 @@ class Scanner(plex.Scanner):
         if not self.next_is_newline():
             raise UnexpectedTokenError(
                 "Expected newline but got %r" % (
+                    self.token_display_name(self.peek())
+                ),
+                " at ", pos_link(self.position()),
+            )
+        return self.read()
+
+    def require_eof(self):
+        if not self.next_is_eof():
+            raise UnexpectedTokenError(
+                "Expected end of file but got %r" % (
                     self.token_display_name(self.peek())
                 ),
                 " at ", pos_link(self.position()),

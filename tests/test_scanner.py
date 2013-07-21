@@ -21,10 +21,10 @@ def PUNCT(val):
 
 class TestScanner(unittest.TestCase):
 
-    def assertTokens(self, inp, expected_tokens):
+    def assertTokens(self, inp, expected_tokens, expression_only=False):
         state = CompileState()
         stream = StringIO(inp)
-        scanner = Scanner(state, stream)
+        scanner = Scanner(state, stream, expression_only=expression_only)
         got_tokens = []
         while True:
             got_token = scanner.read()
@@ -370,6 +370,38 @@ class TestScanner(unittest.TestCase):
                 NEWLINE,
                 OUTDENT,
             ]
+        )
+
+    def test_expression_only(self):
+        self.assertTokens(
+            "\n"
+            "a = (2 + 3)\n"
+            "     * 5\n",
+            [
+                IDENT("a"),
+                PUNCT("="),
+                PUNCT("("),
+                NUMBER("2"),
+                PUNCT("+"),
+                NUMBER("3"),
+                PUNCT(")"),
+                PUNCT("*"),
+                NUMBER("5"),
+            ],
+            expression_only=True,
+        )
+
+        # Make sure extra closing brackets don't allow us to
+        # "escape" back into non-expression scanning land
+        self.assertTokens(
+            "):\n"
+            "    a",
+            [
+                PUNCT(")"),
+                PUNCT(":"),
+                IDENT("a"),
+            ],
+            expression_only=True,
         )
 
     def test_parser_interface(self):
