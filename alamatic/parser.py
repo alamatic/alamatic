@@ -168,7 +168,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
         lhs = next_parser(state, scanner)
 
         peek = scanner.peek()
-        if  peek[0] in ("IDENT", peek[1]) and peek[1] in operator_map:
+        if peek[0] in ("IDENT", peek[1]) and peek[1] in operator_map:
             operator = peek[1]
             ast_class = operator_map[peek[1]]
         else:
@@ -176,6 +176,13 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
 
         # Eat the operator token, since we already dealt with it above.
         scanner.read()
+
+        # As a special case for the funky, two-token "is not" operator,
+        # we try to eat up a "not" right after an "is".
+        # (Yes, this is a bit of a hack. Oh well.)
+        if operator == "is" and scanner.next_is_keyword("not"):
+            operator = "is not"
+            scanner.read()
 
         if allow_chain:
             rhs = this_parser(state, scanner)
@@ -309,11 +316,10 @@ p_expr_bitwise_or = make_p_expr_binary_op(
 p_expr_comparison = make_p_expr_binary_op(
     "p_expr_comparison",
     {
-        # TODO: Implement these ones.
-        # (but "is not" will require a special case because it's
-        # the only operator that consists of two tokens)
-        #"is": LogicalIsExpr,
-        #"is not": LogicalIsExpr,
+
+        "is": ComparisonExpr,
+        # A special case inside make_p_expr_binary_op allows
+        # "is" to also implement "is not". (Hacky, yes.)
 
         "<": ComparisonExpr,
         "<=": ComparisonExpr,

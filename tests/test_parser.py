@@ -24,8 +24,8 @@ class TestParser(unittest.TestCase):
 
         ("and", "LogicalAndExpr"),
 
-        #("is", "LogicalIsExpr"),
-        #("is not", "LogicalIsExpr"),
+        ("is", "ComparisonExpr"),
+        ("is not", "ComparisonExpr"),
         ("<", "ComparisonExpr"),
         ("<=", "ComparisonExpr"),
         (">", "ComparisonExpr"),
