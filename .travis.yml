@@ -7,4 +7,6 @@ install:
   # FIXME: It'd be better not to duplicate the dependencies in here,
   # since they're already in setup.py. :(
   - "pip install --use-mirrors plex"
-script: nosetests
+  # Testing dependencies
+  - "pip install --use-mirrors nose coverage pep8"
+script: nosetests -v --with-coverage --cover-erase --cover-inclusive --cover-branches --cover-min-percentage=80 --cover-package=alamatic
