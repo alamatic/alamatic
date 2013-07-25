@@ -54,25 +54,86 @@ class SymbolTable(object):
 class DataState(object):
 
     def __init__(self, parent_state=None):
-        self.parent = parent_table
+        self.parent = parent_state
         self.symbol_storages = {}
         self.storage_values = {}
 
     def get_symbol_value(self, symbol):
-        pass
+        storage = self.get_symbol_storage(symbol)
+        if storage is None:
+            return None
+        return self.get_storage_value(storage)
+
+    def get_symbol_storage(self, symbol):
+        return _search_tables(self, "symbol_storages", symbol)
+
+    def get_storage_value(self, storage):
+        return _search_tables(self, "storage_values", storage)
 
     def set_symbol_value(self, symbol, value):
-        pass
+        """
+        Set the compile-time value for the given symbol, overwriting any
+        previous value in this state.
+
+        If the value is _not_ known at compile time, use
+        :py:meth:`clear_symbol_value` instead, to make the undefined
+        nature of it known to subsequent code.
+
+        A symbol can change type over the lifetime of the program, but
+        it can only have one type at a time. When multiple types are used,
+        the largest of the set will decide the amount of memory allocated
+        to the type at runtime, if the symbol is used at runtime.
+        """
+        # FIXME: Should detect if we're switching to a new storage and
+        # kill the value for the old one from self.storage_values, since
+        # it can never be reached again anyway so is just wasting memory.
+        storage = symbol.get_storage_for_type(type(value))
+        self.symbol_storages[symbol] = storage
+        self.storage_values[storage] = value
+
+    def clear_symbol_value(self, symbol):
+        try:
+            storage = self.symbol_storages[symbol]
+        except KeyError:
+            return
+
+        try:
+            del self.storage_values[storage]
+        except KeyError:
+            pass
+
+        # We set this to None explicitly rather than deleting it so we
+        # can distinguish between two sitations: either this state has
+        # no opinion on the given symbol and defers to its parent (not present
+        # at all) or this state considers the given symbol to be unknown,
+        # temporarily masking the parent's opinion (explicitly set to None).
+        self.symbol_storages[symbol] = None
 
     def create_child(self):
         return DataState(parent_state=self)
 
 
 class Symbol(object):
-    pass
+
+    def __init__(self):
+        self.storage_by_type = {}
+
+    def get_storage_for_type(self, type):
+        """
+        Get this symbol's storage for the given type.
+
+        If the symbol doesn't yet have a storage for the given type, one is
+        created. It is guaranteed that repeated calls to this method with
+        the same type will return the same storage object.
+        """
+        try:
+            return self.storage_by_type[type]
+        except KeyError:
+            self.storage_by_type[type] = Storage(type)
+            return self.storage_by_type[type]
 
 
 class Storage(object):
-    pass
 
-
+    def __init__(self, type):
+        self.type = type
