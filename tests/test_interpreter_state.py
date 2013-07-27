@@ -1,6 +1,7 @@
 
 import unittest
 from alamatic.interpreter import (
+    interpreter,
     SymbolTable,
     DataState,
     Symbol,
@@ -140,61 +141,83 @@ class TestInterpreterState(unittest.TestCase):
         # and data states together, approximating the machinations of
         # the interpreter executing a program.
 
-        # the root table represents the global scope of a module
+        root_state = DataState()
         root_table = SymbolTable()
 
-        # we start executing the module in a root state
-        root_state = DataState()
+        with root_state:
+            with root_table:
+                interpreter.declare("a", 1)
+                interpreter.declare("b", 32)
+                interpreter.declare("c", 54)
+                interpreter.declare("d", 89)
 
-        # var a = 1
-        sym_root_a = root_table.create_symbol("a")
-        sym_root_b = root_table.create_symbol("b")
-        sym_root_c = root_table.create_symbol("c")
-        sym_root_d = root_table.create_symbol("d")
-        root_state.set_symbol_value(sym_root_a, 1)
-        root_state.set_symbol_value(sym_root_b, 32)
-        root_state.set_symbol_value(sym_root_c, 54)
-        root_state.set_symbol_value(sym_root_d, 89)
+                self.assertEqual(
+                    interpreter.retrieve("a"),
+                    1,
+                )
+                self.assertEqual(
+                    interpreter.retrieve("b"),
+                    32,
+                )
 
-        # this table stands in for the members of some object whose class
-        # is declared in the module. It doesn't inherit the root table
-        # because class members are a separate namespace.
-        class_table = SymbolTable()
+                # this table stands in for the members of some object whose
+                # class is declared in the module. It doesn't inherit the root
+                # table because class members are a separate namespace.
+                class_table = SymbolTable()
 
-        # the class has a member "baz" whose value is 2, and since the
-        # object is instantiated at the top-level of the module the values
-        # of its members live in the root state.
-        sym_class_baz = class_table.create_symbol("baz")
-        root_state.set_symbol_value(sym_class_baz, 2)
+                with class_table:
+                    interpreter.declare("baz", 2)
 
-        # if we encounter an if statement whose expression can't be
-        # evaluated at compile time, we must in fact execute both the
-        # if clause and the else clause, with a separated data state
-        # for each because their execution contexts are separate.
-        # Also, control flow blocks create new scopes, so each clause
-        # gets its own symbol table too.
-        if_table = root_table.create_child()
-        if_state = root_state.create_child()
-        if_state.set_symbol_value(sym_root_a, 3)
-        if_state.set_symbol_value(sym_root_b, 19)
-        if_state.clear_symbol_value(sym_root_d)
-        else_table = root_table.create_child()
-        else_state = root_state.create_child()
-        else_state.set_symbol_value(sym_root_a, 4)
-        else_state.set_symbol_value(sym_root_b, 19)
-
-        # The above represents the following outcome:
-        # - if and else assigned differing values to a
-        # - if and else both assigned the same value to b
-        # - neither clause touched c
-        # - the if clause wrote something to d that can't be determined
-        #   until runtime.
-
-        # TODO: Implement a function to diff two states and retain only
-        # what they have in common, and another function to absorb the
-        # changes from a child state back into a parent, then test the
-        # remaining workflow of updating the root state to reflect the
-        # common results of the if and else clauses.
+                # if we encounter an if statement whose expression can't be
+                # evaluated at compile time, we must in fact execute both the
+                # if clause and the else clause, with a separated data state
+                # for each because their execution contexts are separate.
+                # Also, control flow blocks create new scopes, so each clause
+                # gets its own symbol table too.
+                with interpreter.child_symbol_table() as if_table:
+                    with interpreter.child_data_state() as if_state:
+                        interpreter.assign("a", 3)
+                        interpreter.assign("b", 19)
+                        self.assertEqual(
+                            interpreter.retrieve("a"),
+                            3,
+                        )
+                        self.assertEqual(
+                            interpreter.retrieve("b"),
+                            19,
+                        )
+                    # After popping the child state we should be back
+                    # to the original values.
+                    self.assertEqual(
+                        interpreter.retrieve("a"),
+                        1,
+                    )
+                    self.assertEqual(
+                        interpreter.retrieve("b"),
+                        32,
+                    )
+                with interpreter.child_symbol_table() as else_table:
+                    with interpreter.child_data_state() as else_state:
+                        interpreter.assign("a", 4)
+                        interpreter.assign("b", 19)
+                        self.assertEqual(
+                            interpreter.retrieve("a"),
+                            4,
+                        )
+                        self.assertEqual(
+                            interpreter.retrieve("b"),
+                            19,
+                        )
+                    # After popping the child state we should be back
+                    # to the original values.
+                    self.assertEqual(
+                        interpreter.retrieve("a"),
+                        1,
+                    )
+                    self.assertEqual(
+                        interpreter.retrieve("b"),
+                        32,
+                    )
 
     def test_call_frame(self):
         first_frame = CallFrame()

@@ -13,6 +13,36 @@ states are the mechanism by which we can evaluate both branches of an if
 statement whose condition cannot be fully evaluated at compile time.
 """
 
+class Interpreter(object):
+
+    symbols = None
+    data = None
+    frame = None
+
+    def child_symbol_table(self):
+        return self.symbols.create_child()
+
+    def child_data_state(self):
+        return self.data.create_child()
+
+    def child_symbol_table(self):
+        return self.symbols.create_child()
+
+    def declare(self, name, initial_value=None):
+        symbol = self.symbols.create_symbol(name)
+        self.data.set_symbol_value(symbol, initial_value)
+
+    def assign(self, name, value):
+        symbol = self.symbols.get_symbol(name)
+        self.data.set_symbol_value(symbol, value)
+
+    def retrieve(self, name):
+        symbol = self.symbols.get_symbol(name)
+        return self.data.get_symbol_value(symbol)
+
+
+interpreter = Interpreter()
+
 
 def _search_tables(start, table_name, key):
     current = start
@@ -49,6 +79,13 @@ class SymbolTable(object):
 
     def create_child(self):
         return SymbolTable(parent_table=self)
+
+    def __enter__(self):
+        self.previous_table = interpreter.symbols
+        interpreter.symbols = self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        interpreter.symbols = self.previous_table
 
 
 class DataState(object):
@@ -112,6 +149,13 @@ class DataState(object):
     def create_child(self):
         return DataState(parent_state=self)
 
+    def __enter__(self):
+        self.previous_state = interpreter.data
+        interpreter.data = self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        interpreter.data = self.previous_state
+
 
 class Symbol(object):
 
@@ -152,3 +196,10 @@ class CallFrame(object):
         while current is not None:
             yield current
             current = current.parent
+
+    def __enter__(self):
+        self.previous_frame = interpreter.frame
+        interpreter.frame = self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        interpreter.frame = self.previous_frame
