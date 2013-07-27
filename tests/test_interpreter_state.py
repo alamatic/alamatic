@@ -159,6 +159,14 @@ class TestInterpreterState(unittest.TestCase):
                     interpreter.retrieve("b"),
                     32,
                 )
+                self.assertEqual(
+                    interpreter.retrieve("c"),
+                    54,
+                )
+                self.assertEqual(
+                    interpreter.retrieve("d"),
+                    89,
+                )
 
                 # this table stands in for the members of some object whose
                 # class is declared in the module. It doesn't inherit the root
@@ -174,10 +182,13 @@ class TestInterpreterState(unittest.TestCase):
                 # for each because their execution contexts are separate.
                 # Also, control flow blocks create new scopes, so each clause
                 # gets its own symbol table too.
+                if_state = interpreter.child_data_state()
+                else_state = interpreter.child_data_state()
                 with interpreter.child_symbol_table() as if_table:
-                    with interpreter.child_data_state() as if_state:
+                    with if_state:
                         interpreter.assign("a", 3)
                         interpreter.assign("b", 19)
+                        interpreter.declare("c", 109)
                         self.assertEqual(
                             interpreter.retrieve("a"),
                             3,
@@ -185,6 +196,10 @@ class TestInterpreterState(unittest.TestCase):
                         self.assertEqual(
                             interpreter.retrieve("b"),
                             19,
+                        )
+                        self.assertEqual(
+                            interpreter.retrieve("c"),
+                            109,
                         )
                     # After popping the child state we should be back
                     # to the original values.
@@ -196,8 +211,14 @@ class TestInterpreterState(unittest.TestCase):
                         interpreter.retrieve("b"),
                         32,
                     )
+                # And after popping the child table we should be back
+                # to the original symbol for "c".
+                self.assertEqual(
+                    interpreter.retrieve("c"),
+                    54,
+                )
                 with interpreter.child_symbol_table() as else_table:
-                    with interpreter.child_data_state() as else_state:
+                    with else_state:
                         interpreter.assign("a", 4)
                         interpreter.assign("b", 19)
                         self.assertEqual(
@@ -218,6 +239,48 @@ class TestInterpreterState(unittest.TestCase):
                         interpreter.retrieve("b"),
                         32,
                     )
+
+                post_if_state = if_state.combine(else_state)
+                with post_if_state:
+                    # "a" had a different value in each clause, so it's unknown
+                    self.assertEqual(
+                        interpreter.retrieve("a"),
+                        None,
+                    )
+                    # but "b" had the same value, so it's known
+                    self.assertEqual(
+                        interpreter.retrieve("b"),
+                        19,
+                    )
+                    # we declared a new "c" inside the if block, so
+                    # the original "c" is unaffected.
+                    self.assertEqual(
+                        interpreter.retrieve("c"),
+                        54,
+                    )
+
+                # After we finish the if statement we merge the resulting
+                # state back into the root state to continue executing.
+                root_state.merge_child(post_if_state)
+
+                # And now the root state has the updated values of "a"
+                # and "b", with "a" being unknown.
+                self.assertEqual(
+                    interpreter.retrieve("a"),
+                    None,
+                )
+                self.assertEqual(
+                    interpreter.retrieve("b"),
+                    19,
+                )
+                self.assertEqual(
+                    interpreter.retrieve("c"),
+                    54,
+                )
+                self.assertEqual(
+                    interpreter.retrieve("d"),
+                    89,
+                )
 
     def test_call_frame(self):
         first_frame = CallFrame()

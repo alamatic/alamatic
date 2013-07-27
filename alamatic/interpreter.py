@@ -149,6 +149,67 @@ class DataState(object):
     def create_child(self):
         return DataState(parent_state=self)
 
+    def merge_child(self, child):
+        if child.parent != self:
+            raise Exception(
+                "Can't merge %r into %r: not a child" % (
+                    child,
+                    self,
+                )
+            )
+        for symbol in child.symbol_storages:
+            self.symbol_storages[symbol] = child.symbol_storages[symbol]
+        for storage in child.storage_values:
+            self.storage_values[storage] = child.storage_values[storage]
+
+    def combine(self, other, *others):
+        """
+        Given a bunch of states, return a new state that represents the
+        situation after any one of the given states could've run.
+
+        In other words, given the states from the if, elif and else clauses of
+        an if statement, this returns what the state should look like in
+        the code _following_ the whole if statement, assuming that we won't
+        know until runtime which of the blocks will actually execute.
+        """
+        if self.parent != other.parent:
+            raise Exception(
+                "Can't combine %s and %s because parents don't match" % (
+                    self,
+                    other,
+                )
+            )
+        symbols = (
+            set(self.symbol_storages.iterkeys()) |
+            set(other.symbol_storages.iterkeys())
+        )
+        storages = (
+            set(self.storage_values.iterkeys()) |
+            set(other.storage_values.iterkeys())
+        )
+        ret = DataState(parent_state=self.parent)
+
+        for symbol in symbols:
+            mine = self.symbol_storages.get(symbol)
+            theirs = other.symbol_storages.get(symbol)
+            if mine == theirs:
+                ret.symbol_storages[symbol] = mine
+            else:
+                ret.symbol_storages[symbol] = None
+
+        for storage in storages:
+            mine = self.storage_values.get(storage)
+            theirs = other.storage_values.get(storage)
+            if mine == theirs:
+                ret.storage_values[storage] = mine
+            else:
+                ret.storage_values[storage] = None
+
+        if len(others) > 0:
+            return ret.combine(*others)
+        else:
+            return ret
+
     def __enter__(self):
         self.previous_state = interpreter.data
         interpreter.data = self
