@@ -1,9 +1,9 @@
 
 import unittest
-from alamatic.scope import SymbolTable, DataState, Symbol, Storage
+from alamatic.interpreter import SymbolTable, DataState, Symbol, Storage
 
 
-class TestScope(unittest.TestCase):
+class TestInterpreterState(unittest.TestCase):
 
     def test_symbol_table(self):
         sym = Symbol()
