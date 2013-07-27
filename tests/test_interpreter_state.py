@@ -1,6 +1,12 @@
 
 import unittest
-from alamatic.interpreter import SymbolTable, DataState, Symbol, Storage
+from alamatic.interpreter import (
+    SymbolTable,
+    DataState,
+    Symbol,
+    Storage,
+    CallFrame,
+)
 
 
 class TestInterpreterState(unittest.TestCase):
@@ -189,3 +195,30 @@ class TestInterpreterState(unittest.TestCase):
         # changes from a child state back into a parent, then test the
         # remaining workflow of updating the root state to reflect the
         # common results of the if and else clauses.
+
+    def test_call_frame(self):
+        first_frame = CallFrame()
+        second_frame = first_frame.create_child()
+        third_frame = second_frame.create_child()
+
+        self.assertEqual(
+            list(third_frame.trace),
+            [
+                third_frame,
+                second_frame,
+                first_frame,
+            ]
+        )
+        self.assertEqual(
+            list(second_frame.trace),
+            [
+                second_frame,
+                first_frame,
+            ]
+        )
+        self.assertEqual(
+            list(first_frame.trace),
+            [
+                first_frame,
+            ]
+        )

@@ -137,3 +137,18 @@ class Storage(object):
 
     def __init__(self, type):
         self.type = type
+
+
+class CallFrame(object):
+    def __init__(self, parent=None):
+        self.parent = parent
+
+    def create_child(self):
+        return CallFrame(parent=self)
+
+    @property
+    def trace(self):
+        current = self
+        while current is not None:
+            yield current
+            current = current.parent
