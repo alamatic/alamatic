@@ -18,6 +18,17 @@ class ExpressionStmt(Statement):
     def child_nodes(self):
         yield self.expr
 
+    def execute(self, runtime_stmts):
+        from alamatic.ast import ValueExpr
+        eval_expr = self.expr.evaluate()
+        if type(eval_expr) != ValueExpr:
+            runtime_stmts.append(
+                ExpressionStmt(
+                    self.position,
+                    eval_expr,
+                )
+            )
+
 
 class PassStmt(Statement):
     pass

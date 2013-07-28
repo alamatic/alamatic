@@ -101,6 +101,9 @@ def p_statement(state, scanner):
 
     expr = p_expression(state, scanner, allow_assign=True)
     scanner.require_newline()
+    # FIXME: Should fail if an expression statement has no
+    # direct side-effects... that is, if it's not a call or an
+    # assignment node.
     return ExpressionStmt(pos, expr)
 
 
