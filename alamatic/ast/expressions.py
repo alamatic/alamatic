@@ -121,37 +121,9 @@ class BinaryOpExpr(Expression):
         yield self.rhs
 
     def evaluate(self):
-        node_type = type(self)
-        lhs_node = self.lhs.evaluate()
-        rhs_node = self.rhs.evaluate()
-        (lhs_node, rhs_node) = node_type.check_and_coerce_operands(
-            self,
-            lhs_node,
-            self.op,
-            rhs_node,
-        )
-        eval_node = node_type(
-            lhs_node,
-            self.op,
-            rhs_node,
-        )
-        lhs_type = type(eval_node.lhs)
-        rhs_type = type(eval_node.rhs)
-        if lhs_type == lhs_type and lhs_type == ValueExpr:
-            # Both sides are known at compile time, so we can do the
-            # calculation right here.
-            eval_val = type(eval_node).evaluate_values(
-                self,
-                lhs_type,
-                eval_node.op,
-                rhs_type,
-            )
-            return ValueExpr(
-                self,
-                eval_val,
-            )
-        else:
-            return eval_node
+        method_name = self.type_impl_method_name
+        method = getattr(type(self.lhs), method_name)
+        return method(self, self.lhs, self.rhs)
 
 
 class UnaryOpExpr(Expression):
@@ -207,26 +179,6 @@ class BinaryOpArithmeticExpr(BinaryOpExpr):
     def __init__(self, position, lhs, op, rhs, result_type=None):
         BinaryOpExpr.__init__(self, position, lhs, op, rhs)
         self._result_type = result_type
-    @classmethod
-    def check_and_coerce_operands(cls, source_node, lhs, op, rhs, position):
-        lhs_type = lhs.result_type
-        rhs_type = rhs.result_type
-        if lhs_type == rhs_type:
-            return (lhs, rhs)
-        elif lhs_type.can_coerce_type(rhs_type):
-            return (lhs, lhs_type.coerce_expr(rhs))
-        elif rhs_type.can_coerce_type(lhs_type):
-            return (rhs_type.coerce_expr(lhs), rhs)
-        else:
-            raise IncompatibleTypesError(
-                "Cannot evaluate %s %s %s" % (
-                    lhs_type.__name__,
-                    op,
-                    rhs_type.__name__,
-                ),
-                " at ", pos_link(source_node.position),
-                ": incompatible types"
-            )
 
     @property
     def result_type(self):
@@ -234,7 +186,13 @@ class BinaryOpArithmeticExpr(BinaryOpExpr):
 
 
 class SumExpr(BinaryOpArithmeticExpr):
-    pass
+
+    @property
+    def type_impl_method_name(self):
+        if self.op == "+":
+            return "add"
+        else:
+            return "subtract"
 
 
 class MultiplyExpr(BinaryOpArithmeticExpr):
