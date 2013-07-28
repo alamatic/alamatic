@@ -320,3 +320,7 @@ class UnknownSymbolError(CompilerError):
 
 class InconsistentTypesError(CompilerError):
     pass
+
+
+class IncompatibleTypesError(CompilerError):
+    pass

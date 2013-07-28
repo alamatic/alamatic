@@ -5,6 +5,7 @@ from alamatic.interpreter import (
     interpreter,
     UnknownSymbolError,
     InconsistentTypesError,
+    IncompatibleTypesError,
 )
 
 
