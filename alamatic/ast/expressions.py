@@ -162,6 +162,9 @@ class ValueExpr(Expression):
     def params(self):
         yield self.value
 
+    def evaluate(self):
+        return self
+
 
 class SymbolStorageExpr(Expression):
     def __init__(self, source_node, storage):
@@ -172,3 +175,6 @@ class SymbolStorageExpr(Expression):
     @property
     def params(self):
         yield self.storage
+
+    def evaluate(self):
+        return self
