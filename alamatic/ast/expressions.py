@@ -214,7 +214,10 @@ class BitwiseNotExpr(UnaryOpExpr):
 class ValueExpr(Expression):
     def __init__(self, source_node, value):
         self.source_node = source_node
-        self.position = source_node.position
+        if source_node is not None:
+            self.position = source_node.position
+        else:
+            self.position = None
         self.value = value
 
     @property
@@ -232,7 +235,10 @@ class ValueExpr(Expression):
 class SymbolStorageExpr(Expression):
     def __init__(self, source_node, storage):
         self.source_node = source_node
-        self.position = source_node.position
+        if source_node is not None:
+            self.position = source_node.position
+        else:
+            self.position = None
         self.storage = storage
 
     @property
