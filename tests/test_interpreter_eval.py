@@ -124,3 +124,106 @@ class TestInterpreterEval(unittest.TestCase):
                 type(eval_node.value),
                 expected_type,
             )
+
+    @state
+    def test_arithmetic_ops(self):
+        from alamatic.types import Value
+
+        # These are arrays just so we can modify them in the closures
+        # in the classes below.
+        performed = []
+
+        # Some mock types so we can test the expression behavior without
+        # depending on the behavior of any specific type.
+        class Dummy1(Value):
+            @classmethod
+            def add(cls, source_node, lhs, rhs):
+                performed.append("add")
+                return source_node
+            @classmethod
+            def multiply(cls, source_node, lhs, rhs):
+                performed.append("multiply")
+                return source_node
+        class Dummy2(Value):
+            @classmethod
+            def subtract(cls, source_node, lhs, rhs):
+                performed.append("subtract")
+                return source_node
+            @classmethod
+            def divide(cls, source_node, lhs, rhs):
+                performed.append("divide")
+                return source_node
+            @classmethod
+            def modulo(cls, source_node, lhs, rhs):
+                performed.append("modulo")
+                return source_node
+
+        val1 = Dummy1()
+        val2 = Dummy2()
+
+        # Add
+
+        lhs = ValueExpr(None, val1)
+        rhs = ValueExpr(None, val2)
+
+        src_node = SumExpr(None, lhs, "+", rhs)
+        eval_node = src_node.evaluate()
+        self.assertEqual(
+            src_node,
+            eval_node,
+        )
+
+        # Subtract (Swap sides this time)
+        rhs = ValueExpr(None, val1)
+        lhs = ValueExpr(None, val2)
+
+        src_node = SumExpr(None, lhs, "-", rhs)
+        eval_node = src_node.evaluate()
+        self.assertEqual(
+            src_node,
+            eval_node,
+        )
+
+        # Multiply (Swap back)
+        lhs = ValueExpr(None, val1)
+        rhs = ValueExpr(None, val2)
+
+        src_node = MultiplyExpr(None, lhs, "*", rhs)
+        eval_node = src_node.evaluate()
+        self.assertEqual(
+            src_node,
+            eval_node,
+        )
+
+        # Divide (And swap again)
+        rhs = ValueExpr(None, val1)
+        lhs = ValueExpr(None, val2)
+
+        src_node = MultiplyExpr(None, lhs, "/", rhs)
+        eval_node = src_node.evaluate()
+        self.assertEqual(
+            src_node,
+            eval_node,
+        )
+
+        # Modulo
+        rhs = ValueExpr(None, val1)
+        lhs = ValueExpr(None, val2)
+
+        src_node = MultiplyExpr(None, lhs, "%", rhs)
+        eval_node = src_node.evaluate()
+        self.assertEqual(
+            src_node,
+            eval_node,
+        )
+
+        self.assertEqual(
+            performed,
+            [
+                "add",
+                "subtract",
+                "multiply",
+                "divide",
+                "modulo",
+            ],
+        )

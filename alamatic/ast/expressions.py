@@ -122,8 +122,10 @@ class BinaryOpExpr(Expression):
 
     def evaluate(self):
         method_name = self.type_impl_method_name
-        method = getattr(type(self.lhs), method_name)
-        return method(self, self.lhs, self.rhs)
+        lhs = self.lhs.evaluate()
+        rhs = self.rhs.evaluate()
+        method = getattr(lhs.result_type, method_name)
+        return method(self, lhs, rhs)
 
 
 class UnaryOpExpr(Expression):
@@ -191,12 +193,24 @@ class SumExpr(BinaryOpArithmeticExpr):
     def type_impl_method_name(self):
         if self.op == "+":
             return "add"
-        else:
+        elif self.op == "-":
             return "subtract"
+        else:
+            raise Exception("Unknown SumExpr operator " + self.op)
 
 
 class MultiplyExpr(BinaryOpArithmeticExpr):
-    pass
+
+    @property
+    def type_impl_method_name(self):
+        if self.op == "*":
+            return "multiply"
+        elif self.op == "%":
+            return "modulo"
+        elif self.op == "/":
+            return "divide"
+        else:
+            raise Exception("Unknown MultiplyExpr operator " + self.op)
 
 
 class SignExpr(UnaryOpExpr):
