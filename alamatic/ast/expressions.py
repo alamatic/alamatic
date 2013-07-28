@@ -204,6 +204,9 @@ class ShiftExpr(BinaryOpExpr):
 
 class BinaryOpArithmeticExpr(BinaryOpExpr):
 
+    def __init__(self, position, lhs, op, rhs, result_type=None):
+        BinaryOpExpr.__init__(self, position, lhs, op, rhs)
+        self._result_type = result_type
     @classmethod
     def check_and_coerce_operands(cls, source_node, lhs, op, rhs, position):
         lhs_type = lhs.result_type
@@ -227,9 +230,7 @@ class BinaryOpArithmeticExpr(BinaryOpExpr):
 
     @property
     def result_type(self):
-        # TODO: Implement this by returning whatever we coerced the two
-        # operands to be.
-        pass
+        return self._result_type
 
 
 class SumExpr(BinaryOpArithmeticExpr):
