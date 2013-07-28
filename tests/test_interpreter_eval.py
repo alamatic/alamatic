@@ -81,3 +81,38 @@ class TestInterpreterEval(unittest.TestCase):
             UnknownSymbolError,
             src_d.evaluate,
         )
+
+    @state
+    def test_integer_literal_expr(self):
+        from alamatic.types import (
+            Int8,
+            Int16,
+            Int32,
+            Int64,
+            UInt64,
+        )
+
+        tests = [
+            (Int8, 127),
+            (Int8, -128),
+            (Int16, 128),
+            (Int16, 32767),
+            (Int16, -32768),
+            (Int32, 32768),
+            (Int32, -32769),
+            (Int64, 2 ** 32),
+            (Int64, -2 ** 32),
+            (UInt64, (2 ** 64) - 1),
+        ]
+
+        for expected_type, src_value in tests:
+            src_node = IntegerLiteralExpr(None, src_value)
+            eval_node = src_node.evaluate()
+            self.assertEqual(
+                type(eval_node),
+                ValueExpr,
+            )
+            self.assertEqual(
+                type(eval_node.value),
+                expected_type,
+            )

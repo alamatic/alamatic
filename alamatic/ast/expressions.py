@@ -60,7 +60,31 @@ class LiteralExpr(Expression):
 
 
 class IntegerLiteralExpr(LiteralExpr):
-    pass
+
+    def evaluate(self):
+        from alamatic.types import (
+            Int8,
+            Int16,
+            Int32,
+            Int64,
+            UInt64,
+        )
+        src_value = long(self.value)
+        for possible_type in (Int8, Int16, Int32, Int64, UInt64):
+            limits = possible_type.get_limits()
+            if src_value >= limits[0] and src_value <= limits[1]:
+                return ValueExpr(
+                    self,
+                    possible_type(src_value),
+                )
+
+        # Should never happen
+        raise Exception(
+            "Integer value %i (in %r) does not fit in any integer type",
+            self.value,
+            self,
+        )
+
 
 class FloatLiteralExpr(LiteralExpr):
     pass
