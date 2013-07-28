@@ -35,7 +35,9 @@ class Integer(Number):
         if value < limits[0] or value > limits[1]:
             # TODO: Make this some special exception type that our runtime
             # can understand as its own.
-            raise Exception("Integer out of range: %i to %i" % limits)
+            raise Exception("Integer %r out of range: %i to %i" % ((
+                value,
+            ) + limits))
 
         self.value = long(value)
 
