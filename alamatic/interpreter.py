@@ -13,6 +13,9 @@ states are the mechanism by which we can evaluate both branches of an if
 statement whose condition cannot be fully evaluated at compile time.
 """
 
+from alamatic.compilelogging import CompilerError, pos_link
+
+
 class Interpreter(object):
 
     symbols = None
@@ -304,3 +307,16 @@ class CallFrame(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.frame = self.previous_frame
+
+
+class UnknownSymbolError(CompilerError):
+    def __init__(self, symbol_name, node):
+        CompilerError.__init__(
+            self,
+            "Unknown symbol '", symbol_name,
+            "' at ", pos_link(node.position),
+        )
+
+
+class InconsistentTypesError(CompilerError):
+    pass

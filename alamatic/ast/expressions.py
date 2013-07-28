@@ -1,9 +1,17 @@
 
 from alamatic.ast import *
+from alamatic.compilelogging import pos_link
+from alamatic.interpreter import (
+    interpreter,
+    UnknownSymbolError,
+    InconsistentTypesError,
+)
 
 
 class Expression(AstNode):
-    pass
+
+    def evaluate(self):
+        raise Exception("evaluate is not implemented for %r" % self)
 
 
 class SymbolExpr(Expression):
