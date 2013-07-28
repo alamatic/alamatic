@@ -1,4 +1,7 @@
 
+from alamatic.compilelogging import pos_link
+
+
 class Type(type):
     def __new__(cls, name, bases, dict):
         return type.__new__(cls, name, bases, dict)
@@ -56,7 +59,6 @@ class Integer(Number):
     def get_min_value(cls):
         return cls.limits[0]
 
-
     @classmethod
     def get_max_value(self):
         return cls.limits[1]
@@ -67,45 +69,129 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    @classmethod
+    def add(cls, source_node, lhs, rhs):
+        from alamatic.ast import SumExpr, ValueExpr
+        from alamatic.interpreter import IncompatibleTypesError
+
+        lhs_result_type = lhs.result_type
+        rhs_result_type = rhs.result_type
+
+        if not issubclass(rhs_result_type, Integer):
+            raise IncompatibleTypesError(
+                "Can't add %s to %s at " % (
+                    lhs_result_type.__name__,
+                    rhs_result_type.__name__,
+                ),
+                pos_link(source_node.position)
+            )
+
+        # Whichever operand has the biggest type decides which type
+        # we use for the return value, though if either of them are
+        # signed then the result type is always signed.
+        # FIXME: Is this the right promotion rule? Seems complex enough
+        # that it's probably confusing.
+        result_type = None
+        if rhs_result_type.value_size > lhs_result_type.value_size:
+            result_type = rhs_result_type
+        else:
+            result_type = lhs_result_type
+
+        should_be_signed = lhs_result_type.signed or rhs_result_type.signed
+
+        if should_be_signed and not result_type.signed:
+            result_type = result_type.as_signed()
+
+        if type(lhs) == type(rhs) and type(lhs) == ValueExpr:
+            # FIXME: Need to make this do the correct overflow behavior
+            # if the result is too big for the target type, or else we'll
+            # fail here assigning a value that's too big.
+            return ValueExpr(
+                source_node,
+                result_type(lhs.value.value + rhs.value.value),
+            )
+        else:
+            # FIXME: If either of these operands don't match the result
+            # value, we need to generate an explicit cast for them so
+            # that our codegen can generate the right C cast to ensure that
+            # we respect our own type conversion rules rather than C's.
+            return SumExpr(
+                source_node.position,
+                lhs, "+", rhs,
+                result_type=result_type,
+            )
+
 
 class Int64(Integer):
     value_size = 63
     signed = True
+
+    @classmethod
+    def as_unsigned(cls):
+        return UInt64
 
 
 class Int32(Integer):
     value_size = 31
     signed = True
 
+    @classmethod
+    def as_unsigned(cls):
+        return UInt32
+
 
 class Int16(Integer):
     value_size = 15
     signed = True
+
+    @classmethod
+    def as_unsigned(cls):
+        return UInt16
 
 
 class Int8(Integer):
     value_size = 7
     signed = True
 
+    @classmethod
+    def as_unsigned(cls):
+        return UInt8
+
 
 class UInt64(Integer):
     value_size = 64
     signed = False
+
+    @classmethod
+    def as_signed(cls):
+        return Int64
 
 
 class UInt32(Integer):
     value_size = 32
     signed = False
 
+    @classmethod
+    def as_signed(cls):
+        return Int32
+
 
 class UInt16(Integer):
     value_size = 16
     signed = False
 
+    @classmethod
+    def as_signed(cls):
+        return Int16
+
 
 class UInt8(Integer):
     value_size = 8
     signed = False
+
+    @classmethod
+    def as_signed(cls):
+        return Int8
 
 
 class String(Value):

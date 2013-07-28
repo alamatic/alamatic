@@ -1,6 +1,8 @@
 
 import unittest
 from alamatic.types import *
+from alamatic.ast import *
+from alamatic.interpreter import Storage
 
 
 class TestTypes(unittest.TestCase):
@@ -25,7 +27,7 @@ class TestTypes(unittest.TestCase):
             is_our_value(Int32)
         )
 
-    def test_integers(self):
+    def test_integer_limits(self):
         self.assertEqual(
             UInt64.get_limits(),
             (
@@ -114,4 +116,141 @@ class TestTypes(unittest.TestCase):
         self.assertRaises(
             Exception,
             lambda: UInt8(-1),
+        )
+
+    def test_integer_arithmetic(self):
+        class DummyNode(object):
+            position = ("dummy", 1, 0)
+
+        dummy_node = DummyNode
+
+        # For testing the constant folding behavior.
+        def assert_binop_value(meth, lhs_value, rhs_value, result_value):
+            result = meth(
+                dummy_node,
+                ValueExpr(dummy_node, lhs_value),
+                ValueExpr(dummy_node, rhs_value),
+            )
+            self.assertEqual(
+                type(result),
+                ValueExpr
+            )
+            self.assertEqual(
+                type(result.value),
+                type(result_value),
+            )
+            self.assertEqual(
+                result.value.value,
+                result_value.value,
+            )
+
+        # For testing our type conversion behavior on variable operands.
+        def assert_binop_compile(
+            meth, lhs_type, rhs_type,
+            result_node_type, result_node_op, result_type,
+        ):
+            lhs = SymbolStorageExpr(dummy_node, Storage(lhs_type))
+            rhs = SymbolStorageExpr(dummy_node, Storage(rhs_type))
+            result = meth(
+                dummy_node,
+                lhs,
+                rhs,
+            )
+            self.assertEqual(
+                type(result),
+                result_node_type,
+            )
+            self.assertEqual(
+                result.op,
+                result_node_op,
+            )
+            self.assertEqual(
+                result.result_type,
+                result_type,
+            )
+
+        assert_binop_value(
+            Int8.add,
+            Int8(1),
+            Int8(2),
+            Int8(3),
+        )
+        assert_binop_value(
+            Int8.add,
+            Int8(1),
+            Int16(2),
+            Int16(3),
+        )
+        assert_binop_value(
+            Int8.add,
+            Int16(1),
+            Int8(2),
+            Int16(3),
+        )
+        assert_binop_value(
+            Int8.add,
+            UInt8(1),
+            UInt8(2),
+            UInt8(3),
+        )
+        assert_binop_value(
+            Int8.add,
+            UInt8(1),
+            Int8(2),
+            Int8(3),
+        )
+        assert_binop_value(
+            Int8.add,
+            Int8(1),
+            UInt8(2),
+            Int8(3),
+        )
+
+        assert_binop_compile(
+            Int8.add,
+            Int8,
+            Int8,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=Int8,
+        )
+        assert_binop_compile(
+            Int8.add,
+            Int16,
+            Int8,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=Int16,
+        )
+        assert_binop_compile(
+            Int8.add,
+            Int8,
+            Int16,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=Int16,
+        )
+        assert_binop_compile(
+            UInt8.add,
+            UInt8,
+            UInt8,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=UInt8,
+        )
+        assert_binop_compile(
+            UInt8.add,
+            UInt8,
+            Int8,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=Int8,
+        )
+        assert_binop_compile(
+            Int8.add,
+            Int8,
+            UInt8,
+            result_node_type=SumExpr,
+            result_node_op="+",
+            result_type=Int8,
         )
