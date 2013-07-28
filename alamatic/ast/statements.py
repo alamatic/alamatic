@@ -3,7 +3,9 @@ from alamatic.ast import *
 
 
 class Statement(AstNode):
-    pass
+
+    def execute(self, runtime_stmts):
+        raise Exception("execute is not implemented for %r" % self)
 
 
 class ExpressionStmt(Statement):
