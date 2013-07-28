@@ -123,3 +123,29 @@ class SignExpr(UnaryOpExpr):
 
 class BitwiseNotExpr(UnaryOpExpr):
     pass
+
+
+# The remaining nodes are never produced by the parser, but get substituted
+# for literals and variable references when we produce the tree to feed into
+# the code generator.
+
+class ValueExpr(Expression):
+    def __init__(self, source_node, value):
+        self.source_node = source_node
+        self.position = source_node.position
+        self.value = value
+
+    @property
+    def params(self):
+        yield self.value
+
+
+class SymbolStorageExpr(Expression):
+    def __init__(self, source_node, storage):
+        self.source_node = source_node
+        self.position = source_node.position
+        self.storage = storage
+
+    @property
+    def params(self):
+        yield self.storage
