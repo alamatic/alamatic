@@ -16,13 +16,36 @@ class Expression(AstNode):
 
 class SymbolExpr(Expression):
 
-    def __init__(self, position, symbol):
+    def __init__(self, position, name):
         self.position = position
-        self.symbol = symbol
+        self.name = name
 
     @property
     def params(self):
-        yield self.symbol
+        yield self.name
+
+    def evaluate(self):
+        # If we know the value of the symbol then we can just return it.
+        name = self.name
+        if not interpreter.name_is_defined(name):
+            raise UnknownSymbolError(name, self)
+
+        if interpreter.value_is_known(name):
+            return ValueExpr(
+                self,
+                interpreter.retrieve(name),
+            )
+        elif interpreter.storage_is_known(name):
+            return SymbolStorageExpr(
+                self,
+                interpreter.get_storage(name),
+            )
+        else:
+            raise InconsistentTypesError(
+                "Type of symbol '", name ,"', "
+                "referenced at ", pos_link(self.position),
+                ", is not consistent",
+            )
 
 
 class LiteralExpr(Expression):
