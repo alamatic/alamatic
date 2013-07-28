@@ -30,15 +30,61 @@ class Interpreter(object):
 
     def declare(self, name, initial_value=None):
         symbol = self.symbols.create_symbol(name)
-        self.data.set_symbol_value(symbol, initial_value)
+        if initial_value is not None:
+            self.data.set_symbol_value(symbol, initial_value)
+        else:
+            self.data.mark_symbol_unknown(symbol)
 
     def assign(self, name, value):
         symbol = self.symbols.get_symbol(name)
         self.data.set_symbol_value(symbol, value)
 
+    def mark_unknown(self, name, known_type=None):
+        symbol = self.symbols.get_symbol(name)
+        self.data.mark_symbol_unknown(symbol, known_type=known_type)
+
     def retrieve(self, name):
         symbol = self.symbols.get_symbol(name)
         return self.data.get_symbol_value(symbol)
+
+    def get_storage(self, name):
+        symbol = self.symbols.get_symbol(name)
+        return self.data.get_symbol_storage(symbol)
+
+    def name_is_defined(self, name):
+        try:
+            symbol = self.symbols.get_symbol(name)
+        except KeyError:
+            return False
+        else:
+            if symbol is None:
+                return False
+            else:
+                return True
+
+    def value_is_known(self, name):
+        symbol = self.symbols.get_symbol(name)
+        try:
+            value = self.data.get_symbol_value(symbol)
+        except KeyError:
+            return False
+        else:
+            if value is None:
+                return False
+            else:
+                return True
+
+    def storage_is_known(self, name):
+        symbol = self.symbols.get_symbol(name)
+        try:
+            storage = self.data.get_symbol_storage(symbol)
+        except KeyError:
+            return False
+        else:
+            if storage is None:
+                return False
+            else:
+                return True
 
 
 interpreter = Interpreter()
@@ -128,23 +174,17 @@ class DataState(object):
         self.symbol_storages[symbol] = storage
         self.storage_values[storage] = value
 
-    def clear_symbol_value(self, symbol):
-        try:
-            storage = self.symbol_storages[symbol]
-        except KeyError:
-            return
+    def mark_symbol_unknown(self, symbol, known_type=None):
 
-        try:
-            del self.storage_values[storage]
-        except KeyError:
-            pass
-
-        # We set this to None explicitly rather than deleting it so we
-        # can distinguish between two sitations: either this state has
-        # no opinion on the given symbol and defers to its parent (not present
-        # at all) or this state considers the given symbol to be unknown,
-        # temporarily masking the parent's opinion (explicitly set to None).
-        self.symbol_storages[symbol] = None
+        if known_type is not None:
+            storage = symbol.get_storage_for_type(known_type)
+            # FIXME: Should detect if we're switching to a new storage and
+            # kill the value for the old one from self.storage_values, since
+            # it can never be reached again anyway so is just wasting memory.
+            self.symbol_storages[symbol] = storage
+            self.storage_values[storage] = None
+        else:
+            self.symbol_storages[symbol] = None
 
     def create_child(self):
         return DataState(parent_state=self)
