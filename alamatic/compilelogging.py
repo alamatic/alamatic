@@ -30,7 +30,10 @@ class pos_link(object):
         if text is not None:
             self.text = text
         else:
-            self.text = "%s:%s,%s" % position
+            if position is not None:
+                self.text = "%s:%s,%s" % position
+            else:
+                self.text = "unknown position"
 
     def __unicode__(self):
         return self.text
