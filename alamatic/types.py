@@ -61,6 +61,12 @@ class Integer(Number):
     def get_max_value(self):
         return cls.limits[1]
 
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Int64(Integer):
     value_size = 63
