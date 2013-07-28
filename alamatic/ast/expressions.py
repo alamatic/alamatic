@@ -14,6 +14,18 @@ class Expression(AstNode):
     def evaluate(self):
         raise Exception("evaluate is not implemented for %r" % self)
 
+    @property
+    def result_type(self):
+        """
+        Returns the type that will result from evaluating this expression.
+
+        This method is only supported on the code generation tree generated
+        by calls to :py:meth:`evaluate`, not on the parse tree generated
+        by the parser, because the parse tree is generated before semantic
+        analysis has been performed and thus has no type information present.
+        """
+        raise Exception("result_type is not implemented for %r" % self)
+
 
 class SymbolExpr(Expression):
 
@@ -190,6 +202,10 @@ class ValueExpr(Expression):
     def evaluate(self):
         return self
 
+    @property
+    def result_type(self):
+        return type(self.value)
+
 
 class SymbolStorageExpr(Expression):
     def __init__(self, source_node, storage):
@@ -203,3 +219,7 @@ class SymbolStorageExpr(Expression):
 
     def evaluate(self):
         return self
+
+    @property
+    def result_type(self):
+        return self.storage.type

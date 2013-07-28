@@ -65,12 +65,20 @@ class TestInterpreterEval(unittest.TestCase):
             src_a,
         )
         self.assertEqual(
+            result_a.result_type,
+            int,
+        )
+        self.assertEqual(
             type(result_b),
             SymbolStorageExpr,
         )
         self.assertEqual(
             result_b.source_node,
             src_b,
+        )
+        self.assertEqual(
+            result_b.result_type,
+            int,
         )
 
         self.assertRaises(
