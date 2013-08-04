@@ -68,58 +68,55 @@ class IfStmt(Statement):
 
 class IfClause(AstNode):
 
-    def __init__(self, position, test_expr, stmts):
+    def __init__(self, position, test_expr, block):
         self.position = position
         self.test_expr = test_expr
-        self.stmts = stmts
+        self.block = block
 
     @property
     def child_nodes(self):
         yield self.test_expr
-        for stmt in self.stmts:
-            yield stmt
+        yield self.block
 
 
 class ElseClause(AstNode):
 
-    def __init__(self, position, stmts):
+    def __init__(self, position, block):
         self.position = position
-        self.stmts = stmts
+        self.block = block
 
     @property
     def child_nodes(self):
-        return self.stmts
+        yield self.block
 
 
 class WhileStmt(Statement):
 
-    def __init__(self, position, test_expr, stmts):
+    def __init__(self, position, test_expr, block):
         self.position = position
         self.test_expr = test_expr
-        self.stmts = stmts
+        self.block = block
 
     @property
     def child_nodes(self):
         yield self.test_expr
-        for stmt in self.stmts:
-            yield stmt
+        yield self.block
 
 
 class ForStmt(Statement):
 
-    def __init__(self, position, target, source_expr, stmts):
+    def __init__(self, position, target, source_expr, block):
         # target is either a variable declaration or an lvalue expression
         self.position = position
         self.target = target
         self.source_expr = source_expr
-        self.stmts = stmts
+        self.block = block
 
     @property
     def child_nodes(self):
         yield self.target
         yield self.source_expr
-        for stmt in self.stmts:
-            yield stmt
+        yield self.block
 
 
 class DataDeclStmt(Statement):
@@ -138,13 +135,12 @@ class DataDeclStmt(Statement):
 
 class FuncDeclStmt(Statement):
 
-    def __init__(self, position, decl, stmts):
+    def __init__(self, position, decl, block):
         self.position = position
         self.decl = decl
-        self.stmts = stmts
+        self.block = block
 
     @property
     def child_nodes(self):
         yield self.decl
-        for stmt in self.stmts:
-            yield stmt
+        yield self.block

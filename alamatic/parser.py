@@ -8,8 +8,9 @@ def parse_module(state, stream, name, filename):
     scanner = Scanner(state, stream, filename)
 
     stmts = p_statements(state, scanner, lambda s : s.next_is_eof())
+    block = StatementBlock(stmts)
 
-    return Module((filename, 1, 0), name, stmts)
+    return Module((filename, 1, 0), name, block)
 
 
 def parse_expression(state, stream, filename, allow_assign=False):
@@ -44,7 +45,7 @@ def p_indented_block(state, scanner):
     scanner.require_indent()
     stmts = p_statements(state, scanner)
     scanner.require_outdent()
-    return stmts
+    return StatementBlock(stmts)
 
 
 def p_statement(state, scanner):
@@ -82,8 +83,8 @@ def p_statement(state, scanner):
         if ident == "while":
             scanner.read()
             expr = p_expression(state, scanner)
-            stmts = p_indented_block(state, scanner)
-            return WhileStmt(pos, expr, stmts)
+            block = p_indented_block(state, scanner)
+            return WhileStmt(pos, expr, block)
         if ident == "for":
             return p_for_stmt(state, scanner)
         if ident == "var" or ident == "const":
@@ -96,8 +97,8 @@ def p_statement(state, scanner):
             return DataDeclStmt(pos, decl, expr)
         if ident == "func":
             decl = p_func_decl(state, scanner)
-            stmts = p_indented_block(state, scanner)
-            return FuncDeclStmt(pos, decl, stmts)
+            block = p_indented_block(state, scanner)
+            return FuncDeclStmt(pos, decl, block)
 
     expr = p_expression(state, scanner, allow_assign=True)
     scanner.require_newline()
@@ -115,22 +116,22 @@ def p_if_stmt(state, scanner):
     if_pos = scanner.position()
     scanner.require_keyword("if")
     if_expr = p_expression(state, scanner)
-    if_stmts = p_indented_block(state, scanner)
+    if_block = p_indented_block(state, scanner)
 
-    clauses.append(IfClause(if_pos, if_expr, if_stmts))
+    clauses.append(IfClause(if_pos, if_expr, if_block))
 
     while scanner.next_is_keyword("elif"):
         elif_pos = scanner.position()
         scanner.read()
         elif_expr = p_expression(state, scanner)
-        elif_stmts = p_indented_block(state, scanner)
-        clauses.append(IfClause(elif_pos, elif_expr, elif_stmts))
+        elif_block = p_indented_block(state, scanner)
+        clauses.append(IfClause(elif_pos, elif_expr, elif_block))
 
     if scanner.next_is_keyword("else"):
         else_pos = scanner.position()
         scanner.read()
-        else_stmts = p_indented_block(state, scanner)
-        clauses.append(ElseClause(else_pos, else_stmts))
+        else_block = p_indented_block(state, scanner)
+        clauses.append(ElseClause(else_pos, else_block))
 
     return IfStmt(pos, clauses)
 
@@ -147,9 +148,9 @@ def p_for_stmt(state, scanner):
     scanner.require_keyword("in")
     source_expr = p_expression(state, scanner)
 
-    stmts = p_indented_block(state, scanner)
+    block = p_indented_block(state, scanner)
 
-    return ForStmt(pos, target, source_expr, stmts)
+    return ForStmt(pos, target, source_expr, block)
 
 
 def p_expression(state, scanner, allow_assign=False):

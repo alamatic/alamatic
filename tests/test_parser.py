@@ -78,7 +78,7 @@ class TestParser(unittest.TestCase):
             caller[3],
             "%s:%i" % (caller[3], caller[2]),
         )
-        got = self.ast_comparison_list(module)
+        got = self.ast_comparison_list(module.block)
         self.assertTrue(state.error_count == 0, "Errors during parse")
         self.assertEqual(got, expected)
 
@@ -174,7 +174,7 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(module.name, "foo")
         self.assertEqual(module.position, ("foo.ala", 1, 0))
-        self.assertEqual(module.stmts, [])
+        self.assertEqual(module.block.stmts, [])
 
         # Module with two simple statements
         state = CompileState()
@@ -184,7 +184,7 @@ class TestParser(unittest.TestCase):
             "foo",
             "foo.ala",
         )
-        self.assertEqual(len(module.stmts), 2)
+        self.assertEqual(len(module.block.stmts), 2)
 
     def test_error_recovery(self):
         # Simple line skipping: the two lines that start with ==
@@ -275,7 +275,9 @@ class TestParser(unittest.TestCase):
                 ("IfStmt", (), [
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (1,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                 ]),
             ]
@@ -289,10 +291,14 @@ class TestParser(unittest.TestCase):
                 ("IfStmt", (), [
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (1,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("ElseClause", (), [
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                 ]),
             ]
@@ -308,15 +314,21 @@ class TestParser(unittest.TestCase):
                 ("IfStmt", (), [
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (1,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (2,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (3,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                 ]),
             ]
@@ -334,18 +346,26 @@ class TestParser(unittest.TestCase):
                 ("IfStmt", (), [
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (1,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (2,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("IfClause", (), [
                         ('IntegerLiteralExpr', (3,), []),
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                     ("ElseClause", (), [
-                        ('PassStmt', (), []),
+                        ('StatementBlock', (), [
+                            ('PassStmt', (), []),
+                        ]),
                     ]),
                 ]),
             ]
@@ -359,8 +379,10 @@ class TestParser(unittest.TestCase):
             [
                 ("WhileStmt", (), [
                     ('IntegerLiteralExpr', (1,), []),
-                    ('PassStmt', (), []),
-                    ('PassStmt', (), []),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                        ('PassStmt', (), []),
+                    ]),
                 ]),
             ]
         )
@@ -374,8 +396,10 @@ class TestParser(unittest.TestCase):
                 ("ForStmt", (), [
                     ('SymbolExpr', ("i",), []),
                     ('IntegerLiteralExpr', (1,), []),
-                    ('PassStmt', (), []),
-                    ('PassStmt', (), []),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                        ('PassStmt', (), []),
+                    ]),
                 ]),
             ]
         )
@@ -387,8 +411,10 @@ class TestParser(unittest.TestCase):
                 ("ForStmt", (), [
                     ('VarDeclClause', ("i",), []),
                     ('IntegerLiteralExpr', (1,), []),
-                    ('PassStmt', (), []),
-                    ('PassStmt', (), []),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                        ('PassStmt', (), []),
+                    ]),
                 ]),
             ]
         )
@@ -400,8 +426,10 @@ class TestParser(unittest.TestCase):
                 ("ForStmt", (), [
                     ('ConstDeclClause', ("i",), []),
                     ('IntegerLiteralExpr', (1,), []),
-                    ('PassStmt', (), []),
-                    ('PassStmt', (), []),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                        ('PassStmt', (), []),
+                    ]),
                 ]),
             ]
         )
@@ -472,7 +500,9 @@ class TestParser(unittest.TestCase):
                             ('SymbolExpr', ('foo',), []),
                         ]),
                     ]),
-                    ('PassStmt', (), []),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                    ]),
                 ]),
             ]
         )

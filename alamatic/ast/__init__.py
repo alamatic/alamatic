@@ -29,11 +29,23 @@ class AstNode(object):
         return "<alamatic.ast.%s>" % str(self)
 
 
+class StatementBlock(AstNode):
+    def __init__(self, stmts, scope=None):
+        self.stmts = stmts
+        # scope is only populated in a code generation tree; it's
+        # always None in a parse tree.
+        self.scope = scope
+
+    @property
+    def child_nodes(self):
+        return self.stmts
+
+
 class Module(AstNode):
 
-    def __init__(self, position, name, stmts):
+    def __init__(self, position, name, block):
         self.name = name
-        self.stmts = stmts
+        self.block = block
         self.position = position
 
     @property
@@ -42,7 +54,7 @@ class Module(AstNode):
 
     @property
     def child_nodes(self):
-        return self.stmts
+        yield self.block
 
 
 # These imports depend on the above symbols, so they must appear after
