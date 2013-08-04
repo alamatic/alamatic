@@ -69,6 +69,9 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __repr__(self):
+        return "<alamatic.types.%s: %i>" % (type(self).__name__, self.value)
+
     @classmethod
     def add(cls, source_node, lhs, rhs):
         from alamatic.ast import SumExpr, ValueExpr
