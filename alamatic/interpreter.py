@@ -16,11 +16,30 @@ statement whose condition cannot be fully evaluated at compile time.
 from alamatic.compilelogging import CompilerError, pos_link
 
 
+def execute_module(state, module):
+    from alamatic.ast import Module
+    old_state = interpreter.state
+    interpreter.state = state
+    try:
+        with SymbolTable() as root_symbols:
+            with DataState() as root_data:
+                try:
+                    runtime_block = module.block.execute()
+                    return Module(module.position, module.name, runtime_block)
+                except CompilerError, ex:
+                    state.error(ex)
+                else:
+                    return None
+    finally:
+        interpreter.state = old_state
+
+
 class Interpreter(object):
 
     symbols = None
     data = None
     frame = None
+    state = None
 
     def child_symbol_table(self):
         return self.symbols.create_child()
@@ -132,6 +151,7 @@ class SymbolTable(object):
     def __enter__(self):
         self.previous_table = interpreter.symbols
         interpreter.symbols = self
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.symbols = self.previous_table
@@ -256,6 +276,7 @@ class DataState(object):
     def __enter__(self):
         self.previous_state = interpreter.data
         interpreter.data = self
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.data = self.previous_state

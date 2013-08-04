@@ -30,15 +30,33 @@ class AstNode(object):
 
 
 class StatementBlock(AstNode):
-    def __init__(self, stmts, scope=None):
+    def __init__(self, stmts, symbols=None):
         self.stmts = stmts
-        # scope is only populated in a code generation tree; it's
+        # symbols is only populated in a code generation tree; it's
         # always None in a parse tree.
-        self.scope = scope
+        self.symbols = symbols
 
     @property
     def child_nodes(self):
         return self.stmts
+
+    @property
+    def is_empty(self):
+        return len(self.stmts) > 0
+
+    def execute(self):
+        # Note that StatementBlock isn't a Statement, so this is not the
+        # statement execute() interface even though the method has the
+        # same name.
+        from alamatic.interpreter import interpreter
+        with interpreter.child_symbol_table() as symbols:
+            runtime_stmts = []
+            for stmt in self.stmts:
+                stmt.execute(runtime_stmts)
+            return StatementBlock(
+                runtime_stmts,
+                symbols,
+            )
 
 
 class Module(AstNode):
