@@ -234,6 +234,10 @@ class TestInterpreterExec(unittest.TestCase):
         self.assertTrue(
             type(symbol) is Symbol
         )
+        self.assertFalse(
+            symbol.const,
+            "Symbol is const but expected var",
+        )
         self.assertTrue(
             result.data.get_symbol_storage(symbol) is None
         )
@@ -266,6 +270,10 @@ class TestInterpreterExec(unittest.TestCase):
             1,
         )
         symbol = result.symbols.get_symbol("baz")
+        self.assertFalse(
+            symbol.const,
+            "Symbol is const but expected var",
+        )
         storage = result.data.get_symbol_storage(symbol)
         self.assertEqual(
             result.runtime_stmts[0].expr.lhs.storage,
@@ -300,6 +308,10 @@ class TestInterpreterExec(unittest.TestCase):
         self.assertTrue(
             type(symbol) is Symbol
         )
+        self.assertFalse(
+            symbol.const,
+            "Symbol is const but expected var",
+        )
         self.assertEqual(
             type(result.data.get_symbol_value(symbol)),
             type(None),
@@ -323,6 +335,10 @@ class TestInterpreterExec(unittest.TestCase):
         symbol = result.symbols.get_symbol("bez")
         self.assertTrue(
             type(symbol) is Symbol
+        )
+        self.assertTrue(
+            symbol.const,
+            "Symbol is var but expected const",
         )
         self.assertEqual(
             result.data.get_symbol_value(symbol).value,

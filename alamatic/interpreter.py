@@ -50,8 +50,8 @@ class Interpreter(object):
     def child_symbol_table(self):
         return self.symbols.create_child()
 
-    def declare(self, name, initial_value=None):
-        symbol = self.symbols.create_symbol(name)
+    def declare(self, name, initial_value=None, const=False):
+        symbol = self.symbols.create_symbol(name, const=const)
         if initial_value is not None:
             self.data.set_symbol_value(symbol, initial_value)
         else:
@@ -137,12 +137,12 @@ class SymbolTable(object):
     def get_symbol(self, name):
         return _search_tables(self, "symbols", name)
 
-    def create_symbol(self, name):
+    def create_symbol(self, name, const=False):
         # If the name was already used then we'll "lose" the symbol
         # that was there before, but that's okay because any code we
         # already generated that refers to the old symbol will still
         # have a reference to it.
-        self.symbols[name] = Symbol()
+        self.symbols[name] = Symbol(const=const)
         return self.symbols[name]
 
     def create_child(self):
@@ -284,8 +284,9 @@ class DataState(object):
 
 class Symbol(object):
 
-    def __init__(self):
+    def __init__(self, const=False):
         self.storage_by_type = {}
+        self.const = const
 
     def get_storage_for_type(self, type):
         """

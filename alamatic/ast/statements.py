@@ -145,21 +145,22 @@ class DataDeclStmt(Statement):
         )
         from alamatic.compilelogging import pos_link
 
-        interpreter.declare(self.decl.name)
+        const = type(self.decl) is ConstDeclClause
+
+        interpreter.declare(self.decl.name, const=const)
         if self.expr is None:
-            if type(self.decl) is ConstDeclClause:
+            if const:
                 raise NotConstantError(
                     "Constant '%s'," % self.decl.name,
                     " declared at ", pos_link(self.position),
                     ", must be assigned an initial value",
                 )
-            interpreter.declare(self.decl.name)
         else:
             val_expr = self.expr.evaluate()
             if type(val_expr) is ValueExpr:
                 interpreter.assign(self.decl.name, val_expr.value)
             else:
-                if type(self.decl) is ConstDeclClause:
+                if const:
                     raise NotConstantError(
                         "Initial value for constant '%s'," % self.decl.name,
                         " declared at ", pos_link(self.position),
@@ -175,7 +176,7 @@ class DataDeclStmt(Statement):
 
             # The code generator will generate the declaration from the scope,
             # so we just need to assign a value to it in the runtime stmts.
-            if type(self.decl) is not ConstDeclClause:
+            if not const:
                 assign_stmt = ExpressionStmt(
                     self.position,
                     AssignExpr(
