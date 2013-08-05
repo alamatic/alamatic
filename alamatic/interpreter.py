@@ -345,3 +345,7 @@ class InconsistentTypesError(CompilerError):
 
 class IncompatibleTypesError(CompilerError):
     pass
+
+
+class NotConstantError(CompilerError):
+    pass

@@ -132,6 +132,64 @@ class DataDeclStmt(Statement):
         if self.expr is not None:
             yield self.expr
 
+    def execute(self, runtime_stmts):
+        from alamatic.interpreter import (
+            interpreter,
+            NotConstantError,
+        )
+        from alamatic.ast import (
+            ValueExpr,
+            AssignExpr,
+            SymbolStorageExpr,
+            ConstDeclClause,
+        )
+        from alamatic.compilelogging import pos_link
+
+        interpreter.declare(self.decl.name)
+        if self.expr is None:
+            if type(self.decl) is ConstDeclClause:
+                raise NotConstantError(
+                    "Constant '%s'," % self.decl.name,
+                    " declared at ", pos_link(self.position),
+                    ", must be assigned an initial value",
+                )
+            interpreter.declare(self.decl.name)
+        else:
+            val_expr = self.expr.evaluate()
+            if type(val_expr) is ValueExpr:
+                interpreter.assign(self.decl.name, val_expr.value)
+            else:
+                if type(self.decl) is ConstDeclClause:
+                    raise NotConstantError(
+                        "Initial value for constant '%s'," % self.decl.name,
+                        " declared at ", pos_link(self.position),
+                        ", can't be determined at compile time",
+                    )
+                else:
+                    interpreter.mark_unknown(
+                        self.decl.name,
+                        known_type=val_expr.result_type
+                    )
+
+            storage = interpreter.get_storage(self.decl.name)
+
+            # The code generator will generate the declaration from the scope,
+            # so we just need to assign a value to it in the runtime stmts.
+            if type(self.decl) is not ConstDeclClause:
+                assign_stmt = ExpressionStmt(
+                    self.position,
+                    AssignExpr(
+                        self.decl.position,
+                        SymbolStorageExpr(
+                            self,
+                            storage,
+                        ),
+                        "=",
+                        val_expr,
+                    ),
+                )
+                runtime_stmts.append(assign_stmt)
+
 
 class FuncDeclStmt(Statement):
 

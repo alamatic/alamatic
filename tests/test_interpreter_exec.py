@@ -176,3 +176,167 @@ class TestInterpreterExec(unittest.TestCase):
             "Didn't evaluate Dummy2Expr",
         )
 
+    def test_decl_stmt(self):
+        from alamatic.interpreter import (
+            DataState,
+            SymbolTable,
+            Symbol,
+            Storage,
+            NotConstantError,
+        )
+        class ConstantExpr(Expression):
+            def __init__(self):
+                pass
+            def evaluate(self):
+                return ValueExpr(self, UInt8(1))
+        class NotConstantExpr(Expression):
+            def __init__(self):
+                pass
+            def evaluate(self):
+                return NotConstantExpr()
+            @property
+            def result_type(self):
+                return UInt8
+
+        class Result(object):
+            pass
+
+        def try_decl(decl_type, name, expr):
+            decl = decl_type(
+                None,
+                name,
+            )
+            decl_stmt = DataDeclStmt(
+                None,
+                decl,
+                expr,
+            )
+            runtime_stmts = []
+            data = DataState()
+            symbols = SymbolTable()
+            with data:
+                with symbols:
+                    decl_stmt.execute(runtime_stmts)
+            ret = Result()
+            ret.runtime_stmts = runtime_stmts
+            ret.data = data
+            ret.symbols = symbols
+            return ret
+
+        # Var declaration with no value: populates the symbol table but doesn't
+        # assign a value nor generate any runtime code.
+        result = try_decl(VarDeclClause, "foo", None)
+        self.assertEqual(
+            len(result.runtime_stmts),
+            0,
+        )
+        symbol = result.symbols.get_symbol("foo")
+        self.assertTrue(
+            type(symbol) is Symbol
+        )
+        self.assertTrue(
+            result.data.get_symbol_storage(symbol) is None
+        )
+
+        # Var declaration with a constant value: populates the symbol table,
+        # assigns a value, and generates an assignment in runtime code.
+        result = try_decl(VarDeclClause, "baz", ConstantExpr())
+        self.assertEqual(
+            len(result.runtime_stmts),
+            1,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0]),
+            ExpressionStmt,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr),
+            AssignExpr,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr.lhs),
+            SymbolStorageExpr,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr.rhs),
+            ValueExpr,
+        )
+        self.assertEqual(
+            result.runtime_stmts[0].expr.rhs.value.value,
+            1,
+        )
+        symbol = result.symbols.get_symbol("baz")
+        storage = result.data.get_symbol_storage(symbol)
+        self.assertEqual(
+            result.runtime_stmts[0].expr.lhs.storage,
+            storage,
+        )
+
+        # Var declaration with a non-constant value: populates the symbol
+        # table, assigns a type, and generates a dynamic assignment at
+        # runtime.
+        result = try_decl(VarDeclClause, "fee", NotConstantExpr())
+        self.assertEqual(
+            len(result.runtime_stmts),
+            1,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0]),
+            ExpressionStmt,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr),
+            AssignExpr,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr.lhs),
+            SymbolStorageExpr,
+        )
+        self.assertEqual(
+            type(result.runtime_stmts[0].expr.rhs),
+            NotConstantExpr,
+        )
+        symbol = result.symbols.get_symbol("fee")
+        self.assertTrue(
+            type(symbol) is Symbol
+        )
+        self.assertEqual(
+            type(result.data.get_symbol_value(symbol)),
+            type(None),
+        )
+        self.assertEqual(
+            result.data.get_symbol_storage(symbol).type,
+            UInt8,
+        )
+        self.assertEqual(
+            result.runtime_stmts[0].expr.lhs.storage,
+            result.data.get_symbol_storage(symbol),
+        )
+
+        # Constant declaration with a constant value: populates the symbol
+        # table, assigns a value, but generates no assignment at runtime.
+        result = try_decl(ConstDeclClause, "bez", ConstantExpr())
+        self.assertEqual(
+            len(result.runtime_stmts),
+            0,
+        )
+        symbol = result.symbols.get_symbol("bez")
+        self.assertTrue(
+            type(symbol) is Symbol
+        )
+        self.assertEqual(
+            result.data.get_symbol_value(symbol).value,
+            1,
+        )
+
+        # Constant declaration with a non-constant value: fails!
+        self.assertRaises(
+            NotConstantError,
+            lambda: try_decl(ConstDeclClause, "boz", NotConstantExpr()),
+        )
+
+        # Constant declaration with no value: fails!
+        self.assertRaises(
+            NotConstantError,
+            lambda: try_decl(ConstDeclClause, "biz", None),
+        )
