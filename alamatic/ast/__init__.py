@@ -58,6 +58,16 @@ class StatementBlock(AstNode):
                 symbols,
             )
 
+    def generate_decl_c_code(self, state, writer):
+        writer.writeln("decls go here")
+
+    def generate_body_c_code(self, state, writer):
+        writer.writeln("body goes here")
+
+    def generate_c_code(self, state, writer):
+        self.generate_decl_c_code(state, writer)
+        self.generate_body_c_code(state, writer)
+
 
 class Module(AstNode):
 

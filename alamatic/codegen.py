@@ -1,4 +1,13 @@
 
+def generate_c_unit_for_module(state, module, stream):
+    writer = CodeWriter(stream)
+    module.block.generate_decl_c_code(state, writer)
+    writer.writeln("")
+    writer.write("int main(*argc, **argv)")
+    with writer.braces():
+        module.block.generate_body_c_code(state, writer)
+
+
 class CodeWriter(object):
 
     def __init__(self, stream):
@@ -17,7 +26,7 @@ class CodeWriter(object):
             self.stream.write("  " * self.indent_level)
         for s in strs:
             self.stream.write(s)
-        if s[-1].endswith("\n"):
+        if len(s) > 0 and s.endswith("\n"):
             self.at_start_of_line = True
         else:
             self.at_start_of_line = False
