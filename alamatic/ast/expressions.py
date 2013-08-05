@@ -127,6 +127,13 @@ class BinaryOpExpr(Expression):
         method = getattr(lhs.result_type, method_name)
         return method(self, lhs, rhs)
 
+    def generate_c_code(self, state, writer):
+        writer.write("(")
+        self.lhs.generate_c_code(state, writer)
+        writer.write(" ", self.c_operator, " ")
+        self.rhs.generate_c_code(state, writer)
+        writer.write(")")
+
 
 class UnaryOpExpr(Expression):
 
@@ -145,7 +152,10 @@ class UnaryOpExpr(Expression):
 
 
 class AssignExpr(BinaryOpExpr):
-    pass
+
+    @property
+    def c_operator(self):
+        return "=";
 
 
 class LogicalOrExpr(BinaryOpExpr):
@@ -245,6 +255,9 @@ class ValueExpr(Expression):
     def result_type(self):
         return type(self.value)
 
+    def generate_c_code(self, state, writer):
+        self.value.generate_c_code(state, writer)
+
 
 class SymbolStorageExpr(Expression):
     def __init__(self, source_node, storage):
@@ -265,3 +278,13 @@ class SymbolStorageExpr(Expression):
     @property
     def result_type(self):
         return self.storage.type
+
+    def generate_c_code(self, state, writer):
+        if self.storage.symbol.codegen_uses_union:
+            writer.write(
+                self.storage.symbol.codegen_name,
+                ".",
+            )
+        writer.write(
+            self.storage.codegen_name,
+        )

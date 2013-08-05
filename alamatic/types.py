@@ -72,6 +72,9 @@ class Integer(Number):
     def __repr__(self):
         return "<alamatic.types.%s: %i>" % (type(self).__name__, self.value)
 
+    def generate_c_code(self, state, writer):
+        writer.write(str(self.value))
+
     @classmethod
     def add(cls, source_node, lhs, rhs):
         from alamatic.ast import SumExpr, ValueExpr
@@ -133,6 +136,10 @@ class Int64(Integer):
     def as_unsigned(cls):
         return UInt64
 
+    @classmethod
+    def c_type_spec(self):
+        return "int64_t"
+
 
 class Int32(Integer):
     value_size = 31
@@ -141,6 +148,10 @@ class Int32(Integer):
     @classmethod
     def as_unsigned(cls):
         return UInt32
+
+    @classmethod
+    def c_type_spec(self):
+        return "int32_t"
 
 
 class Int16(Integer):
@@ -151,6 +162,10 @@ class Int16(Integer):
     def as_unsigned(cls):
         return UInt16
 
+    @classmethod
+    def c_type_spec(self):
+        return "int16_t"
+
 
 class Int8(Integer):
     value_size = 7
@@ -159,6 +174,10 @@ class Int8(Integer):
     @classmethod
     def as_unsigned(cls):
         return UInt8
+
+    @classmethod
+    def c_type_spec(self):
+        return "int8_t"
 
 
 class UInt64(Integer):
@@ -169,6 +188,10 @@ class UInt64(Integer):
     def as_signed(cls):
         return Int64
 
+    @classmethod
+    def c_type_spec(self):
+        return "uint64_t"
+
 
 class UInt32(Integer):
     value_size = 32
@@ -177,6 +200,10 @@ class UInt32(Integer):
     @classmethod
     def as_signed(cls):
         return Int32
+
+    @classmethod
+    def c_type_spec(self):
+        return "uint32_t"
 
 
 class UInt16(Integer):
@@ -187,6 +214,10 @@ class UInt16(Integer):
     def as_signed(cls):
         return Int16
 
+    @classmethod
+    def c_type_spec(self):
+        return "uint16_t"
+
 
 class UInt8(Integer):
     value_size = 8
@@ -195,6 +226,10 @@ class UInt8(Integer):
     @classmethod
     def as_signed(cls):
         return Int8
+
+    @classmethod
+    def c_type_spec(self):
+        return "uint8_t"
 
 
 class String(Value):

@@ -148,6 +148,10 @@ class SymbolTable(object):
     def create_child(self):
         return SymbolTable(parent_table=self)
 
+    @property
+    def local_symbols(self):
+        return self.symbols.values()
+
     def __enter__(self):
         self.previous_table = interpreter.symbols
         interpreter.symbols = self
@@ -299,14 +303,42 @@ class Symbol(object):
         try:
             return self.storage_by_type[type]
         except KeyError:
-            self.storage_by_type[type] = Storage(type)
+            self.storage_by_type[type] = Storage(self, type)
             return self.storage_by_type[type]
+
+    @property
+    def storages(self):
+        return self.storage_by_type.values()
+
+    @property
+    def codegen_name(self):
+        return "_ala_%x" % id(self)
+
+    @property
+    def codegen_uses_union(self):
+        # We only use a union for a variable that has several different
+        # storages during its life.
+        # We flatten constants because a constant union doesn't make
+        # much sense anyway.
+        # We flatten single-storage variables to help the C compiler
+        # optimize access to them better.
+        if self.const:
+            return False
+        elif len(self.storage_by_type) == 1:
+            return False
+        else:
+            return True
 
 
 class Storage(object):
 
-    def __init__(self, type):
+    def __init__(self, symbol, type):
+        self.symbol = symbol
         self.type = type
+
+    @property
+    def codegen_name(self):
+        return "_ala_%x" % id(self)
 
 
 class CallFrame(object):

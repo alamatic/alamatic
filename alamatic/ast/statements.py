@@ -29,6 +29,10 @@ class ExpressionStmt(Statement):
                 )
             )
 
+    def generate_c_code(self, state, writer):
+        self.expr.generate_c_code(state, writer)
+        writer.writeln(";")
+
 
 class PassStmt(Statement):
     pass

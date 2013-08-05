@@ -29,8 +29,8 @@ def alac():
     if state.error_count > 0:
         return 1
 
-    for row in runtime_module.as_tree_rows():
-        print row
+    #for row in runtime_module.as_tree_rows():
+    #    print row
 
-    print "\n"
+    #print "\n"
     generate_c_unit_for_module(state, runtime_module, sys.stdout)

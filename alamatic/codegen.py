@@ -1,9 +1,10 @@
 
 def generate_c_unit_for_module(state, module, stream):
     writer = CodeWriter(stream)
+    writer.writeln("\n#include <stdint.h>\n");
     module.block.generate_decl_c_code(state, writer)
     writer.writeln("")
-    writer.write("int main(*argc, **argv)")
+    writer.write("int main(int argc, char **argv)")
     with writer.braces():
         module.block.generate_body_c_code(state, writer)
 
@@ -36,7 +37,7 @@ class CodeWriter(object):
         self.stream.write("\n")
         self.at_start_of_line = True
 
-    def braces(self):
+    def braces(self, trailing_newline=True):
         writer = self
         class Braces(object):
             def __enter__(self):
@@ -47,6 +48,9 @@ class CodeWriter(object):
                 writer.indent()
             def __exit__(*args):
                 writer.outdent()
-                writer.writeln("}")
+                if trailing_newline:
+                    writer.writeln("}")
+                else:
+                    writer.write("}")
 
         return Braces()

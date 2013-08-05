@@ -59,14 +59,45 @@ class StatementBlock(AstNode):
             )
 
     def generate_decl_c_code(self, state, writer):
-        writer.writeln("decls go here")
+        for symbol in self.symbols.local_symbols:
+            union_braces = writer.braces(trailing_newline=False)
+            if symbol.codegen_uses_union:
+                writer.write("typedef union")
+                union_type_name = symbol.codegen_name + "_type"
+                union_braces.__enter__()
+            for storage in symbol.storages:
+                if symbol.const:
+                    writer.write("const ")
+                writer.write(storage.type.c_type_spec(), " ")
+                writer.write(storage.codegen_name);
+                if symbol.const:
+                    writer.write(" = ")
+                    # TODO: Need to make the data state visible in
+                    # here so that we can see the constant's value.
+                    writer.write("0");
+                writer.writeln(";")
+            if symbol.codegen_uses_union:
+                union_braces.__exit__()
+                writer.writeln(
+                    " ",
+                    union_type_name,
+                    ";",
+                )
+                writer.writeln(
+                    union_type_name,
+                    " ",
+                    symbol.codegen_name,
+                    ";"
+                )
 
     def generate_body_c_code(self, state, writer):
-        writer.writeln("body goes here")
+        for stmt in self.stmts:
+            stmt.generate_c_code(state, writer)
 
     def generate_c_code(self, state, writer):
-        self.generate_decl_c_code(state, writer)
-        self.generate_body_c_code(state, writer)
+        with writer.braces():
+            self.generate_decl_c_code(state, writer)
+            self.generate_body_c_code(state, writer)
 
 
 class Module(AstNode):

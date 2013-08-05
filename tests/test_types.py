@@ -2,7 +2,7 @@
 import unittest
 from alamatic.types import *
 from alamatic.ast import *
-from alamatic.interpreter import Storage
+from alamatic.interpreter import Storage, Symbol
 
 
 class TestTypes(unittest.TestCase):
@@ -149,8 +149,8 @@ class TestTypes(unittest.TestCase):
             meth, lhs_type, rhs_type,
             result_node_type, result_node_op, result_type,
         ):
-            lhs = SymbolStorageExpr(dummy_node, Storage(lhs_type))
-            rhs = SymbolStorageExpr(dummy_node, Storage(rhs_type))
+            lhs = SymbolStorageExpr(dummy_node, Storage(Symbol(), lhs_type))
+            rhs = SymbolStorageExpr(dummy_node, Storage(Symbol(), rhs_type))
             result = meth(
                 dummy_node,
                 lhs,
