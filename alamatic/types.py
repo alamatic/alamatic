@@ -247,3 +247,16 @@ class ArrayType(Type):
 
     def __init__(self, element_type, element_count):
         pass
+
+
+class Bool(Value):
+    def __init__(self, value):
+        if type(value) is not bool:
+            raise Exception(
+                "Value %r is not boolean" % value
+            )
+
+        self.value = value
+
+    def __repr__(self):
+        return "<alamatic.types.%s: %r>" % (type(self).__name__, self.value)

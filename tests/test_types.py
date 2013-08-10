@@ -254,3 +254,25 @@ class TestTypes(unittest.TestCase):
             result_node_op="+",
             result_type=Int8,
         )
+
+    def test_bool_construct(self):
+        self.assertEqual(
+            Bool(True).value,
+            True,
+        )
+        self.assertEqual(
+            Bool(False).value,
+            False,
+        )
+        self.assertRaises(
+            Exception,
+            lambda: Bool(None).value,
+        )
+        self.assertRaises(
+            Exception,
+            lambda: Bool(1).value,
+        )
+        self.assertRaises(
+            Exception,
+            lambda: Bool("true").value,
+        )
