@@ -58,6 +58,11 @@ class StatementBlock(AstNode):
                 symbols,
             )
 
+    @property
+    def inlined(self):
+        from alamatic.ast import InlineStatementBlock
+        return InlineStatementBlock(self)
+
     def generate_decl_c_code(self, state, writer):
         for symbol in self.symbols.local_symbols:
             union_braces = writer.braces(trailing_newline=False)

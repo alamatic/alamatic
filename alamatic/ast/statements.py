@@ -207,3 +207,22 @@ class FuncDeclStmt(Statement):
     def child_nodes(self):
         yield self.decl
         yield self.block
+
+
+class InlineStatementBlock(Statement):
+    """
+    When a block will unconditionally execute at runtime,
+    such as if we can determine the outcome of an if statement at
+    compile time, this statement is used to glue it into the codegen
+    tree.
+    """
+
+    def __init__(self, block):
+        self.block = block
+
+    @property
+    def child_nodes(self):
+        yield self.block
+
+    def generate_c_code(self, state, writer):
+        self.block.generate_c_code(state, writer)
