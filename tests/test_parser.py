@@ -532,6 +532,10 @@ class TestParser(unittest.TestCase):
             ("IntegerLiteralExpr", (1,), []),
         )
         self.assertExprAst(
+            "0",
+            ("IntegerLiteralExpr", (0,), []),
+        )
+        self.assertExprAst(
             "92",
             ("IntegerLiteralExpr", (92,), []),
         )

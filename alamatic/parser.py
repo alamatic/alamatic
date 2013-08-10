@@ -408,7 +408,7 @@ def p_expr_number(state, scanner):
                 num_str[2:], " is not a valid binary number, "
                 " at ", pos_link(pos),
             )
-    elif num_str.startswith("0"):
+    elif num_str.startswith("0") and len(num_str) > 1:
         try:
             value = int(num_str[1:], 8)
         except ValueError:
