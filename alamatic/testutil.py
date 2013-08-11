@@ -289,8 +289,9 @@ class DummyExprCompileTime(alamatic.ast.Expression):
 
     def evaluate(self):
         self.evaluated = True
-        return ast.ValueExpr(
-            self.value
+        return alamatic.ast.ValueExpr(
+            None,
+            self.value,
         )
 
 
