@@ -207,6 +207,15 @@ class SymbolTable(object):
     def local_symbols(self):
         return self.symbols.values()
 
+    @property
+    def all_names(self):
+        if self.parent is None:
+            ret = set([])
+        else:
+            ret = self.parent.all_names
+        ret.update(self.symbols.keys())
+        return ret
+
     def __enter__(self):
         self.previous_table = interpreter.symbols
         interpreter.symbols = self
