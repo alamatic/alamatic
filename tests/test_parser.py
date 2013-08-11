@@ -138,16 +138,6 @@ class TestParser(LanguageTestCase):
             ]
         )
 
-    def test_expression_statement(self):
-        self.assertStmtParseTree(
-            "baz",
-            [
-                ("ExpressionStmt", (), [
-                    ('SymbolExpr', ('baz',), []),
-                ]),
-            ]
-        )
-
     def test_return_statement(self):
         # with expression
         self.assertStmtParseTree(
