@@ -191,6 +191,7 @@ class DummyAssignStmt(alamatic.ast.Statement):
     def __init__(self, name, value):
         self.name = name
         self.value = value
+        self.executed = False
 
     @property
     def params(self):
@@ -200,6 +201,7 @@ class DummyAssignStmt(alamatic.ast.Statement):
     def execute(self, runtime_stmts):
         from alamatic.interpreter import interpreter
         interpreter.assign(self.name, self.value)
+        self.executed = True
 
 
 class DummyType(alamatic.types.Value):
