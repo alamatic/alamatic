@@ -2,9 +2,13 @@
 import unittest
 from alamatic.ast import *
 from alamatic.types import *
+from alamatic.testutil import *
 
 
 class TestInterpreterExec(unittest.TestCase):
+
+    assertCodegenTree = testcase_assertCodegenTree
+    assertDataResult = testcase_assertDataResult
 
     def test_execute_module(self):
         from alamatic.interpreter import (
@@ -355,4 +359,360 @@ class TestInterpreterExec(unittest.TestCase):
         self.assertRaises(
             NotConstantError,
             lambda: try_decl(ConstDeclClause, "biz", None),
+        )
+
+    def test_if_stmt(self):
+
+        # if true with no else
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                ]
+            ),
+            [
+                ('InlineStatementBlock', (), [
+                    ('StatementBlock', (), [
+                        ('DummyStmtRuntime', ('if',), []),
+                    ]),
+                ]),
+            ],
+        )
+
+        # if false with no else
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(False),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                ]
+            ),
+            [],
+        )
+
+        # if true with else
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            [
+                ('InlineStatementBlock', (), [
+                    ('StatementBlock', (), [
+                        ('DummyStmtRuntime', ('if',), []),
+                    ]),
+                ]),
+            ],
+        )
+
+        # if false with else
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(False),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            [
+                ('InlineStatementBlock', (), [
+                    ('StatementBlock', (), [
+                        ('DummyStmtRuntime', ('else',), []),
+                    ]),
+                ]),
+            ],
+        )
+
+        # if unknown with else
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyStmtRuntime("elif")
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            [
+                ('IfStmt', (), [
+                    ('IfClause', (), [
+                        ('DummyExprRuntime', ('cond', Bool), []),
+                        ('StatementBlock', (), [
+                            ('DummyStmtRuntime', ('if',), []),
+                        ]),
+                    ]),
+                    ('IfClause', (), [
+                        ('DummyExprRuntime', ('cond', Bool), []),
+                        ('StatementBlock', (), [
+                            ('DummyStmtRuntime', ('elif',), []),
+                        ]),
+                    ]),
+                    ('ElseClause', (), [
+                        ('StatementBlock', (), [
+                            ('DummyStmtRuntime', ('else',), []),
+                        ]),
+                    ]),
+                ]),
+            ],
+        )
+
+        # elif true after unknown if (emitted as an 'else')
+        self.assertCodegenTree(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyStmtRuntime("if")
+                        ])
+                    ),
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyStmtRuntime("elif")
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            [
+                ('IfStmt', (), [
+                    ('IfClause', (), [
+                        ('DummyExprRuntime', ('cond', Bool), []),
+                        ('StatementBlock', (), [
+                            ('DummyStmtRuntime', ('if',), []),
+                        ]),
+                    ]),
+                    ('ElseClause', (), [
+                        ('StatementBlock', (), [
+                            ('DummyStmtRuntime', ('elif',), []),
+                        ]),
+                    ]),
+                ]),
+            ],
+        )
+
+        # Now we need to test the scope management behavior.
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                "a": DummyType(2),
+            },
+        )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(False),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                "a": DummyType(1),
+            },
+        )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                # We don't know the value of 'a' after the if block.
+                "a": None,
+            },
+        )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                # Both sides of the if statement produce the same
+                # value, so it's guaranteed here.
+                "a": DummyType(2),
+            },
+        )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            {
+                # if and elif produce the same value, and we know that
+                # the else case can never run because the elif is
+                # known to be true, so the value is guaranteed.
+                "a": DummyType(2),
+            },
+        )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmtRuntime("else")
+                        ])
+                    ),
+                ]
+            ),
+            {
+                # else clause doesn't update the value, and all clauses
+                # could be chosen at runtime, so the value is unknown.
+                "a": None,
+            },
         )

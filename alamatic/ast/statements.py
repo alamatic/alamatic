@@ -69,6 +69,109 @@ class IfStmt(Statement):
         for clause in self.clauses:
             yield clause
 
+    def execute(self, runtime_stmts):
+        from alamatic.ast import ValueExpr
+        from alamatic.types import Bool
+        from alamatic.interpreter import interpreter, IncompatibleTypesError
+        from alamatic.compilelogging import pos_link
+
+        runtime_clauses = []
+        clause_datas = []
+        have_else_clause = False
+
+        for clause in self.clauses:
+            if isinstance(clause, IfClause):
+                test_expr = clause.test_expr.evaluate()
+                if test_expr.result_type is not Bool:
+                    raise IncompatibleTypesError(
+                        "Test expression must return Bool, not %s" % (
+                            test_expr.result_type.__name__,
+                        ),
+                        " at ", pos_link(clause.test_expr.position),
+                    )
+            elif isinstance(clause, ElseClause):
+                test_expr = ValueExpr(None, Bool(True))
+                have_else_clause = True
+            else:
+                raise Exception(
+                    "Don't know how to use %r as an if statement clause" % (
+                        clause,
+                    )
+                )
+
+            test_result = None
+            if type(test_expr) is ValueExpr:
+                test_result = test_expr.value.value
+            if test_result is False:
+                # This clause can never run, so skip it.
+                continue
+            elif test_result is True and len(runtime_clauses) == 0:
+                # This clause will *definitely* run, so
+                # just inline its block here.
+                runtime_block = clause.block.execute()
+                runtime_stmts.append(runtime_block.inlined)
+                return
+            else:
+                data = interpreter.child_data_state()
+                with data:
+                    runtime_block = clause.block.execute()
+                if test_result is True:
+                    # If we've already generated some clauses but
+                    # we know this one is definitely true, then
+                    # this is effectively the else clause because
+                    # no further clauses can possibly run.
+                    have_else_clause = True
+                    runtime_clause = ElseClause(
+                        clause.position,
+                        runtime_block,
+                    )
+                else:
+                    runtime_clause = IfClause(
+                        clause.position,
+                        test_expr,
+                        runtime_block,
+                    )
+                runtime_clauses.append(runtime_clause)
+                clause_datas.append(data)
+                if test_result is True:
+                    # No need to visit the rest of the clauses.
+                    break
+
+        interpreter.data.merge_children(
+            clause_datas,
+            or_none=not have_else_clause,
+        )
+
+        if len(runtime_clauses) > 0:
+            runtime_stmts.append(
+                IfStmt(
+                    self.position,
+                    runtime_clauses,
+                )
+            )
+
+    def generate_c_code(self, state, writer):
+        need_elseif = False
+
+        for clause in self.clauses:
+            if isinstance(clause, IfClause):
+                if need_elseif:
+                    writer.write("else ")
+                writer.write("if (")
+                clause.test_expr.generate_c_code(state, writer)
+                writer.write(")")
+                clause.block.generate_c_code(state, writer)
+                need_elseif = True
+            elif isinstance(clause, ElseClause):
+                writer.write("else")
+                clause.block.generate_c_code(state, writer)
+            else:
+                raise Exception(
+                    "Don't know how to use %r as an if statement clause" % (
+                        clause,
+                    )
+                )
+
 
 class IfClause(AstNode):
 
