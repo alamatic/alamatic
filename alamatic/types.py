@@ -260,3 +260,10 @@ class Bool(Value):
 
     def __repr__(self):
         return "<alamatic.types.%s: %r>" % (type(self).__name__, self.value)
+
+    def generate_c_code(self, state, writer):
+        writer.write("1" if self.value else "0")
+
+    @property
+    def c_type_spec(self):
+        return "_Bool"
