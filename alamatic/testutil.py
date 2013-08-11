@@ -204,6 +204,23 @@ class DummyAssignStmt(alamatic.ast.Statement):
         self.executed = True
 
 
+class DummyDataDeclStmt(alamatic.ast.Statement):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+        self.executed = False
+
+    @property
+    def params(self):
+        yield self.name
+        yield self.value
+
+    def execute(self, runtime_stmts):
+        from alamatic.interpreter import interpreter
+        interpreter.declare(self.name, self.value)
+        self.executed = True
+
+
 class DummyType(alamatic.types.Value):
     from weakref import WeakValueDictionary
     instances = WeakValueDictionary()
