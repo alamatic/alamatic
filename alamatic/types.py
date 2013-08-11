@@ -294,6 +294,6 @@ class Bool(Value):
     def generate_c_code(self, state, writer):
         writer.write("1" if self.value else "0")
 
-    @property
+    @classmethod
     def c_type_spec(self):
         return "_Bool"
