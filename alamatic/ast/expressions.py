@@ -171,7 +171,19 @@ class LogicalAndExpr(BinaryOpExpr):
 
 
 class ComparisonExpr(BinaryOpExpr):
-    pass
+
+    @property
+    def type_impl_method_name(self):
+        if self.op == "==":
+            return "equals"
+        elif self.op == "!=":
+            return "not_equals"
+        else:
+            raise Exception("Unknown ComparisonExpr operator " + self.op)
+
+    @property
+    def result_type(self):
+        return Bool
 
 
 class BitwiseOrExpr(BinaryOpExpr):

@@ -64,6 +64,8 @@ class Integer(Number):
         return cls.limits[1]
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.value == other.value
 
     def __ne__(self, other):
@@ -125,6 +127,34 @@ class Integer(Number):
                 source_node.position,
                 lhs, "+", rhs,
                 result_type=result_type,
+            )
+
+    @classmethod
+    def equals(cls, source_node, lhs, rhs):
+        from alamatic.ast import ComparisonExpr, ValueExpr
+        from alamatic.interpreter import IncompatibleTypesError
+
+        lhs_result_type = lhs.result_type
+        rhs_result_type = rhs.result_type
+
+        if not issubclass(rhs_result_type, Integer):
+            raise IncompatibleTypesError(
+                "Can't compare %s to %s at " % (
+                    lhs_result_type.__name__,
+                    rhs_result_type.__name__,
+                ),
+                pos_link(source_node.position)
+            )
+
+        if type(lhs) == type(rhs) and type(lhs) == ValueExpr:
+            return ValueExpr(
+                source_node,
+                Bool(lhs.value.value == rhs.value.value),
+            )
+        else:
+            return ComparisonExpr(
+                source_node.position,
+                lhs, "==", rhs,
             )
 
 
