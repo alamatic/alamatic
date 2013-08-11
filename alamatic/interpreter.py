@@ -346,7 +346,7 @@ class Symbol(object):
         # optimize access to them better.
         if self.const:
             return False
-        elif len(self.storage_by_type) == 1:
+        elif len(self.storage_by_type) < 2:
             return False
         else:
             return True
