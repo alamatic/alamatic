@@ -253,6 +253,10 @@ class DummyType(alamatic.types.Value):
         else:
             return False
 
+    @classmethod
+    def c_type_spec(self):
+        return "DummyType"
+
 
 class DummyExprCompileTime(alamatic.ast.Expression):
     def __init__(self, sigil, value=DummyType(None)):
