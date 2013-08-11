@@ -240,31 +240,16 @@ class TestInterpreterState(unittest.TestCase):
                         32,
                     )
 
-                post_if_state = if_state.combine(else_state)
-                with post_if_state:
-                    # "a" had a different value in each clause, so it's unknown
-                    self.assertEqual(
-                        interpreter.retrieve("a"),
-                        None,
-                    )
-                    # but "b" had the same value, so it's known
-                    self.assertEqual(
-                        interpreter.retrieve("b"),
-                        19,
-                    )
-                    # we declared a new "c" inside the if block, so
-                    # the original "c" is unaffected.
-                    self.assertEqual(
-                        interpreter.retrieve("c"),
-                        54,
-                    )
-
-                # After we finish the if statement we merge the resulting
-                # state back into the root state to continue executing.
-                root_state.merge_child(post_if_state)
+                root_state.merge_children(
+                    [
+                        if_state,
+                        else_state,
+                    ]
+                )
 
                 # And now the root state has the updated values of "a"
-                # and "b", with "a" being unknown.
+                # and "b", with "a" being unknown because its value
+                # differed in each clause.
                 self.assertEqual(
                     interpreter.retrieve("a"),
                     None,

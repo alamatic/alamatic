@@ -128,6 +128,61 @@ def _search_tables(start, table_name, key):
     raise KeyError(key)
 
 
+def _merge_possible_child_tables(orig, table_name, possibles, or_none=False):
+    if len(possibles) == 0:
+        return
+
+    # Sanity check: make sure all of the possibles are children of
+    # the original, or crazy things will happen.
+    for possible in possibles:
+        if possible.parent != orig:
+            raise Exception(
+                "Can't merge %s for %r into %r: not a child" % (
+                    table_name, possible, original,
+                )
+            )
+
+    orig_table = getattr(orig, table_name)
+    possible_tables = [
+        getattr(possible, table_name) for possible in possibles
+    ]
+
+    keys = set([])
+    # Add to the keyset only those keys where one of the possibles
+    # disagrees with the original.
+    for possible_table in possible_tables:
+        for key in possible_table.iterkeys():
+            mine = orig_table.get(key, None)
+            theirs = possible_table[key]
+            if mine != theirs:
+                keys.add(key)
+
+    for key in keys:
+        chosen_values = []
+        try:
+            for possible in possibles:
+                chosen_values.append(
+                    _search_tables(possible, table_name, key)
+                )
+        except KeyError:
+            chosen_values.append(None)
+
+        if or_none:
+            chosen_values.append(
+                _search_tables(orig, table_name, key)
+            )
+
+        all_agreed = all(
+            chosen_values[0] == chosen_value
+            for chosen_value in chosen_values
+        )
+        if all_agreed:
+            orig_table[key] = chosen_values[0]
+        else:
+            # Signal that the true result is unknown
+            orig_table[key] = None
+
+
 class SymbolTable(object):
 
     def __init__(self, parent_table=None):
@@ -216,66 +271,24 @@ class DataState(object):
     def create_child(self):
         return DataState(parent_state=self)
 
-    def merge_child(self, child):
-        if child.parent != self:
-            raise Exception(
-                "Can't merge %r into %r: not a child" % (
-                    child,
-                    self,
-                )
-            )
-        for symbol in child.symbol_storages:
-            self.symbol_storages[symbol] = child.symbol_storages[symbol]
-        for storage in child.storage_values:
-            self.storage_values[storage] = child.storage_values[storage]
-
-    def combine(self, other, *others):
+    def merge_children(self, children, or_none=False):
         """
-        Given a bunch of states, return a new state that represents the
-        situation after any one of the given states could've run.
+        Given an iterable of child states representing possible outcomes,
+        merge these back into their parent.
 
-        In other words, given the states from the if, elif and else clauses of
-        an if statement, this returns what the state should look like in
-        the code _following_ the whole if statement, assuming that we won't
-        know until runtime which of the blocks will actually execute.
+        This method will investigate which data still has a known value
+        if we consider that any one of the given children may be selected
+        at runtime. If `or_none` is set, the method will also allow for the
+        possibility that _none_ of the given children may be selected,
+        such as is the case when there's an ``if`` statement with no ``else``
+        clause.
         """
-        if self.parent != other.parent:
-            raise Exception(
-                "Can't combine %s and %s because parents don't match" % (
-                    self,
-                    other,
-                )
-            )
-        symbols = (
-            set(self.symbol_storages.iterkeys()) |
-            set(other.symbol_storages.iterkeys())
+        _merge_possible_child_tables(
+            self, "symbol_storages", children, or_none=or_none
         )
-        storages = (
-            set(self.storage_values.iterkeys()) |
-            set(other.storage_values.iterkeys())
+        _merge_possible_child_tables(
+            self, "storage_values", children, or_none=or_none
         )
-        ret = DataState(parent_state=self.parent)
-
-        for symbol in symbols:
-            mine = self.symbol_storages.get(symbol)
-            theirs = other.symbol_storages.get(symbol)
-            if mine == theirs:
-                ret.symbol_storages[symbol] = mine
-            else:
-                ret.symbol_storages[symbol] = None
-
-        for storage in storages:
-            mine = self.storage_values.get(storage)
-            theirs = other.storage_values.get(storage)
-            if mine == theirs:
-                ret.storage_values[storage] = mine
-            else:
-                ret.storage_values[storage] = None
-
-        if len(others) > 0:
-            return ret.combine(*others)
-        else:
-            return ret
 
     def __enter__(self):
         self.previous_state = interpreter.data
