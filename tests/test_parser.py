@@ -10,10 +10,14 @@ from alamatic.compilelogging import (
 )
 from alamatic.parser import *
 from alamatic.ast import *
+from alamatic.testutil import *
 from StringIO import StringIO
 
 
-class TestParser(unittest.TestCase):
+class TestParser(LanguageTestCase):
+
+    assertErrorsInStmts = testcase_assertErrorsInStmts
+    assertErrorsInExpr = testcase_assertErrorsInExpr
 
     binary_operators = (
         # These are in precedence order with lowest first.
@@ -56,111 +60,6 @@ class TestParser(unittest.TestCase):
         ("-", "SignExpr"),
         ("~", "BitwiseNotExpr"),
     )
-
-    def parse_stmts(self, inp):
-        caller = inspect.stack()[1]
-        state = CompileState()
-        module = parse_module(
-            state,
-            StringIO(inp),
-            caller[3],
-            "%s:%i" % (caller[3], caller[2]),
-        )
-        return module.stmts
-
-    def assertAst(self, inp, expected):
-        caller = inspect.stack()[1]
-        log_handler = LoggingCompileLogHandler()
-        state = CompileState(log_handler=log_handler)
-        module = parse_module(
-            state,
-            StringIO(inp),
-            caller[3],
-            "%s:%i" % (caller[3], caller[2]),
-        )
-        got = self.ast_comparison_list(module.block)
-        self.assertTrue(state.error_count == 0, "Errors during parse")
-        self.assertEqual(got, expected)
-
-    def assertExprAst(self, inp, expected, allow_assign=False):
-        caller = inspect.stack()[1]
-        log_handler = LoggingCompileLogHandler()
-        state = CompileState(log_handler=log_handler)
-        expr = parse_expression(
-            state,
-            StringIO(inp),
-            "%s:%i" % (caller[3], caller[2]),
-            allow_assign=allow_assign
-        )
-        import logging
-        got = self.ast_comparison_node(expr)
-        self.assertTrue(
-            state.error_count == 0,
-            "Errors during parse (see error log)",
-        )
-        self.assertEqual(got, expected)
-
-    def ast_comparison_list(self, root):
-        ret = []
-        if root is not None:
-            for node in root.child_nodes:
-                ret.append(self.ast_comparison_node(node))
-        return ret
-
-    def ast_comparison_node(self, node):
-        if node is None:
-            return None
-        return (
-            type(node).__name__,
-            tuple(node.params),
-            self.ast_comparison_list(node),
-        )
-
-    def assertErrorsInStmts(self, inp, positions):
-        caller = inspect.stack()[1]
-        in_memory_log_handler = InMemoryCompileLogHandler()
-        logging_log_handler = LoggingCompileLogHandler()
-        log_handler = MultiCompileLogHandler((
-            in_memory_log_handler,
-            logging_log_handler,
-        ))
-        state = CompileState(log_handler=log_handler)
-        module = parse_module(
-            state,
-            StringIO(inp),
-            caller[3],
-            "%s:%i" % (caller[3], caller[2]),
-        )
-        got_positions = []
-        for line in in_memory_log_handler.lines:
-            if line.level == ERROR:
-                for position in line.positions_mentioned:
-                    got_positions.append((position[1], position[2]))
-
-        self.assertEqual(got_positions, positions)
-
-    def assertErrorsInExpr(self, inp, positions, allow_assign=False):
-        caller = inspect.stack()[1]
-        in_memory_log_handler = InMemoryCompileLogHandler()
-        logging_log_handler = LoggingCompileLogHandler()
-        log_handler = MultiCompileLogHandler((
-            in_memory_log_handler,
-            logging_log_handler,
-        ))
-        state = CompileState(log_handler=log_handler)
-        expr = parse_expression(
-            state,
-            StringIO(inp),
-            "%s:%i" % (caller[3], caller[2]),
-            allow_assign=allow_assign,
-        )
-        got_positions = []
-        for line in in_memory_log_handler.lines:
-            if line.level == ERROR:
-                for position in line.positions_mentioned:
-                    got_positions.append((position[1], position[2]))
-
-        self.assertEqual(got_positions, positions)
 
     def test_basics(self):
 
@@ -217,7 +116,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_pass_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             "pass",
             [
                 ("PassStmt", (), []),
@@ -231,7 +130,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_loop_control_statements(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             "break\ncontinue",
             [
                 ("BreakStmt", (), []),
@@ -240,7 +139,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_expression_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             "baz",
             [
                 ("ExpressionStmt", (), [
@@ -251,7 +150,7 @@ class TestParser(unittest.TestCase):
 
     def test_return_statement(self):
         # with expression
-        self.assertAst(
+        self.assertStmtParseTree(
             "return 1",
             [
                 ("ReturnStmt", (), [
@@ -260,119 +159,15 @@ class TestParser(unittest.TestCase):
             ]
         )
         # without expression
-        self.assertAst(
+        self.assertStmtParseTree(
             "return",
             [
                 ("ReturnStmt", (), []),
             ]
         )
 
-    def test_if_statement(self):
-        self.assertAst(
-            'if 1:\n'
-            '    pass',
-            [
-                ("IfStmt", (), [
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                ]),
-            ]
-        )
-        self.assertAst(
-            'if 1:\n'
-            '    pass\n'
-            'else:\n'
-            '    pass',
-            [
-                ("IfStmt", (), [
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("ElseClause", (), [
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                ]),
-            ]
-        )
-        self.assertAst(
-            'if 1:\n'
-            '    pass\n'
-            'elif 2:\n'
-            '    pass\n'
-            'elif 3:\n'
-            '    pass',
-            [
-                ("IfStmt", (), [
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (2,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (3,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                ]),
-            ]
-        )
-        self.assertAst(
-            'if 1:\n'
-            '    pass\n'
-            'elif 2:\n'
-            '    pass\n'
-            'elif 3:\n'
-            '    pass\n'
-            'else:\n'
-            '    pass',
-            [
-                ("IfStmt", (), [
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (2,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("IfClause", (), [
-                        ('IntegerLiteralExpr', (3,), []),
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                    ("ElseClause", (), [
-                        ('StatementBlock', (), [
-                            ('PassStmt', (), []),
-                        ]),
-                    ]),
-                ]),
-            ]
-        )
-
     def test_while_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             'while 1:\n'
             '    pass\n'
             '    pass',
@@ -388,7 +183,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_for_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             'for i in 1:\n'
             '    pass\n'
             '    pass',
@@ -403,7 +198,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]
         )
-        self.assertAst(
+        self.assertStmtParseTree(
             'for var i in 1:\n'
             '    pass\n'
             '    pass',
@@ -418,7 +213,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]
         )
-        self.assertAst(
+        self.assertStmtParseTree(
             'for const i in 1:\n'
             '    pass\n'
             '    pass',
@@ -435,7 +230,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_data_decl_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             'var i',
             [
                 ('DataDeclStmt', (), [
@@ -443,7 +238,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]
         )
-        self.assertAst(
+        self.assertStmtParseTree(
             'var i = 1',
             [
                 ('DataDeclStmt', (), [
@@ -452,7 +247,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]
         )
-        self.assertAst(
+        self.assertStmtParseTree(
             'const i',
             [
                 ('DataDeclStmt', (), [
@@ -460,7 +255,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]
         )
-        self.assertAst(
+        self.assertStmtParseTree(
             'const i = 1',
             [
                 ('DataDeclStmt', (), [
@@ -489,7 +284,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_func_decl_statement(self):
-        self.assertAst(
+        self.assertStmtParseTree(
             'func doot(a, b as foo):\n'
             '    pass',
             [
@@ -508,7 +303,7 @@ class TestParser(unittest.TestCase):
         )
 
     def test_symbol_expression(self):
-        self.assertExprAst(
+        self.assertExprParseTree(
             "baz",
             ("SymbolExpr", ('baz',), []),
         )
@@ -516,35 +311,35 @@ class TestParser(unittest.TestCase):
     def test_paren_expression(self):
         # Parentheses just affect precedence during parsing... they
         # don't actually show up explicitly as nodes in the parse tree.
-        self.assertExprAst(
+        self.assertExprParseTree(
             "(1)",
             ('IntegerLiteralExpr', (1,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "((1))",
             ('IntegerLiteralExpr', (1,), []),
         )
 
     def test_number_expressions(self):
         # Decimal integers
-        self.assertExprAst(
+        self.assertExprParseTree(
             "1",
             ("IntegerLiteralExpr", (1,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "0",
             ("IntegerLiteralExpr", (0,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "92",
             ("IntegerLiteralExpr", (92,), []),
         )
         # Hex integers
-        self.assertExprAst(
+        self.assertExprParseTree(
             "0x1",
             ("IntegerLiteralExpr", (1,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "0xff",
             ("IntegerLiteralExpr", (255,), []),
         )
@@ -555,11 +350,11 @@ class TestParser(unittest.TestCase):
             ]
         )
         # Octal integers
-        self.assertExprAst(
+        self.assertExprParseTree(
             "01",
             ("IntegerLiteralExpr", (1,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "010",
             ("IntegerLiteralExpr", (8,), []),
         )
@@ -570,11 +365,11 @@ class TestParser(unittest.TestCase):
             ]
         )
         # Binary integers
-        self.assertExprAst(
+        self.assertExprParseTree(
             "0b1",
             ("IntegerLiteralExpr", (1,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "0b10",
             ("IntegerLiteralExpr", (2,), []),
         )
@@ -585,26 +380,26 @@ class TestParser(unittest.TestCase):
             ]
         )
         # Decimal floats
-        self.assertExprAst(
+        self.assertExprParseTree(
             "1.0",
             ("FloatLiteralExpr", (1.0,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "92.2",
             ("FloatLiteralExpr", (92.2,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "1.0E+2",
             ("FloatLiteralExpr", (100.0,), []),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "1.0E-1",
             ("FloatLiteralExpr", (0.1,), []),
         )
 
     def test_assign_expressions(self):
         for operator in ("=", "+=", "-=", "*=", "/=", "|=", "&="):
-            self.assertExprAst(
+            self.assertExprParseTree(
                 "a %s 1" % operator,
                 ('AssignExpr', (operator,), [
                     ('SymbolExpr', ('a',), []),
@@ -633,7 +428,7 @@ class TestParser(unittest.TestCase):
     def test_logical_operator_precedence(self):
         # TODO: Generalize this to test everything in self.binary_operators,
         # assuming that the list is in order of precedence.
-        self.assertExprAst(
+        self.assertExprParseTree(
             "a or b and c",
             ('LogicalOrExpr', ('or',), [
                 ('SymbolExpr', ('a',), []),
@@ -643,7 +438,7 @@ class TestParser(unittest.TestCase):
                 ]),
             ]),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "a and b or c",
             ('LogicalOrExpr', ('or',), [
                 ('LogicalAndExpr', ('and',), [
@@ -662,14 +457,14 @@ class TestParser(unittest.TestCase):
 
 def make_binary_op_func(operator, class_name):
     def func(self):
-        self.assertExprAst(
+        self.assertExprParseTree(
             "a %s b" % operator,
             (class_name, (operator,), [
                 ('SymbolExpr', ('a',), []),
                 ('SymbolExpr', ('b',), []),
             ]),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "a %s b %s c" % (operator, operator),
             (class_name, (operator,), [
                 ('SymbolExpr', ('a',), []),
@@ -685,13 +480,13 @@ def make_binary_op_func(operator, class_name):
 
 def make_unary_prefix_op_func(operator, class_name):
     def func(self):
-        self.assertExprAst(
+        self.assertExprParseTree(
             "%s a" % operator,
             (class_name, (operator,), [
                 ('SymbolExpr', ('a',), []),
             ]),
         )
-        self.assertExprAst(
+        self.assertExprParseTree(
             "%s %s a" % (operator, operator),
             (class_name, (operator,), [
                 (class_name, (operator,), [

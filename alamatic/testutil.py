@@ -8,6 +8,7 @@ It may only be used from the unit tests.
 import alamatic.ast
 import alamatic.types
 import functools
+import unittest
 
 
 class OperationGeneratedErrors(Exception):
@@ -29,6 +30,19 @@ def ast_comparison_node(node):
         tuple(node.params),
         ast_comparison_nodes(node.child_nodes),
     )
+
+
+def parse_stmts(inp):
+    from alamatic.parser import parse_module
+    caller = inspect.stack()[1]
+    state = CompileState()
+    module = parse_module(
+        state,
+        StringIO(inp),
+        caller[3],
+        "%s:%i" % (caller[3], caller[2]),
+    )
+    return module.stmts
 
 
 def generate_c_code_for_tree(root):
@@ -326,3 +340,132 @@ def testcase_assertCCode(testcase, node, expected_code):
         expected_code,
     )
 testcase_assertCCode.__name__ = "assertCCode"
+
+
+def testcase_assertStmtParseTree(testcase, inp, expected):
+    from alamatic.parser import parse_module
+    from alamatic.compiler import CompileState
+    from alamatic.compilelogging import LoggingCompileLogHandler
+    import inspect
+    from StringIO import StringIO
+
+    caller = inspect.stack()[1]
+    log_handler = LoggingCompileLogHandler()
+    state = CompileState(log_handler=log_handler)
+    module = parse_module(
+        state,
+        StringIO(inp),
+        caller[3],
+        "%s:%i" % (caller[3], caller[2]),
+    )
+    got = ast_comparison_nodes(module.block.stmts)
+    testcase.assertTrue(state.error_count == 0, "Errors during parse")
+    testcase.assertEqual(got, expected)
+testcase_assertStmtParseTree.__name__ = "assertParseTree"
+
+
+def testcase_assertExprParseTree(testcase, inp, expected, allow_assign=False):
+    from alamatic.parser import parse_expression
+    from alamatic.compiler import CompileState
+    from alamatic.compilelogging import LoggingCompileLogHandler
+    import inspect
+    from StringIO import StringIO
+
+    caller = inspect.stack()[1]
+    log_handler = LoggingCompileLogHandler()
+    state = CompileState(log_handler=log_handler)
+    expr = parse_expression(
+        state,
+        StringIO(inp),
+        "%s:%i" % (caller[3], caller[2]),
+        allow_assign=allow_assign
+    )
+    got = ast_comparison_node(expr)
+    testcase.assertTrue(
+        state.error_count == 0,
+        "Errors during parse (see error log)",
+    )
+    testcase.assertEqual(got, expected)
+testcase_assertExprParseTree.__name__ = "assertExprParseTree"
+
+
+def testcase_assertErrorsInStmts(testcase, inp, positions):
+    from alamatic.parser import parse_module
+    from alamatic.compilelogging import (
+        InMemoryCompileLogHandler,
+        LoggingCompileLogHandler,
+        MultiCompileLogHandler,
+        ERROR,
+    )
+    from alamatic.compiler import CompileState
+    import inspect
+    from StringIO import StringIO
+
+    caller = inspect.stack()[1]
+    in_memory_log_handler = InMemoryCompileLogHandler()
+    logging_log_handler = LoggingCompileLogHandler()
+    log_handler = MultiCompileLogHandler((
+        in_memory_log_handler,
+        logging_log_handler,
+    ))
+    state = CompileState(log_handler=log_handler)
+    module = parse_module(
+        state,
+        StringIO(inp),
+        caller[3],
+        "%s:%i" % (caller[3], caller[2]),
+    )
+    got_positions = []
+    for line in in_memory_log_handler.lines:
+        if line.level == ERROR:
+            for position in line.positions_mentioned:
+                got_positions.append((position[1], position[2]))
+
+    testcase.assertEqual(got_positions, positions)
+testcase_assertErrorsInStmts.__name__ = "assertErrorsInStmts"
+
+
+def testcase_assertErrorsInExpr(self, inp, positions, allow_assign=False):
+    from alamatic.parser import parse_expression
+    from alamatic.compilelogging import (
+        InMemoryCompileLogHandler,
+        LoggingCompileLogHandler,
+        MultiCompileLogHandler,
+        ERROR,
+    )
+    from alamatic.compiler import CompileState
+    import inspect
+    from StringIO import StringIO
+
+    caller = inspect.stack()[1]
+    in_memory_log_handler = InMemoryCompileLogHandler()
+    logging_log_handler = LoggingCompileLogHandler()
+    log_handler = MultiCompileLogHandler((
+        in_memory_log_handler,
+        logging_log_handler,
+    ))
+    state = CompileState(log_handler=log_handler)
+    expr = parse_expression(
+        state,
+        StringIO(inp),
+        "%s:%i" % (caller[3], caller[2]),
+        allow_assign=allow_assign,
+    )
+    got_positions = []
+    for line in in_memory_log_handler.lines:
+        if line.level == ERROR:
+            for position in line.positions_mentioned:
+                got_positions.append((position[1], position[2]))
+
+    self.assertEqual(got_positions, positions)
+testcase_assertErrorsInExpr.__name__ = "assertErrorsInExpr"
+
+
+class LanguageTestCase(unittest.TestCase):
+    assertCodegenTree = testcase_assertCodegenTree
+    assertDataResult = testcase_assertDataResult
+    assertCCode = testcase_assertCCode
+    assertStmtParseTree = testcase_assertStmtParseTree
+    assertExprParseTree = testcase_assertExprParseTree
+    assertErrorsInStmts = testcase_assertErrorsInStmts
+    assertErrorsInExpr = testcase_assertErrorsInExpr
