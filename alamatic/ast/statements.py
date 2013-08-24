@@ -209,6 +209,69 @@ class WhileStmt(Statement):
         yield self.test_expr
         yield self.block
 
+    def execute(self, runtime_stmts):
+        from alamatic.ast import ValueExpr
+        from alamatic.types import Bool
+        from alamatic.interpreter import interpreter, IncompatibleTypesError
+        from alamatic.compilelogging import pos_link
+
+        test_expr = self.test_expr.evaluate()
+
+        if test_expr.result_type is not Bool:
+            raise IncompatibleTypesError(
+                "Test expression must return Bool, not %s" % (
+                    test_expr.result_type.__name__,
+                ),
+                " at ", pos_link(clause.test_expr.position),
+            )
+
+        while True:
+            test_expr = self.test_expr.evaluate()
+            if test_expr.result_type is not Bool:
+                raise IncompatibleTypesError(
+                "Test expression must return Bool, not %s" % (
+                    test_expr.result_type.__name__,
+                ),
+                " at ", pos_link(clause.test_expr.position),
+            )
+
+            if type(test_expr) is ValueExpr:
+                test_result = test_expr.value.value
+                if test_result is False:
+                    # Done iterating
+                    break
+                elif test_result is True:
+                    # This iteration will definitely run, so
+                    # just inline its block here.
+                    # FIXME: This behaves badly if the test expression
+                    # remains constant for many iterations but the
+                    # block generates runtime stmts... it effectively
+                    # unrolls the loop and may result in much larger
+                    # code than we otherwise would've had.
+                    # This can be fixed once we have a codegen node type for
+                    # C-style for loops, so we can test how many times
+                    # we generate the same block and turn it into a for loop
+                    # which the C compiler is then free to unroll if it wants.
+                    runtime_block = self.block.execute()
+                    if len(runtime_block.stmts) > 0:
+                        runtime_stmts.append(runtime_block.inlined)
+                else:
+                    # should never happen
+                    raise Exception("boolean expr has non-boolean value")
+            else:
+                data = interpreter.child_data_state()
+                with data:
+                    runtime_block = self.block.execute()
+                runtime_stmt = WhileStmt(
+                    self.position,
+                    test_expr,
+                    runtime_block,
+                )
+                runtime_stmts.append(runtime_stmt)
+                # We don't know if the body will run at runtime
+                interpreter.data.merge_children([data], or_none=True)
+                break
+
 
 class ForStmt(Statement):
 

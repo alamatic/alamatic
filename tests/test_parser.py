@@ -156,22 +156,6 @@ class TestParser(LanguageTestCase):
             ]
         )
 
-    def test_while_statement(self):
-        self.assertStmtParseTree(
-            'while 1:\n'
-            '    pass\n'
-            '    pass',
-            [
-                ("WhileStmt", (), [
-                    ('IntegerLiteralExpr', (1,), []),
-                    ('StatementBlock', (), [
-                        ('PassStmt', (), []),
-                        ('PassStmt', (), []),
-                    ]),
-                ]),
-            ]
-        )
-
     def test_for_statement(self):
         self.assertStmtParseTree(
             'for i in 1:\n'

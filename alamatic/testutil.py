@@ -204,6 +204,42 @@ class DummyAssignStmt(alamatic.ast.Statement):
         self.executed = True
 
 
+class DummyIncrementStmt(alamatic.ast.Statement):
+    def __init__(self, name, amount=1):
+        self.name = name
+        self.amount = amount
+        self.executed = False
+
+    @property
+    def params(self):
+        yield self.name
+        yield self.amount
+
+    def execute(self, runtime_stmts):
+        self.executed = True
+        from alamatic.interpreter import interpreter
+        if interpreter.value_is_known(self.name):
+            old_value = interpreter.retrieve(self.name)
+            if isinstance(old_value, DummyType):
+                new_value = DummyType(old_value.value + self.amount)
+                interpreter.assign(self.name, new_value)
+            else:
+                raise Exception(
+                    "DummyIncrementStmt can only increment DummyType values"
+                    " but this one was given %r" % old_value
+                )
+        else:
+            runtime_stmts.append(
+                DummyIncrementStmt(
+                    self.name,
+                    self.amount,
+                )
+            )
+
+    def generate_c_code(self, state, writer):
+        writer.writeln("DUMMY(%s+=%i);" % (self.name, self.amount))
+
+
 class DummyDataDeclStmt(alamatic.ast.Statement):
     def __init__(self, name, value):
         self.name = name
@@ -335,6 +371,49 @@ class DummyBooleanConstantExpr(alamatic.ast.Expression):
 
     def evaluate(self):
         return self.ret
+
+
+class DummyLessThanTestExpr(alamatic.ast.Expression):
+    def __init__(self, name, limit):
+        self.name = name
+        self.limit = limit
+        self.evaluated = False
+
+    @property
+    def params(self):
+        yield self.name
+        yield self.limit
+
+    def evaluate(self):
+        self.evaluated = True
+        from alamatic.interpreter import interpreter
+        from alamatic.types import Bool
+
+        if interpreter.value_is_known(self.name):
+            value = interpreter.retrieve(self.name)
+            if isinstance(value, DummyType):
+                return alamatic.ast.ValueExpr(
+                    None,
+                    Bool(value.value < self.limit),
+                )
+            else:
+                raise Exception(
+                    "DummyLessThanTestExpr can only test DummyType values"
+                    " but this one was given %r" % value
+                )
+        else:
+            return DummyLessThanTestExpr(
+                self.name,
+                self.limit,
+            )
+
+    @property
+    def result_type(self):
+        from alamatic.types import Bool
+        return Bool
+
+    def generate_c_code(self, state, writer):
+        writer.write("DUMMY(%s<%i)" % (self.name, self.limit))
 
 
 # These testcase_-prefixed functions are intended to be added to
