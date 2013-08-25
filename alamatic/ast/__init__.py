@@ -65,21 +65,26 @@ class StatementBlock(AstNode):
 
     def generate_decl_c_code(self, state, writer):
         for symbol in self.symbols.local_symbols:
+            if symbol.final_runtime_usage_position is None:
+                # Don't bother generating any symbols that aren't used
+                # at runtime.
+                continue
             union_braces = writer.braces(trailing_newline=False)
             if symbol.codegen_uses_union:
                 writer.write("typedef union")
                 union_type_name = symbol.codegen_name + "_type"
                 union_braces.__enter__()
             for storage in symbol.storages:
+                if storage.final_runtime_usage_position is None:
+                    # Skip any storages that aren't used at runtime.
+                    continue
                 if symbol.const:
                     writer.write("const ")
                 writer.write(storage.type.c_type_spec(), " ")
                 writer.write(storage.codegen_name);
                 if symbol.const:
                     writer.write(" = ")
-                    # TODO: Need to make the data state visible in
-                    # here so that we can see the constant's value.
-                    writer.write("0");
+                    storage.final_value.generate_c_code(state, writer)
                 writer.writeln(";")
             if symbol.codegen_uses_union:
                 union_braces.__exit__()

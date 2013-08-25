@@ -136,6 +136,7 @@ def execute_stmts(stmts, global_data={}):
                     root_symbols,
                     root_data,
                 )
+                root_data.finalize_values()
                 return ret
     finally:
         interpreter.state = old_state
@@ -229,6 +230,10 @@ class DummyIncrementStmt(alamatic.ast.Statement):
                     " but this one was given %r" % old_value
                 )
         else:
+            interpreter.mark_storage_used_at_runtime(
+                interpreter.get_storage(self.name),
+                self.position,
+            )
             runtime_stmts.append(
                 DummyIncrementStmt(
                     self.name,
@@ -402,6 +407,10 @@ class DummyLessThanTestExpr(alamatic.ast.Expression):
                     " but this one was given %r" % value
                 )
         else:
+            interpreter.mark_storage_used_at_runtime(
+                interpreter.get_storage(self.name),
+                self.position,
+            )
             return DummyLessThanTestExpr(
                 self.name,
                 self.limit,

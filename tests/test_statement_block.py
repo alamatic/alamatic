@@ -88,8 +88,20 @@ class TestStatementBlock(LanguageTestCase):
         symbols = SymbolTable()
         sym_a = symbols.create_symbol("a")
         sym_b = symbols.create_symbol("b")
+        sym_c = symbols.create_symbol("c")
         stor_a = sym_a.get_storage_for_type(DummyType)
         stor_b = sym_b.get_storage_for_type(DummyType)
+        stor_c = sym_c.get_storage_for_type(DummyType)
+        # Tell the codegen that stor_a and stor_b were used,
+        # but skip stor_c to emulate what happens when a symbol
+        # is only used at compile time.
+        sym_a.final_storage = stor_a
+        sym_b.final_storage = stor_b
+        sym_c.final_storage = stor_c
+        sym_a.final_runtime_usage_position = ('', 0, 0)
+        sym_b.final_runtime_usage_position = ('', 0, 0)
+        stor_a.final_runtime_usage_position = ('', 0, 0)
+        stor_b.final_runtime_usage_position = ('', 0, 0)
 
         self.assertCCode(
             StatementBlock(

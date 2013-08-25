@@ -359,6 +359,10 @@ class DataDeclStmt(Statement):
                         val_expr,
                     ),
                 )
+                interpreter.mark_storage_used_at_runtime(
+                    storage,
+                    self.position,
+                )
                 runtime_stmts.append(assign_stmt)
 
 

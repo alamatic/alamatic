@@ -25,6 +25,7 @@ def execute_module(state, module):
             with DataState() as root_data:
                 try:
                     runtime_block = module.block.execute()
+                    root_data.finalize_values()
                     return Module(module.position, module.name, runtime_block)
                 except CompilerError, ex:
                     state.error(ex)
@@ -59,7 +60,14 @@ class Interpreter(object):
 
     def assign(self, name, value):
         symbol = self.symbols.get_symbol(name)
-        self.data.set_symbol_value(symbol, value)
+        try:
+            self.data.set_symbol_value(symbol, value)
+        except CannotChangeConstantError, ex:
+            # re-raise with the symbol_name populated
+            raise CannotChangeConstantError(
+                usage_position=ex.usage_position,
+                symbol_name=name,
+            )
 
     def mark_unknown(self, name, known_type=None):
         symbol = self.symbols.get_symbol(name)
@@ -107,6 +115,12 @@ class Interpreter(object):
                 return False
             else:
                 return True
+
+    def mark_storage_used_at_runtime(self, storage, position):
+        self.data.mark_storage_used_at_runtime(storage, position)
+
+    def get_runtime_usage_position(self, item):
+        return self.data.get_runtime_usage_position(item)
 
 
 interpreter = Interpreter()
@@ -231,6 +245,7 @@ class DataState(object):
         self.parent = parent_state
         self.symbol_storages = {}
         self.storage_values = {}
+        self.used_at_runtime = {}
 
     def get_symbol_value(self, symbol):
         storage = self.get_symbol_storage(symbol)
@@ -258,6 +273,12 @@ class DataState(object):
         the largest of the set will decide the amount of memory allocated
         to the type at runtime, if the symbol is used at runtime.
         """
+        if symbol.const:
+            runtime_usage_pos = self.get_runtime_usage_position(symbol)
+            if runtime_usage_pos is not None:
+                raise CannotChangeConstantError(
+                    usage_position=runtime_usage_pos,
+                )
         # FIXME: Should detect if we're switching to a new storage and
         # kill the value for the old one from self.storage_values, since
         # it can never be reached again anyway so is just wasting memory.
@@ -276,6 +297,28 @@ class DataState(object):
             self.storage_values[storage] = None
         else:
             self.symbol_storages[symbol] = None
+
+    def mark_storage_used_at_runtime(self, storage, position):
+        try:
+            _search_tables(self, "used_at_runtime", storage)
+        except KeyError:
+            self.used_at_runtime[storage] = position
+
+        try:
+            _search_tables(self, "used_at_runtime", storage.symbol)
+        except KeyError:
+            self.used_at_runtime[storage.symbol] = position
+
+    def get_runtime_usage_position(self, item):
+        """
+        Given a symbol or a storage (as ``item``), returns the first source
+        position at which the item was used (or possibly used) at runtime,
+        or ``None`` if the item has not yet been used at runtime.
+        """
+        try:
+            return _search_tables(self, "used_at_runtime", item)
+        except KeyError:
+            return None
 
     def create_child(self):
         return DataState(parent_state=self)
@@ -298,6 +341,13 @@ class DataState(object):
         _merge_possible_child_tables(
             self, "storage_values", children, or_none=or_none
         )
+        # For the "used at runtime" we don't bother with the "maybe" case
+        # because even a possible use requires us to definitely allocate
+        # the item at runtime, just in case it's used.
+        for child in children:
+            for item, position in child.used_at_runtime.iteritems():
+                if item not in self.used_at_runtime:
+                    self.used_at_runtime[item] = position
 
     def __enter__(self):
         self.previous_state = interpreter.data
@@ -307,12 +357,38 @@ class DataState(object):
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.data = self.previous_state
 
+    def finalize_values(self):
+        """
+        Once the interpreter phase has finished, call this method on the root
+        data state to commit all of the final symbol/storage state directly
+        to the objects themselves, so that it's visible to the code
+        generation phase.
+        """
+        for storage, value in self.storage_values.iteritems():
+            storage.final_value = value
+        for symbol, storage in self.symbol_storages.iteritems():
+            if symbol.const and storage.final_value is None:
+                # TODO: Need to retain information about declaration/assignment
+                # positions of symbols so we can actually include a useful
+                # source code position in this error message... otherwise
+                # this message is useless when it comes to fixing the issue.
+                raise NotConstantError(
+                    "Value of constant not known at compile time"
+                )
+            symbol.final_storage = storage
+        for item, runtime_usage_position in self.used_at_runtime.iteritems():
+            item.final_runtime_usage_position = runtime_usage_position
+
 
 class Symbol(object):
 
     def __init__(self, const=False):
         self.storage_by_type = {}
         self.const = const
+        # These will be populated by DataState.finalize_values once we're
+        # done with the interpreter phase.
+        self.final_storage = None
+        self.final_runtime_usage_position = None
 
     def get_storage_for_type(self, type):
         """
@@ -357,6 +433,10 @@ class Storage(object):
     def __init__(self, symbol, type):
         self.symbol = symbol
         self.type = type
+        # These will be populated by DataState.finalize_values once we're
+        # done with the interpreter phase.
+        self.final_value = None
+        self.final_runtime_usage_position = None
 
     @property
     def codegen_name(self):
@@ -403,4 +483,35 @@ class IncompatibleTypesError(CompilerError):
 
 
 class NotConstantError(CompilerError):
+    pass
+
+
+class CannotChangeConstantError(CompilerError):
+    # This is a bit of a weird one since the data required to build this
+    # exception is spread across multiple layers. Therefore we raise this
+    # error initially with just usage_position defined, and then the caller
+    # that knows the symbol_name catches it and re-raises it, and finally
+    # the caller that knows the assign position (if any) catches it and
+    # re-raises it once more.
+    def __init__(self, usage_position, symbol_name=None, assign_position=None):
+        self.usage_position = usage_position
+        self.symbol_name = symbol_name
+        self.assign_position = assign_position
+        if symbol_name is not None:
+            symbol_disp = "constant '%s'" % symbol_name
+        else:
+            symbol_disp = "constant"
+        if assign_position:
+            message = [
+                "Can't assign to ", symbol_disp, " at ",
+                pos_link(assign_position), " because it was used at runtime ",
+                " at ", pos_link(usage_position)
+            ]
+        else:
+            message = [
+                "Can't assign to ", symbol_disp,
+                " because it was used at runtime ",
+                " at ", pos_link(usage_position)
+            ]
+        CompilerError.__init__(self, *message)
     pass

@@ -49,9 +49,11 @@ class SymbolExpr(Expression):
                 interpreter.retrieve(name),
             )
         elif interpreter.storage_is_known(name):
+            storage = interpreter.get_storage(name)
+            interpreter.mark_storage_used_at_runtime(storage, self.position)
             return SymbolStorageExpr(
                 self,
-                interpreter.get_storage(name),
+                storage,
             )
         else:
             raise InconsistentTypesError(
@@ -125,7 +127,15 @@ class BinaryOpExpr(Expression):
         lhs = self.lhs.evaluate()
         rhs = self.rhs.evaluate()
         method = getattr(lhs.result_type, method_name)
-        return method(self, lhs, rhs)
+        try:
+            return method(self, lhs, rhs)
+        except CannotChangeConstantError, ex:
+            # re-raise with the assign_position populated
+            raise CannotChangeConstantError(
+                usage_position=ex.usage_position,
+                symbol_name=ex.symbol_name,
+                assign_position=self.position,
+            )
 
     def generate_c_code(self, state, writer):
         writer.write("(")

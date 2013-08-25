@@ -189,6 +189,10 @@ class TestInterpreterState(unittest.TestCase):
                         interpreter.assign("a", 3)
                         interpreter.assign("b", 19)
                         interpreter.declare("c", 109)
+                        interpreter.mark_storage_used_at_runtime(
+                            interpreter.get_storage("a"),
+                            ("if", 0, 0),
+                        )
                         self.assertEqual(
                             interpreter.retrieve("a"),
                             3,
@@ -211,6 +215,12 @@ class TestInterpreterState(unittest.TestCase):
                         interpreter.retrieve("b"),
                         32,
                     )
+                    self.assertEqual(
+                        interpreter.get_runtime_usage_position(
+                            interpreter.get_storage("a"),
+                        ),
+                        None,
+                    )
                 # And after popping the child table we should be back
                 # to the original symbol for "c".
                 self.assertEqual(
@@ -224,6 +234,10 @@ class TestInterpreterState(unittest.TestCase):
                         self.assertEqual(
                             interpreter.retrieve("a"),
                             4,
+                        )
+                        interpreter.mark_storage_used_at_runtime(
+                            interpreter.get_storage("a"),
+                            ("else", 0, 0),
                         )
                         self.assertEqual(
                             interpreter.retrieve("b"),
@@ -266,6 +280,13 @@ class TestInterpreterState(unittest.TestCase):
                     interpreter.retrieve("d"),
                     89,
                 )
+                self.assertEqual(
+                    interpreter.get_runtime_usage_position(
+                        interpreter.get_storage("a"),
+                    ),
+                    ('if', 0, 0),
+                )
+
 
     def test_call_frame(self):
         first_frame = CallFrame()
@@ -292,4 +313,51 @@ class TestInterpreterState(unittest.TestCase):
             [
                 first_frame,
             ]
+        )
+
+    def test_state_finalize_values(self):
+        root_state = DataState()
+        sym_a = Symbol()
+        sym_b = Symbol()
+        root_state.set_symbol_value(sym_a, 1)
+        root_state.set_symbol_value(sym_b, 2)
+        stor_a = root_state.get_symbol_storage(sym_a)
+        stor_b = root_state.get_symbol_storage(sym_b)
+        root_state.mark_storage_used_at_runtime(
+            stor_a,
+            ("", 0, 0),
+        )
+        root_state.finalize_values()
+
+        self.assertEqual(
+            stor_a.final_value,
+            1,
+        )
+        self.assertEqual(
+            stor_b.final_value,
+            2,
+        )
+        self.assertEqual(
+            sym_a.final_storage,
+            stor_a,
+        )
+        self.assertEqual(
+            sym_b.final_storage,
+            stor_b,
+        )
+        self.assertEqual(
+            sym_a.final_runtime_usage_position,
+            ("", 0, 0),
+        )
+        self.assertEqual(
+            stor_a.final_runtime_usage_position,
+            ("", 0, 0),
+        )
+        self.assertEqual(
+            sym_b.final_runtime_usage_position,
+            None,
+        )
+        self.assertEqual(
+            stor_b.final_runtime_usage_position,
+            None,
         )
