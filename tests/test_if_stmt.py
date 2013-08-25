@@ -4,9 +4,9 @@ from alamatic.types import *
 from alamatic.testutil import *
 
 
-class TestIfStmt(LanguageTestCase):
+class TestParse(LanguageTestCase):
 
-    def test_parse(self):
+    def test_just_if(self):
         self.assertStmtParseTree(
             'if 1:\n'
             '    pass',
@@ -21,6 +21,8 @@ class TestIfStmt(LanguageTestCase):
                 ]),
             ]
         )
+
+    def test_if_else(self):
         self.assertStmtParseTree(
             'if 1:\n'
             '    pass\n'
@@ -42,6 +44,8 @@ class TestIfStmt(LanguageTestCase):
                 ]),
             ]
         )
+
+    def test_if_elif_elif(self):
         self.assertStmtParseTree(
             'if 1:\n'
             '    pass\n'
@@ -72,6 +76,8 @@ class TestIfStmt(LanguageTestCase):
                 ]),
             ]
         )
+
+    def test_if_elif_else(self):
         self.assertStmtParseTree(
             'if 1:\n'
             '    pass\n'
@@ -110,7 +116,10 @@ class TestIfStmt(LanguageTestCase):
             ]
         )
 
-    def test_exec(self):
+
+class TestExec(LanguageTestCase):
+
+    def test_known_true_no_else(self):
 
         # if true with no else
         self.assertCodegenTree(
@@ -134,6 +143,28 @@ class TestIfStmt(LanguageTestCase):
                 ]),
             ],
         )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(True),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                "a": DummyType(2),
+            },
+        )
+
+    def test_known_false_no_else(self):
 
         # if false with no else
         self.assertCodegenTree(
@@ -151,7 +182,28 @@ class TestIfStmt(LanguageTestCase):
             ),
             [],
         )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyBooleanConstantExpr(False),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                "a": DummyType(1),
+            },
+        )
 
+    def test_known_true_with_else(self):
         # if true with else
         self.assertCodegenTree(
             IfStmt(
@@ -181,6 +233,7 @@ class TestIfStmt(LanguageTestCase):
             ],
         )
 
+    def test_known_false_with_else(self):
         # if false with else
         self.assertCodegenTree(
             IfStmt(
@@ -210,6 +263,7 @@ class TestIfStmt(LanguageTestCase):
             ],
         )
 
+    def test_not_known(self):
         # if unknown with else
         self.assertCodegenTree(
             IfStmt(
@@ -259,7 +313,29 @@ class TestIfStmt(LanguageTestCase):
                 ]),
             ],
         )
+        self.assertDataResult(
+            {
+                "a": DummyType(1),
+            },
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExprRuntime("cond", Bool),
+                        StatementBlock([
+                            DummyAssignStmt('a', DummyType(2))
+                        ])
+                    ),
+                ]
+            ),
+            {
+                # We don't know the value of 'a' after the if block.
+                "a": None,
+            },
+        )
 
+    def test_elif_true_after_unknown_if(self):
         # elif true after unknown if (emitted as an 'else')
         self.assertCodegenTree(
             IfStmt(
@@ -305,67 +381,7 @@ class TestIfStmt(LanguageTestCase):
         )
 
         # Now we need to test the scope management behavior.
-        self.assertDataResult(
-            {
-                "a": DummyType(1),
-            },
-            IfStmt(
-                None,
-                [
-                    IfClause(
-                        None,
-                        DummyBooleanConstantExpr(True),
-                        StatementBlock([
-                            DummyAssignStmt('a', DummyType(2))
-                        ])
-                    ),
-                ]
-            ),
-            {
-                "a": DummyType(2),
-            },
-        )
-        self.assertDataResult(
-            {
-                "a": DummyType(1),
-            },
-            IfStmt(
-                None,
-                [
-                    IfClause(
-                        None,
-                        DummyBooleanConstantExpr(False),
-                        StatementBlock([
-                            DummyAssignStmt('a', DummyType(2))
-                        ])
-                    ),
-                ]
-            ),
-            {
-                "a": DummyType(1),
-            },
-        )
-        self.assertDataResult(
-            {
-                "a": DummyType(1),
-            },
-            IfStmt(
-                None,
-                [
-                    IfClause(
-                        None,
-                        DummyExprRuntime("cond", Bool),
-                        StatementBlock([
-                            DummyAssignStmt('a', DummyType(2))
-                        ])
-                    ),
-                ]
-            ),
-            {
-                # We don't know the value of 'a' after the if block.
-                "a": None,
-            },
-        )
+    def test_same_assigns_pass_through(self):
         self.assertDataResult(
             {
                 "a": DummyType(1),
@@ -466,7 +482,10 @@ class TestIfStmt(LanguageTestCase):
             },
         )
 
-    def test_codegen(self):
+
+class TestCodegen(LanguageTestCase):
+
+    def test_if(self):
         self.assertCCode(
             IfStmt(
                 None,
@@ -484,6 +503,8 @@ class TestIfStmt(LanguageTestCase):
             "  // DUMMY if_body\n"
             "}\n"
         )
+
+    def test_if_elif(self):
         self.assertCCode(
             IfStmt(
                 None,
@@ -511,6 +532,8 @@ class TestIfStmt(LanguageTestCase):
             "  // DUMMY elif_body\n"
             "}\n"
         )
+
+    def test_if_elif_else(self):
         self.assertCCode(
             IfStmt(
                 None,
@@ -547,6 +570,8 @@ class TestIfStmt(LanguageTestCase):
             "  // DUMMY else_body\n"
             "}\n"
         )
+
+    def test_if_else(self):
         self.assertCCode(
             IfStmt(
                 None,

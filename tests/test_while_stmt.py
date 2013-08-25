@@ -4,9 +4,9 @@ from alamatic.types import *
 from alamatic.testutil import *
 
 
-class TestWhileStmt(LanguageTestCase):
+class TestParse(LanguageTestCase):
 
-    def test_parse(self):
+    def test_simple(self):
         self.assertStmtParseTree(
             'while 1:\n'
             '    pass\n'
@@ -22,7 +22,9 @@ class TestWhileStmt(LanguageTestCase):
             ]
         )
 
-    def test_exec(self):
+class TestExec(LanguageTestCase):
+
+    def test_cond_known_false(self):
         # cond known false at compile time
         self.assertCodegenTree(
             WhileStmt(
@@ -50,6 +52,7 @@ class TestWhileStmt(LanguageTestCase):
             },
         )
 
+    def test_cond_known_first_true_then_false(self):
         # cond known at compile time, starts true and becomes false
         self.assertCodegenTree(
             [
@@ -100,6 +103,7 @@ class TestWhileStmt(LanguageTestCase):
             },
         )
 
+    def test_cond_not_known(self):
         # cond not known at compile time
         self.assertCodegenTree(
             WhileStmt(
@@ -136,7 +140,8 @@ class TestWhileStmt(LanguageTestCase):
             },
         )
 
-        # cond starts of known and then becomes unknown
+    def test_cond_starts_known_then_unknown(self):
+        # cond starts off known and then becomes unknown
         self.assertCodegenTree(
             [
                 DummyDataDeclStmt("a", DummyType(0)),
