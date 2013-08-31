@@ -5,23 +5,24 @@ from alamatic.interpreter import (
     SymbolTable,
     DataState,
     Symbol,
-    Storage,
     CallFrame,
+    IncompatibleTypesError,
 )
+from alamatic.testutil import DummyType
 
 
 class TestInterpreterState(unittest.TestCase):
 
     def test_symbol_table(self):
-        sym = Symbol()
+        sym = Symbol(DummyType)
         root_table = SymbolTable()
         child_table = root_table.create_child()
         child_child_table = child_table.create_child()
 
-        a_sym_1 = root_table.create_symbol("a")
-        a_sym_2 = child_child_table.create_symbol("a")
-        b_sym = child_table.create_symbol("b")
-        c_sym = root_table.create_symbol("c")
+        a_sym_1 = root_table.create_symbol("a", DummyType)
+        a_sym_2 = child_child_table.create_symbol("a", DummyType)
+        b_sym = child_table.create_symbol("b", DummyType)
+        c_sym = root_table.create_symbol("c", DummyType)
 
         self.assertEqual(
             root_table.get_symbol("a"),
@@ -71,9 +72,9 @@ class TestInterpreterState(unittest.TestCase):
         child_state = root_state.create_child()
         child_child_state = child_state.create_child()
 
-        symbol_a = Symbol()
-        symbol_b = Symbol()
-        symbol_c = Symbol()
+        symbol_a = Symbol(int)
+        symbol_b = Symbol(int)
+        symbol_c = Symbol(int)
 
         # For the sake of this test we use Python's native types as our
         # value types. In real use, however, our interpreter has its own
@@ -98,17 +99,16 @@ class TestInterpreterState(unittest.TestCase):
             2,
         )
 
-        # The same symbol having a different type in different scopes.
-        root_state.set_symbol_value(symbol_b, "hello");
+        root_state.set_symbol_value(symbol_b, 99);
         child_child_state.set_symbol_value(symbol_b, 3)
 
         self.assertEqual(
             root_state.get_symbol_value(symbol_b),
-            "hello",
+            99,
         )
         self.assertEqual(
             child_state.get_symbol_value(symbol_b),
-            "hello",
+            99,
         )
         self.assertEqual(
             child_child_state.get_symbol_value(symbol_b),
@@ -136,6 +136,16 @@ class TestInterpreterState(unittest.TestCase):
             32,
         )
 
+        # Assigned values must be of the correct type.
+        self.assertRaises(
+            IncompatibleTypesError,
+            lambda: child_state.set_symbol_value(symbol_a, 'hi')
+        )
+        self.assertRaises(
+            IncompatibleTypesError,
+            lambda: child_state.clear_symbol_value(symbol_a, str)
+        )
+
     def test_combination(self):
         # This test simulates a realistic combined use of symbol tables
         # and data states together, approximating the machinations of
@@ -146,10 +156,10 @@ class TestInterpreterState(unittest.TestCase):
 
         with root_state:
             with root_table:
-                interpreter.declare("a", 1)
-                interpreter.declare("b", 32)
-                interpreter.declare("c", 54)
-                interpreter.declare("d", 89)
+                interpreter.declare("a", int, 1)
+                interpreter.declare("b", int, 32)
+                interpreter.declare("c", int, 54)
+                interpreter.declare("d", int, 89)
 
                 self.assertEqual(
                     interpreter.retrieve("a"),
@@ -174,7 +184,7 @@ class TestInterpreterState(unittest.TestCase):
                 class_table = SymbolTable()
 
                 with class_table:
-                    interpreter.declare("baz", 2)
+                    interpreter.declare("baz", int, 2)
 
                 # if we encounter an if statement whose expression can't be
                 # evaluated at compile time, we must in fact execute both the
@@ -188,9 +198,9 @@ class TestInterpreterState(unittest.TestCase):
                     with if_state:
                         interpreter.assign("a", 3)
                         interpreter.assign("b", 19)
-                        interpreter.declare("c", 109)
-                        interpreter.mark_storage_used_at_runtime(
-                            interpreter.get_storage("a"),
+                        interpreter.declare("c", int, 109)
+                        interpreter.mark_symbol_used_at_runtime(
+                            interpreter.get_symbol("a"),
                             ("if", 0, 0),
                         )
                         self.assertEqual(
@@ -217,7 +227,7 @@ class TestInterpreterState(unittest.TestCase):
                     )
                     self.assertEqual(
                         interpreter.get_runtime_usage_position(
-                            interpreter.get_storage("a"),
+                            interpreter.get_symbol("a"),
                         ),
                         None,
                     )
@@ -235,8 +245,8 @@ class TestInterpreterState(unittest.TestCase):
                             interpreter.retrieve("a"),
                             4,
                         )
-                        interpreter.mark_storage_used_at_runtime(
-                            interpreter.get_storage("a"),
+                        interpreter.mark_symbol_used_at_runtime(
+                            interpreter.get_symbol("a"),
                             ("else", 0, 0),
                         )
                         self.assertEqual(
@@ -282,7 +292,7 @@ class TestInterpreterState(unittest.TestCase):
                 )
                 self.assertEqual(
                     interpreter.get_runtime_usage_position(
-                        interpreter.get_storage("a"),
+                        interpreter.get_symbol("a"),
                     ),
                     ('if', 0, 0),
                 )
@@ -317,47 +327,29 @@ class TestInterpreterState(unittest.TestCase):
 
     def test_state_finalize_values(self):
         root_state = DataState()
-        sym_a = Symbol()
-        sym_b = Symbol()
+        sym_a = Symbol(int)
+        sym_b = Symbol(int)
         root_state.set_symbol_value(sym_a, 1)
         root_state.set_symbol_value(sym_b, 2)
-        stor_a = root_state.get_symbol_storage(sym_a)
-        stor_b = root_state.get_symbol_storage(sym_b)
-        root_state.mark_storage_used_at_runtime(
-            stor_a,
+        root_state.mark_symbol_used_at_runtime(
+            sym_a,
             ("", 0, 0),
         )
         root_state.finalize_values()
 
         self.assertEqual(
-            stor_a.final_value,
+            sym_a.final_value,
             1,
         )
         self.assertEqual(
-            stor_b.final_value,
+            sym_b.final_value,
             2,
-        )
-        self.assertEqual(
-            sym_a.final_storage,
-            stor_a,
-        )
-        self.assertEqual(
-            sym_b.final_storage,
-            stor_b,
         )
         self.assertEqual(
             sym_a.final_runtime_usage_position,
             ("", 0, 0),
         )
         self.assertEqual(
-            stor_a.final_runtime_usage_position,
-            ("", 0, 0),
-        )
-        self.assertEqual(
             sym_b.final_runtime_usage_position,
-            None,
-        )
-        self.assertEqual(
-            stor_b.final_runtime_usage_position,
             None,
         )

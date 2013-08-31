@@ -11,7 +11,7 @@ class TestExpressionStmt(LanguageTestCase):
             "baz",
             [
                 ("ExpressionStmt", (), [
-                    ('SymbolExpr', ('baz',), []),
+                    ('SymbolNameExpr', ('baz',), []),
                 ]),
             ]
         )

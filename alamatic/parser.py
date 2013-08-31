@@ -240,7 +240,7 @@ def p_expr_factor(state, scanner):
 
     if peek[0] == "IDENT":
         scanner.read()
-        return SymbolExpr(pos, peek[1])
+        return SymbolNameExpr(pos, peek[1])
 
     raise CompilerError(
         "Expected expression but found ",

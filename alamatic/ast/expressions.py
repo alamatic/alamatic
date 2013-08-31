@@ -4,7 +4,6 @@ from alamatic.compilelogging import pos_link
 from alamatic.interpreter import (
     interpreter,
     UnknownSymbolError,
-    InconsistentTypesError,
     IncompatibleTypesError,
 )
 
@@ -27,7 +26,7 @@ class Expression(AstNode):
         raise Exception("result_type is not implemented for %r" % self)
 
 
-class SymbolExpr(Expression):
+class SymbolNameExpr(Expression):
 
     def __init__(self, position, name):
         self.position = position
@@ -48,18 +47,12 @@ class SymbolExpr(Expression):
                 self,
                 interpreter.retrieve(name),
             )
-        elif interpreter.storage_is_known(name):
-            storage = interpreter.get_storage(name)
-            interpreter.mark_storage_used_at_runtime(storage, self.position)
-            return SymbolStorageExpr(
-                self,
-                storage,
-            )
         else:
-            raise InconsistentTypesError(
-                "Type of symbol '", name ,"', "
-                "referenced at ", pos_link(self.position),
-                ", is not consistent",
+            symbol = interpreter.get_symbol(name)
+            interpreter.mark_symbol_used_at_runtime(symbol, self.position)
+            return SymbolExpr(
+                self,
+                symbol,
             )
 
 
@@ -281,32 +274,27 @@ class ValueExpr(Expression):
         self.value.generate_c_code(state, writer)
 
 
-class SymbolStorageExpr(Expression):
-    def __init__(self, source_node, storage):
+class SymbolExpr(Expression):
+    def __init__(self, source_node, symbol):
         self.source_node = source_node
         if source_node is not None:
             self.position = source_node.position
         else:
             self.position = None
-        self.storage = storage
+        self.symbol = symbol
 
     @property
     def params(self):
-        yield self.storage
+        yield self.symbol
 
     def evaluate(self):
         return self
 
     @property
     def result_type(self):
-        return self.storage.type
+        return self.symbol.type
 
     def generate_c_code(self, state, writer):
-        if self.storage.symbol.codegen_uses_union:
-            writer.write(
-                self.storage.symbol.codegen_name,
-                ".",
-            )
         writer.write(
-            self.storage.codegen_name,
+            self.symbol.codegen_name,
         )

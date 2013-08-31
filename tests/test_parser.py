@@ -163,7 +163,7 @@ class TestParser(LanguageTestCase):
             '    pass',
             [
                 ("ForStmt", (), [
-                    ('SymbolExpr', ("i",), []),
+                    ('SymbolNameExpr', ("i",), []),
                     ('IntegerLiteralExpr', (1,), []),
                     ('StatementBlock', (), [
                         ('PassStmt', (), []),
@@ -266,7 +266,7 @@ class TestParser(LanguageTestCase):
                     ('FuncDeclClause', ('doot',), [
                         ('ParamDeclClause', ('a',), []),
                         ('ParamDeclClause', ('b',), [
-                            ('SymbolExpr', ('foo',), []),
+                            ('SymbolNameExpr', ('foo',), []),
                         ]),
                     ]),
                     ('StatementBlock', (), [
@@ -279,7 +279,7 @@ class TestParser(LanguageTestCase):
     def test_symbol_expression(self):
         self.assertExprParseTree(
             "baz",
-            ("SymbolExpr", ('baz',), []),
+            ("SymbolNameExpr", ('baz',), []),
         )
 
     def test_paren_expression(self):
@@ -376,7 +376,7 @@ class TestParser(LanguageTestCase):
             self.assertExprParseTree(
                 "a %s 1" % operator,
                 ('AssignExpr', (operator,), [
-                    ('SymbolExpr', ('a',), []),
+                    ('SymbolNameExpr', ('a',), []),
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
                 allow_assign=True,
@@ -405,10 +405,10 @@ class TestParser(LanguageTestCase):
         self.assertExprParseTree(
             "a or b and c",
             ('LogicalOrExpr', ('or',), [
-                ('SymbolExpr', ('a',), []),
+                ('SymbolNameExpr', ('a',), []),
                 ('LogicalAndExpr', ('and',), [
-                    ('SymbolExpr', ('b',), []),
-                    ('SymbolExpr', ('c',), []),
+                    ('SymbolNameExpr', ('b',), []),
+                    ('SymbolNameExpr', ('c',), []),
                 ]),
             ]),
         )
@@ -416,10 +416,10 @@ class TestParser(LanguageTestCase):
             "a and b or c",
             ('LogicalOrExpr', ('or',), [
                 ('LogicalAndExpr', ('and',), [
-                    ('SymbolExpr', ('a',), []),
-                    ('SymbolExpr', ('b',), []),
+                    ('SymbolNameExpr', ('a',), []),
+                    ('SymbolNameExpr', ('b',), []),
                 ]),
-                ('SymbolExpr', ('c',), []),
+                ('SymbolNameExpr', ('c',), []),
             ]),
         )
 
@@ -434,17 +434,17 @@ def make_binary_op_func(operator, class_name):
         self.assertExprParseTree(
             "a %s b" % operator,
             (class_name, (operator,), [
-                ('SymbolExpr', ('a',), []),
-                ('SymbolExpr', ('b',), []),
+                ('SymbolNameExpr', ('a',), []),
+                ('SymbolNameExpr', ('b',), []),
             ]),
         )
         self.assertExprParseTree(
             "a %s b %s c" % (operator, operator),
             (class_name, (operator,), [
-                ('SymbolExpr', ('a',), []),
+                ('SymbolNameExpr', ('a',), []),
                 (class_name, (operator,), [
-                    ('SymbolExpr', ('b',), []),
-                    ('SymbolExpr', ('c',), []),
+                    ('SymbolNameExpr', ('b',), []),
+                    ('SymbolNameExpr', ('c',), []),
                 ]),
             ]),
         )
@@ -457,14 +457,14 @@ def make_unary_prefix_op_func(operator, class_name):
         self.assertExprParseTree(
             "%s a" % operator,
             (class_name, (operator,), [
-                ('SymbolExpr', ('a',), []),
+                ('SymbolNameExpr', ('a',), []),
             ]),
         )
         self.assertExprParseTree(
             "%s %s a" % (operator, operator),
             (class_name, (operator,), [
                 (class_name, (operator,), [
-                    ('SymbolExpr', ('a',), []),
+                    ('SymbolNameExpr', ('a',), []),
                 ]),
             ]),
         )

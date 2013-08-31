@@ -3,14 +3,13 @@ Functionality related to the runtime state of the interpreter.
 
 A symbol table (:py:class:`SymbolTable`) maps simple names to
 :py:class:`Symbol` objects, which exist independently of their names.
-A symbol can actually have several different types over the course of
-its life, with each of these represented by a :py:class:`Storage` instance.
 
-The selected storage for each symbol and the current value for each storage
-live inside :py:class:`DataState` instances, with each statement evaluated
-in the context of a particular symbol table _and_ data state; child data
-states are the mechanism by which we can evaluate both branches of an if
-statement whose condition cannot be fully evaluated at compile time.
+Each symbol has a particular type that persists over the course of its life.
+The current value for each symbol lives inside :py:class:`DataState` instances,
+with each statement evaluated in the context of a particular symbol table
+_and_ data state. Child data states are the mechanism by which we can evaluate
+both branches of an if statement whose condition cannot be fully evaluated at
+compile time.
 """
 
 from alamatic.compilelogging import CompilerError, pos_link
@@ -51,12 +50,16 @@ class Interpreter(object):
     def child_symbol_table(self):
         return self.symbols.create_child()
 
-    def declare(self, name, initial_value=None, const=False):
-        symbol = self.symbols.create_symbol(name, const=const)
+    def declare(self, name, type_, initial_value=None, const=False):
+        symbol = self.symbols.create_symbol(
+            name,
+            type_,
+            const=const,
+        )
         if initial_value is not None:
             self.data.set_symbol_value(symbol, initial_value)
         else:
-            self.data.mark_symbol_unknown(symbol)
+            self.data.clear_symbol_value(symbol, type_)
 
     def assign(self, name, value):
         symbol = self.symbols.get_symbol(name)
@@ -71,15 +74,14 @@ class Interpreter(object):
 
     def mark_unknown(self, name, known_type=None):
         symbol = self.symbols.get_symbol(name)
-        self.data.mark_symbol_unknown(symbol, known_type=known_type)
+        self.data.clear_symbol_value(symbol, known_type=known_type)
+
+    def get_symbol(self, name):
+        return self.symbols.get_symbol(name)
 
     def retrieve(self, name):
         symbol = self.symbols.get_symbol(name)
         return self.data.get_symbol_value(symbol)
-
-    def get_storage(self, name):
-        symbol = self.symbols.get_symbol(name)
-        return self.data.get_symbol_storage(symbol)
 
     def name_is_defined(self, name):
         try:
@@ -104,23 +106,11 @@ class Interpreter(object):
             else:
                 return True
 
-    def storage_is_known(self, name):
-        symbol = self.symbols.get_symbol(name)
-        try:
-            storage = self.data.get_symbol_storage(symbol)
-        except KeyError:
-            return False
-        else:
-            if storage is None:
-                return False
-            else:
-                return True
+    def mark_symbol_used_at_runtime(self, symbol, position):
+        self.data.mark_symbol_used_at_runtime(symbol, position)
 
-    def mark_storage_used_at_runtime(self, storage, position):
-        self.data.mark_storage_used_at_runtime(storage, position)
-
-    def get_runtime_usage_position(self, item):
-        return self.data.get_runtime_usage_position(item)
+    def get_runtime_usage_position(self, symbol):
+        return self.data.get_runtime_usage_position(symbol)
 
 
 interpreter = Interpreter()
@@ -206,12 +196,12 @@ class SymbolTable(object):
     def get_symbol(self, name):
         return _search_tables(self, "symbols", name)
 
-    def create_symbol(self, name, const=False):
+    def create_symbol(self, name, type_, const=False):
         # If the name was already used then we'll "lose" the symbol
         # that was there before, but that's okay because any code we
         # already generated that refers to the old symbol will still
         # have a reference to it.
-        self.symbols[name] = Symbol(const=const)
+        self.symbols[name] = Symbol(type_, const=const)
         return self.symbols[name]
 
     def create_child(self):
@@ -243,21 +233,11 @@ class DataState(object):
 
     def __init__(self, parent_state=None):
         self.parent = parent_state
-        self.symbol_storages = {}
-        self.storage_values = {}
+        self.symbol_values = {}
         self.used_at_runtime = {}
 
     def get_symbol_value(self, symbol):
-        storage = self.get_symbol_storage(symbol)
-        if storage is None:
-            return None
-        return self.get_storage_value(storage)
-
-    def get_symbol_storage(self, symbol):
-        return _search_tables(self, "symbol_storages", symbol)
-
-    def get_storage_value(self, storage):
-        return _search_tables(self, "storage_values", storage)
+        return _search_tables(self, "symbol_values", symbol)
 
     def set_symbol_value(self, symbol, value):
         """
@@ -279,44 +259,43 @@ class DataState(object):
                 raise CannotChangeConstantError(
                     usage_position=runtime_usage_pos,
                 )
-        # FIXME: Should detect if we're switching to a new storage and
-        # kill the value for the old one from self.storage_values, since
-        # it can never be reached again anyway so is just wasting memory.
-        storage = symbol.get_storage_for_type(type(value))
-        self.symbol_storages[symbol] = storage
-        self.storage_values[storage] = value
 
-    def mark_symbol_unknown(self, symbol, known_type=None):
+        if type(value) is not symbol.type:
+            # We can't generate a very helpful error message in this context
+            # so a caller handling an assignment ought to catch and re-raise
+            # this with a bit more context about what's being assigned to.
+            raise IncompatibleTypesError(
+                "Can't assign a ", type(value), " value to a ",
+                "symbol of type ", symbol.type, "."
+            )
+
+        self.symbol_values[symbol] = value
+
+    def clear_symbol_value(self, symbol, known_type=None):
 
         if known_type is not None:
-            storage = symbol.get_storage_for_type(known_type)
-            # FIXME: Should detect if we're switching to a new storage and
-            # kill the value for the old one from self.storage_values, since
-            # it can never be reached again anyway so is just wasting memory.
-            self.symbol_storages[symbol] = storage
-            self.storage_values[storage] = None
-        else:
-            self.symbol_storages[symbol] = None
+            if known_type is not symbol.type:
+                raise IncompatibleTypesError(
+                    "Can't assign a ", known_type, " value to a ",
+                    "symbol of type ", symbol.type, "."
+                )
 
-    def mark_storage_used_at_runtime(self, storage, position):
+        self.symbol_values[symbol] = None
+
+    def mark_symbol_used_at_runtime(self, symbol, position):
         try:
-            _search_tables(self, "used_at_runtime", storage)
+            _search_tables(self, "used_at_runtime", symbol)
         except KeyError:
-            self.used_at_runtime[storage] = position
+            self.used_at_runtime[symbol] = position
 
-        try:
-            _search_tables(self, "used_at_runtime", storage.symbol)
-        except KeyError:
-            self.used_at_runtime[storage.symbol] = position
-
-    def get_runtime_usage_position(self, item):
+    def get_runtime_usage_position(self, symbol):
         """
-        Given a symbol or a storage (as ``item``), returns the first source
-        position at which the item was used (or possibly used) at runtime,
-        or ``None`` if the item has not yet been used at runtime.
+        Given a symbol, returns the first source position at which the symbol
+        was used (or possibly used) at runtime, or ``None`` if the symbol has
+        not yet been used at runtime.
         """
         try:
-            return _search_tables(self, "used_at_runtime", item)
+            return _search_tables(self, "used_at_runtime", symbol)
         except KeyError:
             return None
 
@@ -336,10 +315,7 @@ class DataState(object):
         clause.
         """
         _merge_possible_child_tables(
-            self, "symbol_storages", children, or_none=or_none
-        )
-        _merge_possible_child_tables(
-            self, "storage_values", children, or_none=or_none
+            self, "symbol_values", children, or_none=or_none
         )
         # For the "used at runtime" we don't bother with the "maybe" case
         # because even a possible use requires us to definitely allocate
@@ -364,10 +340,8 @@ class DataState(object):
         to the objects themselves, so that it's visible to the code
         generation phase.
         """
-        for storage, value in self.storage_values.iteritems():
-            storage.final_value = value
-        for symbol, storage in self.symbol_storages.iteritems():
-            if symbol.const and storage.final_value is None:
+        for symbol, value in self.symbol_values.iteritems():
+            if symbol.const and value is None:
                 # TODO: Need to retain information about declaration/assignment
                 # positions of symbols so we can actually include a useful
                 # source code position in this error message... otherwise
@@ -375,67 +349,21 @@ class DataState(object):
                 raise NotConstantError(
                     "Value of constant not known at compile time"
                 )
-            symbol.final_storage = storage
+
+            symbol.final_value = value
+
         for item, runtime_usage_position in self.used_at_runtime.iteritems():
             item.final_runtime_usage_position = runtime_usage_position
 
 
 class Symbol(object):
 
-    def __init__(self, const=False):
-        self.storage_by_type = {}
+    def __init__(self, type_, const=False):
+        self.type = type_
         self.const = const
         # These will be populated by DataState.finalize_values once we're
         # done with the interpreter phase.
-        self.final_storage = None
-        self.final_runtime_usage_position = None
-
-    def get_storage_for_type(self, type):
-        """
-        Get this symbol's storage for the given type.
-
-        If the symbol doesn't yet have a storage for the given type, one is
-        created. It is guaranteed that repeated calls to this method with
-        the same type will return the same storage object.
-        """
-        try:
-            return self.storage_by_type[type]
-        except KeyError:
-            self.storage_by_type[type] = Storage(self, type)
-            return self.storage_by_type[type]
-
-    @property
-    def storages(self):
-        return self.storage_by_type.values()
-
-    @property
-    def codegen_name(self):
-        return "_ala_%x" % id(self)
-
-    @property
-    def codegen_uses_union(self):
-        # We only use a union for a variable that has several different
-        # storages during its life.
-        # We flatten constants because a constant union doesn't make
-        # much sense anyway.
-        # We flatten single-storage variables to help the C compiler
-        # optimize access to them better.
-        if self.const:
-            return False
-        elif len(self.storage_by_type) < 2:
-            return False
-        else:
-            return True
-
-
-class Storage(object):
-
-    def __init__(self, symbol, type):
-        self.symbol = symbol
-        self.type = type
-        # These will be populated by DataState.finalize_values once we're
-        # done with the interpreter phase.
-        self.final_value = None
+        self.final_type = None
         self.final_runtime_usage_position = None
 
     @property
@@ -472,10 +400,6 @@ class UnknownSymbolError(CompilerError):
             "Unknown symbol '", symbol_name,
             "' at ", pos_link(node.position),
         )
-
-
-class InconsistentTypesError(CompilerError):
-    pass
 
 
 class IncompatibleTypesError(CompilerError):

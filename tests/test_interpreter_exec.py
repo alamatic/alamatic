@@ -51,7 +51,6 @@ class TestInterpreterExec(unittest.TestCase):
             DataState,
             SymbolTable,
             Symbol,
-            Storage,
             NotConstantError,
         )
         class ConstantExpr(Expression):
@@ -93,25 +92,6 @@ class TestInterpreterExec(unittest.TestCase):
             ret.symbols = symbols
             return ret
 
-        # Var declaration with no value: populates the symbol table but doesn't
-        # assign a value nor generate any runtime code.
-        result = try_decl(VarDeclClause, "foo", None)
-        self.assertEqual(
-            len(result.runtime_stmts),
-            0,
-        )
-        symbol = result.symbols.get_symbol("foo")
-        self.assertTrue(
-            type(symbol) is Symbol
-        )
-        self.assertFalse(
-            symbol.const,
-            "Symbol is const but expected var",
-        )
-        self.assertTrue(
-            result.data.get_symbol_storage(symbol) is None
-        )
-
         # Var declaration with a constant value: populates the symbol table,
         # assigns a value, and generates an assignment in runtime code.
         result = try_decl(VarDeclClause, "baz", ConstantExpr())
@@ -129,7 +109,7 @@ class TestInterpreterExec(unittest.TestCase):
         )
         self.assertEqual(
             type(result.runtime_stmts[0].expr.lhs),
-            SymbolStorageExpr,
+            SymbolExpr,
         )
         self.assertEqual(
             type(result.runtime_stmts[0].expr.rhs),
@@ -144,10 +124,9 @@ class TestInterpreterExec(unittest.TestCase):
             symbol.const,
             "Symbol is const but expected var",
         )
-        storage = result.data.get_symbol_storage(symbol)
         self.assertEqual(
-            result.runtime_stmts[0].expr.lhs.storage,
-            storage,
+            result.runtime_stmts[0].expr.lhs.symbol,
+            symbol,
         )
 
         # Var declaration with a non-constant value: populates the symbol
@@ -168,7 +147,7 @@ class TestInterpreterExec(unittest.TestCase):
         )
         self.assertEqual(
             type(result.runtime_stmts[0].expr.lhs),
-            SymbolStorageExpr,
+            SymbolExpr,
         )
         self.assertEqual(
             type(result.runtime_stmts[0].expr.rhs),
@@ -187,12 +166,12 @@ class TestInterpreterExec(unittest.TestCase):
             type(None),
         )
         self.assertEqual(
-            result.data.get_symbol_storage(symbol).type,
+            symbol.type,
             UInt8,
         )
         self.assertEqual(
-            result.runtime_stmts[0].expr.lhs.storage,
-            result.data.get_symbol_storage(symbol),
+            result.runtime_stmts[0].expr.lhs.symbol,
+            symbol,
         )
 
         # Constant declaration with a constant value: populates the symbol

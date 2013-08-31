@@ -119,7 +119,7 @@ def execute_stmts(stmts, global_data={}):
         with SymbolTable() as root_symbols:
             with DataState() as root_data:
                 for name, value in global_data.iteritems():
-                    interpreter.declare(name, value)
+                    interpreter.declare(name, type(value), value)
 
                 runtime_stmts = []
                 for stmt in stmts:
@@ -201,7 +201,10 @@ class DummyAssignStmt(alamatic.ast.Statement):
 
     def execute(self, runtime_stmts):
         from alamatic.interpreter import interpreter
-        interpreter.assign(self.name, self.value)
+        if self.value is not None:
+            interpreter.assign(self.name, self.value)
+        else:
+            interpreter.mark_unknown(self.name)
         self.executed = True
 
 
@@ -230,8 +233,8 @@ class DummyIncrementStmt(alamatic.ast.Statement):
                     " but this one was given %r" % old_value
                 )
         else:
-            interpreter.mark_storage_used_at_runtime(
-                interpreter.get_storage(self.name),
+            interpreter.mark_symbol_used_at_runtime(
+                interpreter.get_symbol(self.name),
                 self.position,
             )
             runtime_stmts.append(
@@ -258,7 +261,7 @@ class DummyDataDeclStmt(alamatic.ast.Statement):
 
     def execute(self, runtime_stmts):
         from alamatic.interpreter import interpreter
-        interpreter.declare(self.name, self.value)
+        interpreter.declare(self.name, type(self.value), self.value)
         self.executed = True
 
 
@@ -407,8 +410,8 @@ class DummyLessThanTestExpr(alamatic.ast.Expression):
                     " but this one was given %r" % value
                 )
         else:
-            interpreter.mark_storage_used_at_runtime(
-                interpreter.get_storage(self.name),
+            interpreter.mark_symbol_used_at_runtime(
+                interpreter.get_symbol(self.name),
                 self.position,
             )
             return DummyLessThanTestExpr(

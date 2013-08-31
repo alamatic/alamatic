@@ -5,7 +5,6 @@ from alamatic.ast import *
 from alamatic.interpreter import (
     interpreter,
     UnknownSymbolError,
-    InconsistentTypesError,
     SymbolTable,
     DataState,
 )
@@ -42,16 +41,14 @@ class TestInterpreterEval(unittest.TestCase):
 
     @state
     def test_symbol_expr(self):
-        interpreter.declare('a', 1)
-        interpreter.declare('b')
-        interpreter.declare('c')
+        interpreter.declare('a', int, 1)
+        interpreter.declare('b', int, 2)
 
         interpreter.mark_unknown('b', known_type=int)
 
-        src_a = SymbolExpr(None, "a")
-        src_b = SymbolExpr(None, "b")
-        src_c = SymbolExpr(None, "c")
-        src_d = SymbolExpr(None, "d")
+        src_a = SymbolNameExpr(None, "a")
+        src_b = SymbolNameExpr(None, "b")
+        src_d = SymbolNameExpr(None, "d")
 
         result_a = src_a.evaluate()
         result_b = src_b.evaluate()
@@ -70,7 +67,7 @@ class TestInterpreterEval(unittest.TestCase):
         )
         self.assertEqual(
             type(result_b),
-            SymbolStorageExpr,
+            SymbolExpr,
         )
         self.assertEqual(
             result_b.source_node,
@@ -81,10 +78,6 @@ class TestInterpreterEval(unittest.TestCase):
             int,
         )
 
-        self.assertRaises(
-            InconsistentTypesError,
-            src_c.evaluate,
-        )
         self.assertRaises(
             UnknownSymbolError,
             src_d.evaluate,

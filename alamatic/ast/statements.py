@@ -310,14 +310,13 @@ class DataDeclStmt(Statement):
         from alamatic.ast import (
             ValueExpr,
             AssignExpr,
-            SymbolStorageExpr,
+            SymbolExpr,
             ConstDeclClause,
         )
         from alamatic.compilelogging import pos_link
 
         const = type(self.decl) is ConstDeclClause
 
-        interpreter.declare(self.decl.name, const=const)
         if self.expr is None:
             if const:
                 raise NotConstantError(
@@ -325,10 +324,18 @@ class DataDeclStmt(Statement):
                     " declared at ", pos_link(self.position),
                     ", must be assigned an initial value",
                 )
+            else:
+                raise NotConstantError(
+                    "Variable '%s'," % self.decl.name,
+                    " declared at ", pos_link(self.position),
+                    ", must be assigned an initial value",
+                )
         else:
             val_expr = self.expr.evaluate()
+            initial_value = None
+
             if type(val_expr) is ValueExpr:
-                interpreter.assign(self.decl.name, val_expr.value)
+                initial_value = val_expr.value
             else:
                 if const:
                     raise NotConstantError(
@@ -336,13 +343,15 @@ class DataDeclStmt(Statement):
                         " declared at ", pos_link(self.position),
                         ", can't be determined at compile time",
                     )
-                else:
-                    interpreter.mark_unknown(
-                        self.decl.name,
-                        known_type=val_expr.result_type
-                    )
 
-            storage = interpreter.get_storage(self.decl.name)
+            interpreter.declare(
+                self.decl.name,
+                val_expr.result_type,
+                initial_value,
+                const=const,
+            )
+
+            symbol = interpreter.get_symbol(self.decl.name)
 
             # The code generator will generate the declaration from the scope,
             # so we just need to assign a value to it in the runtime stmts.
@@ -351,16 +360,20 @@ class DataDeclStmt(Statement):
                     self.position,
                     AssignExpr(
                         self.decl.position,
-                        SymbolStorageExpr(
+                        SymbolExpr(
                             self,
-                            storage,
+                            symbol,
                         ),
                         "=",
                         val_expr,
                     ),
                 )
-                interpreter.mark_storage_used_at_runtime(
-                    storage,
+                # FIXME: This means that just declaring a variable
+                # automatically marks it as used at runtime. Instead we
+                # should find some way to omit the assign expression if there
+                # is no other use of the symbol in the program.
+                interpreter.mark_symbol_used_at_runtime(
+                    symbol,
                     self.position,
                 )
                 runtime_stmts.append(assign_stmt)
