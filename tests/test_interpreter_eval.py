@@ -19,6 +19,7 @@ def state(func=None):
         return ret
 
     class TestState:
+
         def __init__(self, symbols, data):
             self.symbols = symbols
             self.data = data
@@ -129,23 +130,29 @@ class TestInterpreterEval(unittest.TestCase):
         # Some mock types so we can test the expression behavior without
         # depending on the behavior of any specific type.
         class Dummy1(Value):
+
             @classmethod
             def add(cls, source_node, lhs, rhs):
                 performed.append("add")
                 return source_node
+
             @classmethod
             def multiply(cls, source_node, lhs, rhs):
                 performed.append("multiply")
                 return source_node
+
         class Dummy2(Value):
+
             @classmethod
             def subtract(cls, source_node, lhs, rhs):
                 performed.append("subtract")
                 return source_node
+
             @classmethod
             def divide(cls, source_node, lhs, rhs):
                 performed.append("divide")
                 return source_node
+
             @classmethod
             def modulo(cls, source_node, lhs, rhs):
                 performed.append("modulo")

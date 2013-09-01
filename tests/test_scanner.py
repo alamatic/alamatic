@@ -9,12 +9,20 @@ from plex.errors import UnrecognizedInput
 NEWLINE = ('NEWLINE', '\n')
 INDENT = ('INDENT', '')
 OUTDENT = ('OUTDENT', '')
+
+
 def NUMBER(val):
     return ('NUMBER', str(val))
+
+
 def STRINGLIT(val):
     return ('STRINGLIT', str(val))
+
+
 def IDENT(val):
     return ('IDENT', str(val))
+
+
 def PUNCT(val):
     return (str(val), str(val))
 
@@ -141,8 +149,8 @@ class TestScanner(unittest.TestCase):
             ]
         )
         # An empty string still yields a virtual newline.
-        self.assertTokens("", [ NEWLINE ])
-        self.assertTokens("    ", [ INDENT, NEWLINE, OUTDENT ])
+        self.assertTokens("", [NEWLINE])
+        self.assertTokens("    ", [INDENT, NEWLINE, OUTDENT])
 
     def test_numbers(self):
         # Decimal
@@ -423,15 +431,15 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(scanner.require_keyword("if"), IDENT("if"))
         self.assertRaises(
             UnexpectedTokenError,
-            lambda : scanner.require_newline(),
+            lambda: scanner.require_newline(),
         )
         self.assertRaises(
             UnexpectedTokenError,
-            lambda : scanner.require_indent(),
+            lambda: scanner.require_indent(),
         )
         self.assertRaises(
             UnexpectedTokenError,
-            lambda : scanner.require_outdent(),
+            lambda: scanner.require_outdent(),
         )
 
         # a
@@ -439,7 +447,7 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(scanner.read(), IDENT("a"))
         self.assertRaises(
             UnexpectedTokenError,
-            lambda : scanner.require_keyword("if"),
+            lambda: scanner.require_keyword("if"),
         )
 
         # ==

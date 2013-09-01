@@ -229,11 +229,11 @@ class WhileStmt(Statement):
             test_expr = self.test_expr.evaluate()
             if test_expr.result_type is not Bool:
                 raise IncompatibleTypesError(
-                "Test expression must return Bool, not %s" % (
-                    test_expr.result_type.__name__,
-                ),
-                " at ", pos_link(clause.test_expr.position),
-            )
+                    "Test expression must return Bool, not %s" % (
+                        test_expr.result_type.__name__,
+                        ),
+                    " at ", pos_link(clause.test_expr.position),
+                )
 
             if type(test_expr) is ValueExpr:
                 test_result = test_expr.value.value

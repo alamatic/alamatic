@@ -168,7 +168,7 @@ class AssignExpr(BinaryOpExpr):
 
     @property
     def c_operator(self):
-        return "=";
+        return "="
 
 
 class LogicalOrExpr(BinaryOpExpr):

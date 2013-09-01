@@ -7,7 +7,7 @@ from alamatic.compilelogging import pos_link, CompilerError
 def parse_module(state, stream, name, filename):
     scanner = Scanner(state, stream, filename)
 
-    stmts = p_statements(state, scanner, lambda s : s.next_is_eof())
+    stmts = p_statements(state, scanner, lambda s: s.next_is_eof())
     block = StatementBlock(stmts)
 
     return Module((filename, 1, 0), name, block)
@@ -24,7 +24,7 @@ def parse_expression(state, stream, filename, allow_assign=False):
     return expr
 
 
-def p_statements(state, scanner, stop_test=lambda s : s.next_is_outdent()):
+def p_statements(state, scanner, stop_test=lambda s: s.next_is_outdent()):
     stmts = []
     while not stop_test(scanner):
         stmt = None
@@ -166,6 +166,7 @@ def p_expression(state, scanner, allow_assign=False):
 
 def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
     this_parser = None
+
     def this_parser(state, scanner):
         pos = scanner.position()
 
@@ -201,6 +202,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
 
 def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
     this_parser = None
+
     def this_parser(state, scanner):
         pos = scanner.position()
 

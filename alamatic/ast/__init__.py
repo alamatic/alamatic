@@ -1,4 +1,5 @@
 
+
 class AstNode(object):
     position = None
 
@@ -21,7 +22,7 @@ class AstNode(object):
     def as_tree_rows(self, indent=0):
         yield ("  " * indent) + "- " + str(self)
         for child in self.child_nodes:
-            g = child.as_tree_rows(indent+1)
+            g = child.as_tree_rows(indent + 1)
             for row in g:
                 yield row
 

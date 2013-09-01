@@ -598,4 +598,3 @@ class TestCodegen(LanguageTestCase):
             "  // DUMMY else_body\n"
             "}\n"
         )
-

@@ -20,7 +20,9 @@ class TestInterpreterExec(unittest.TestCase):
 
         dummy_block = StatementBlock([])
         state_stuff = {}
+
         class MockBlock(object):
+
             def execute(self):
                 from alamatic.interpreter import interpreter
                 # Grab these so we can verify that execute_module
@@ -53,16 +55,23 @@ class TestInterpreterExec(unittest.TestCase):
             Symbol,
             NotConstantError,
         )
+
         class ConstantExpr(Expression):
+
             def __init__(self):
                 pass
+
             def evaluate(self):
                 return ValueExpr(self, UInt8(1))
+
         class NotConstantExpr(Expression):
+
             def __init__(self):
                 pass
+
             def evaluate(self):
                 return NotConstantExpr()
+
             @property
             def result_type(self):
                 return UInt8

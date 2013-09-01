@@ -84,7 +84,7 @@ class TestInterpreterState(unittest.TestCase):
         # provided value into type()
 
         # Simple test of one state overriding another.
-        root_state.set_symbol_value(symbol_a, 1);
+        root_state.set_symbol_value(symbol_a, 1)
         child_child_state.set_symbol_value(symbol_a, 2)
 
         self.assertEqual(
@@ -100,7 +100,7 @@ class TestInterpreterState(unittest.TestCase):
             2,
         )
 
-        root_state.set_symbol_value(symbol_b, 99);
+        root_state.set_symbol_value(symbol_b, 99)
         child_child_state.set_symbol_value(symbol_b, 3)
 
         self.assertEqual(
@@ -319,7 +319,6 @@ class TestInterpreterState(unittest.TestCase):
                     ),
                     ('if', 0, 0),
                 )
-
 
     def test_call_frame(self):
         first_frame = CallFrame()

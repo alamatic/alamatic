@@ -51,14 +51,20 @@ class Interpreter(object):
         return self.symbols.create_child()
 
     def declare(self, name, type=None, const=False, position=None):
-       self._declare(
-           name,
-           type_=type,
-           const=const,
-           position=position,
+        self._declare(
+            name,
+            type_=type,
+            const=const,
+            position=position,
         )
 
-    def declare_and_init(self, name, initial_value, const=False, position=None):
+    def declare_and_init(
+        self,
+        name,
+        initial_value,
+        const=False,
+        position=None,
+    ):
         self._declare(
             name,
             initial_value=initial_value,
@@ -66,7 +72,14 @@ class Interpreter(object):
             position=position,
         )
 
-    def _declare(self, name, type_=None, initial_value=None, const=False, position=None):
+    def _declare(
+        self,
+        name,
+        type_=None,
+        initial_value=None,
+        const=False,
+        position=None,
+    ):
         symbol = self.symbols.create_symbol(
             name,
             const=const,
@@ -472,11 +485,11 @@ class DataState(object):
         for item, runtime_usage_position in self.used_at_runtime.iteritems():
             item.final_runtime_usage_position = runtime_usage_position
 
-        for symbol, init_position in self.symbol_init_positions.iteritems():
-            symbol.final_init_position = init_position
+        for symbol, init_pos in self.symbol_init_positions.iteritems():
+            symbol.final_init_position = init_pos
 
-        for symbol, assign_position in self.symbol_assign_positions.iteritems():
-            symbol.final_assign_position = assign_position
+        for symbol, assign_pos in self.symbol_assign_positions.iteritems():
+            symbol.final_assign_position = assign_pos
 
 
 class Symbol(object):

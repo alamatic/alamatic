@@ -19,14 +19,18 @@ class TestExpressionStmt(LanguageTestCase):
     def test_execute(self):
         class Dummy1Expr(Expression):
             evaluated = False
+
             def evaluate(self):
                 Dummy1Expr.evaluated = True
                 return ValueExpr(self, UInt8(1))
+
         class Dummy2Expr(Expression):
             evaluated = False
+
             def evaluate(self):
                 Dummy2Expr.evaluated = True
                 return Dummy2Expr(self.position)
+
             @property
             def result_type(self):
                 return UInt8
