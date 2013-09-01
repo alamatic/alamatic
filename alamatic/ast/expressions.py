@@ -6,6 +6,7 @@ from alamatic.interpreter import (
     UnknownSymbolError,
     IncompatibleTypesError,
     SymbolNotInitializedError,
+    InvalidAssignmentError,
 )
 
 
@@ -25,6 +26,11 @@ class Expression(AstNode):
         analysis has been performed and thus has no type information present.
         """
         raise Exception("result_type is not implemented for %r" % self)
+
+    def assign(self, expr):
+        raise InvalidAssignmentError(
+            "Invalid assignment target at ", pos_link(self.position)
+        )
 
 
 class SymbolNameExpr(Expression):
@@ -64,6 +70,19 @@ class SymbolNameExpr(Expression):
                 self,
                 symbol,
             )
+
+    def assign(self, expr):
+        name = self.name
+        if not interpreter.name_is_defined(name):
+            raise UnknownSymbolError(name, self)
+
+        symbol = interpreter.get_symbol(name)
+
+        symbol_expr = SymbolExpr(
+            self,
+            symbol,
+        )
+        return symbol_expr.assign(expr)
 
 
 class LiteralExpr(Expression):
@@ -130,15 +149,7 @@ class BinaryOpExpr(Expression):
         lhs = self.lhs.evaluate()
         rhs = self.rhs.evaluate()
         method = getattr(lhs.result_type, method_name)
-        try:
-            return method(self, lhs, rhs)
-        except CannotChangeConstantError, ex:
-            # re-raise with the assign_position populated
-            raise CannotChangeConstantError(
-                usage_position=ex.usage_position,
-                symbol_name=ex.symbol_name,
-                assign_position=self.position,
-            )
+        return method(self, lhs, rhs)
 
     def generate_c_code(self, state, writer):
         writer.write("(")
@@ -165,6 +176,23 @@ class UnaryOpExpr(Expression):
 
 
 class AssignExpr(BinaryOpExpr):
+
+    def evaluate(self):
+        from alamatic.interpreter import CannotChangeConstantError
+        # FIXME: This only supports the simple assign operation, but
+        # this node type also needs to support all of the shorthands
+        # like +=, -=, etc.
+        rhs = self.rhs.evaluate()
+        try:
+            ret = self.lhs.assign(rhs)
+        except CannotChangeConstantError, ex:
+            # Re-raise with the position populated.
+            raise CannotChangeConstantError(
+                usage_position=ex.usage_position,
+                symbol_name=ex.symbol_name,
+                assign_position=self.position,
+            )
+        return ret
 
     @property
     def c_operator(self):
@@ -299,6 +327,41 @@ class SymbolExpr(Expression):
 
     def evaluate(self):
         return self
+
+    def assign(self, expr):
+        from alamatic.interpreter import interpreter
+        if type(expr) is ValueExpr:
+            interpreter.set_symbol_value(
+                self.symbol,
+                expr.value,
+                position=self.position,
+            )
+        else:
+            interpreter.mark_symbol_unknown(
+                self.symbol,
+                expr.result_type,
+                position=self.position,
+            )
+        if self.symbol.const:
+            # Just return the expression alone if the symbol is a constant,
+            # since we can't assign to it at runtime anyway. The resulting
+            # expression will end up being a no-op value that should get
+            # optimized away by the code generator.
+            return expr
+        else:
+            interpreter.mark_symbol_used_at_runtime(
+                self.symbol,
+                self.position,
+            )
+            return AssignExpr(
+                self.position,
+                SymbolExpr(
+                    self,
+                    self.symbol,
+                ),
+                "=",
+                expr,
+            )
 
     @property
     def result_type(self):

@@ -371,25 +371,6 @@ class TestParser(LanguageTestCase):
             ("FloatLiteralExpr", (0.1,), []),
         )
 
-    def test_assign_expressions(self):
-        for operator in ("=", "+=", "-=", "*=", "/=", "|=", "&="):
-            self.assertExprParseTree(
-                "a %s 1" % operator,
-                ('AssignExpr', (operator,), [
-                    ('SymbolNameExpr', ('a',), []),
-                    ('IntegerLiteralExpr', (1,), []),
-                ]),
-                allow_assign=True,
-            )
-        # But chaining is not allowed
-        self.assertErrorsInExpr(
-            "a = b = 1",
-            [
-                (1, 6),
-            ],
-            allow_assign=True,
-        )
-
     def test_assign_disallowed(self):
         self.assertErrorsInExpr(
             "a = 1",

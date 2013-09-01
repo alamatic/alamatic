@@ -373,6 +373,30 @@ class DummyExprRuntime(alamatic.ast.Expression):
         return self._result_type
 
 
+class DummyExprLvalue(alamatic.ast.Expression):
+    def __init__(self, sigil, assigned_expr=None):
+        self.sigil = sigil
+        self.assigned_expr = assigned_expr
+
+    @property
+    def params(self):
+        yield self.sigil
+
+    @property
+    def child_nodes(self):
+        if self.assigned_expr is not None:
+            yield self.assigned_expr
+
+    def assign(self, expr):
+        return DummyExprLvalue(
+            self.sigil,
+            expr,
+        )
+
+    def generate_c_code(self, state, writer):
+        writer.write("DUMMY(%s)" % str(self.sigil))
+
+
 class DummyBooleanConstantExpr(alamatic.ast.Expression):
     def __init__(self, value):
         from alamatic.types import Bool

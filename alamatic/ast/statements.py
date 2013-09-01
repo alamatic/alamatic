@@ -381,25 +381,14 @@ class DataDeclStmt(Statement):
             # The code generator will generate the declaration from the scope,
             # so we just need to assign a value to it in the runtime stmts.
             if not const:
+                symbol_expr = SymbolExpr(
+                    self,
+                    symbol,
+                )
+                assign_expr = symbol_expr.assign(val_expr)
                 assign_stmt = ExpressionStmt(
                     self.position,
-                    AssignExpr(
-                        self.decl.position,
-                        SymbolExpr(
-                            self,
-                            symbol,
-                        ),
-                        "=",
-                        val_expr,
-                    ),
-                )
-                # FIXME: This means that just declaring a variable
-                # automatically marks it as used at runtime. Instead we
-                # should find some way to omit the assign expression if there
-                # is no other use of the symbol in the program.
-                interpreter.mark_symbol_used_at_runtime(
-                    symbol,
-                    self.position,
+                    assign_expr,
                 )
                 runtime_stmts.append(assign_stmt)
 

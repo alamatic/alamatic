@@ -121,12 +121,27 @@ class Interpreter(object):
                 symbol_name=name,
             )
 
-    def mark_unknown(self, name, known_type=None):
+    def mark_unknown(self, name, known_type=None, position=None):
         symbol = self.symbols.get_symbol(name)
-        self.data.clear_symbol_value(symbol, known_type=known_type)
+        self.data.clear_symbol_value(
+            symbol,
+            known_type=known_type,
+            position=position,
+        )
 
-    def mark_symbol_unknown(self, symbol, known_type=None):
-        self.data.clear_symbol_value(symbol, known_type=known_type)
+    def set_symbol_value(self, symbol, value, position=None):
+        self.data.set_symbol_value(
+            symbol,
+            value,
+            position=position,
+        )
+
+    def mark_symbol_unknown(self, symbol, known_type=None, position=None):
+        self.data.clear_symbol_value(
+            symbol,
+            known_type=known_type,
+            position=position,
+        )
 
     def get_symbol(self, name):
         return self.symbols.get_symbol(name)
@@ -582,4 +597,8 @@ class CannotChangeConstantError(CompilerError):
                 " at ", pos_link(usage_position)
             ]
         CompilerError.__init__(self, *message)
+    pass
+
+
+class InvalidAssignmentError(CompilerError):
     pass
