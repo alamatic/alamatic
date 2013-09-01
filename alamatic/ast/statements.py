@@ -259,9 +259,26 @@ class WhileStmt(Statement):
                     # should never happen
                     raise Exception("boolean expr has non-boolean value")
             else:
+                # If we can't evaluate the value expression at compile time
+                # anymore, we have no idea how many more iterations the
+                # loop will run for. Therefore we analyze what state changes
+                # the loop *might* cause, mark each of those targets as
+                # being unknown, and then execute the body in *that* context
+                # to produce a body that is capable of executing all possible
+                # code paths for the remainder of the loop.
                 data = interpreter.child_data_state()
                 with data:
+                    for assigned_symbol in self.find_assigned_symbols():
+                        interpreter.mark_symbol_unknown(assigned_symbol)
+
+                    # Now execute the block with all of the above unknown
+                    # symbols to produce the runtime block.
                     runtime_block = self.block.execute()
+
+                # Now merge the state that resulted from 'executing' the
+                # while loop body, including all of those unknowns.
+                interpreter.data.merge_children([data], or_none=True)
+
                 runtime_stmt = WhileStmt(
                     self.position,
                     test_expr,

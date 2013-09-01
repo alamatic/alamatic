@@ -112,6 +112,9 @@ class Interpreter(object):
         symbol = self.symbols.get_symbol(name)
         self.data.clear_symbol_value(symbol, known_type=known_type)
 
+    def mark_symbol_unknown(self, symbol, known_type=None):
+        self.data.clear_symbol_value(symbol, known_type=known_type)
+
     def get_symbol(self, name):
         return self.symbols.get_symbol(name)
 

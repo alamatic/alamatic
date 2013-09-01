@@ -203,3 +203,120 @@ class TestExec(LanguageTestCase):
                 "a": None,
             },
         )
+
+    def unknown_test_known_body(self):
+        # This one is a tricky case where we don't know how many times the
+        # loop will iterate, but everything inside the loop would be known
+        # at compile time within a single iteration. In this case we need to
+        # catch all of the things that might change from one iteration to
+        # the next and treat them as unknown when evaluating the block.
+
+        test_stmt = WhileStmt(
+            None,
+            DummyExprRuntime("cond", Bool),
+            StatementBlock([
+                # DummyIncrementStmt counts as an assignment, thus marking
+                # the "a" symbol unknown when we execute this block.
+                DummyIncrementStmt("a"),
+                IfStmt(
+                    None,
+                    [
+                        IfClause(
+                            None,
+                            DummyLessThanTestExpr("a", 10),
+                            StatementBlock([]),
+                        ),
+                        ElseClause(
+                            None,
+                            StatementBlock([
+                                DummyAssignStmt("b", DummyType(True)),
+                                DummyStmtRuntime("else"),
+                            ]),
+                        ),
+                    ],
+                ),
+            ]),
+        )
+
+        self.assertDataResult(
+            {
+                "a": DummyType(0),
+                "b": DummyType(False),
+            },
+            test_stmt,
+            {
+                "a": None,
+                "b": None,
+            }
+        )
+        self.assertCodegenTree(
+            [
+                DummyDataDeclStmt("a", DummyType(0)),
+                DummyDataDeclStmt("b", DummyType(False)),
+                test_stmt,
+            ],
+            [
+                ('WhileStmt', (), [
+                    ('DummyExprRuntime', ('cond', Bool), []),
+                    ('StatementBlock', (), [
+                        ('DummyIncrementStmt', ('a', 1), []),
+                        ('IfStmt', (), [
+                            ('IfClause', (), [
+                                ('DummyLessThanTestExpr', ("a", 10), []),
+                                ('StatementBlock', (), []),
+                            ]),
+                            ('ElseClause', (), [
+                                ('StatementBlock', (), [
+                                    ('DummyStmtRuntime', ('else',), []),
+                                ]),
+                            ]),
+                        ]),
+                    ]),
+                ]),
+            ],
+        )
+
+        # We should still be able to evaluate at compile time things that
+        # are *not* mutated inside the loop.
+        test_stmt_2 = WhileStmt(
+            None,
+            DummyExprRuntime("cond", Bool),
+            StatementBlock([
+                DummyIncrementStmt("a"),
+                IfStmt(
+                    None,
+                    [
+                        IfClause(
+                            None,
+                            DummyExprCompileTime('dummy', Bool(True)),
+                            StatementBlock([]),
+                        ),
+                        ElseClause(
+                            None,
+                            StatementBlock([
+                                DummyAssignStmt("b", DummyType(True)),
+                                DummyStmtRuntime("else"),
+                            ]),
+                        ),
+                    ],
+                ),
+            ]),
+        )
+        self.assertCodegenTree(
+            [
+                DummyDataDeclStmt("a", DummyType(0)),
+                DummyDataDeclStmt("b", DummyType(False)),
+                test_stmt_2,
+            ],
+            [
+                ('WhileStmt', (), [
+                    ('DummyExprRuntime', ('cond', Bool), []),
+                    ('StatementBlock', (), [
+                        ('DummyIncrementStmt', ('a', 1), []),
+                        ('InlineStatementBlock', (), [
+                            ('StatementBlock', (), []),
+                        ]),
+                    ]),
+                ]),
+            ],
+        )

@@ -207,6 +207,10 @@ class DummyAssignStmt(alamatic.ast.Statement):
             interpreter.mark_unknown(self.name)
         self.executed = True
 
+    def find_assigned_symbols(self):
+        from alamatic.interpreter import interpreter
+        yield interpreter.get_symbol(self.name)
+
 
 class DummyIncrementStmt(alamatic.ast.Statement):
     def __init__(self, name, amount=1):
@@ -243,6 +247,10 @@ class DummyIncrementStmt(alamatic.ast.Statement):
                     self.amount,
                 )
             )
+
+    def find_assigned_symbols(self):
+        from alamatic.interpreter import interpreter
+        yield interpreter.get_symbol(self.name)
 
     def generate_c_code(self, state, writer):
         writer.writeln("DUMMY(%s+=%i);" % (self.name, self.amount))
