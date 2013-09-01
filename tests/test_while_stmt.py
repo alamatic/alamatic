@@ -205,7 +205,7 @@ class TestExec(LanguageTestCase):
             },
         )
 
-    def unknown_test_known_body(self):
+    def test_unknown_test_known_body(self):
         # This one is a tricky case where we don't know how many times the
         # loop will iterate, but everything inside the loop would be known
         # at compile time within a single iteration. In this case we need to
