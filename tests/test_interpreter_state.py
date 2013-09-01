@@ -352,7 +352,7 @@ class TestInterpreterState(unittest.TestCase):
         root_state = DataState()
         sym_a = Symbol(int)
         sym_b = Symbol(int)
-        root_state.set_symbol_value(sym_a, 1)
+        root_state.set_symbol_value(sym_a, 1, position=('testa', 1, 0))
         root_state.set_symbol_value(sym_b, 2)
         root_state.mark_symbol_used_at_runtime(
             sym_a,
@@ -365,6 +365,10 @@ class TestInterpreterState(unittest.TestCase):
             1,
         )
         self.assertEqual(
+            sym_a.final_type,
+            int,
+        )
+        self.assertEqual(
             sym_b.final_value,
             2,
         )
@@ -375,4 +379,12 @@ class TestInterpreterState(unittest.TestCase):
         self.assertEqual(
             sym_b.final_runtime_usage_position,
             None,
+        )
+        self.assertEqual(
+            sym_a.final_assign_position,
+            ('testa', 1, 0),
+        )
+        self.assertEqual(
+            sym_a.final_init_position,
+            ('testa', 1, 0),
         )
