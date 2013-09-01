@@ -50,16 +50,27 @@ class Interpreter(object):
     def child_symbol_table(self):
         return self.symbols.create_child()
 
-    def declare(self, name, type=None, const=False):
-       self._declare(name, type_=type, const=const)
+    def declare(self, name, type=None, const=False, position=None):
+       self._declare(
+           name,
+           type_=type,
+           const=const,
+           position=position,
+        )
 
-    def declare_and_init(self, name, initial_value, const=False):
-        self._declare(name, initial_value=initial_value, const=const)
+    def declare_and_init(self, name, initial_value, const=False, position=None):
+        self._declare(
+            name,
+            initial_value=initial_value,
+            const=const,
+            position=position,
+        )
 
-    def _declare(self, name, type_=None, initial_value=None, const=False):
+    def _declare(self, name, type_=None, initial_value=None, const=False, position=None):
         symbol = self.symbols.create_symbol(
             name,
             const=const,
+            decl_position=position,
         )
         if type_ is not None and initial_value is not None:
             raise Exception(
@@ -67,17 +78,29 @@ class Interpreter(object):
                 "but not both."
             )
         if initial_value is not None:
-            self.data.set_symbol_value(symbol, initial_value)
+            self.data.set_symbol_value(
+                symbol,
+                initial_value,
+                position=position,
+            )
         else:
             # type_ might still be None here, meaning we don't know
             # what the type is at declaration time. We'll figure it out
             # when the symbol is initialized (assigned for the first time)
-            self.data.clear_symbol_value(symbol, type_)
+            self.data.clear_symbol_value(
+                symbol,
+                type_,
+                position=position,
+            )
 
-    def assign(self, name, value):
+    def assign(self, name, value, position=None):
         symbol = self.symbols.get_symbol(name)
         try:
-            self.data.set_symbol_value(symbol, value)
+            self.data.set_symbol_value(
+                symbol,
+                value,
+                position=position,
+            )
         except CannotChangeConstantError, ex:
             # re-raise with the symbol_name populated
             raise CannotChangeConstantError(
@@ -223,12 +246,16 @@ class SymbolTable(object):
     def get_symbol(self, name):
         return _search_tables(self, "symbols", name)
 
-    def create_symbol(self, name, const=False):
+    def create_symbol(self, name, const=False, decl_position=None):
         # If the name was already used then we'll "lose" the symbol
         # that was there before, but that's okay because any code we
         # already generated that refers to the old symbol will still
         # have a reference to it.
-        self.symbols[name] = Symbol(const=const)
+        self.symbols[name] = Symbol(
+            const=const,
+            decl_name=name,
+            decl_position=decl_position,
+        )
         return self.symbols[name]
 
     def create_child(self):
@@ -263,6 +290,8 @@ class DataState(object):
         self.symbol_values = {}
         self.symbol_types = {}
         self.used_at_runtime = {}
+        self.symbol_init_positions = {}
+        self.symbol_assign_positions = {}
 
     def symbol_is_initialized(self, symbol):
         try:
@@ -284,7 +313,7 @@ class DataState(object):
                 "Can't use a symbol that may not be initialized."
             )
 
-    def set_symbol_value(self, symbol, value):
+    def set_symbol_value(self, symbol, value, position=None):
         """
         Set the compile-time value for the given symbol, overwriting any
         previous value in this state.
@@ -315,10 +344,12 @@ class DataState(object):
                 )
         else:
             self.symbol_types[symbol] = type(value)
+            self.symbol_init_positions[symbol] = position
 
+        self.symbol_assign_positions[symbol] = position
         self.symbol_values[symbol] = value
 
-    def clear_symbol_value(self, symbol, known_type=None):
+    def clear_symbol_value(self, symbol, known_type=None, position=None):
 
         if known_type is not None:
             if self.symbol_is_initialized(symbol):
@@ -332,8 +363,15 @@ class DataState(object):
                     )
             else:
                 self.symbol_types[symbol] = known_type
+                self.symbol_init_positions[symbol] = position
 
         self.symbol_values[symbol] = None
+
+        # Clearing only counts as an assign if we're now initialized.
+        # otherwise, we're just stating that we don't know the type *or*
+        # the value, which isn't an assignment at all.
+        if self.symbol_is_initialized(symbol):
+            self.symbol_assign_positions[symbol] = position
 
     def mark_symbol_used_at_runtime(self, symbol, position):
         try:
@@ -387,6 +425,12 @@ class DataState(object):
                 if item not in self.used_at_runtime:
                     self.used_at_runtime[item] = position
 
+    def get_symbol_init_position(self, symbol):
+        return _search_tables(self, "symbol_init_positions", symbol)
+
+    def get_symbol_assign_position(self, symbol):
+        return _search_tables(self, "symbol_assign_positions", symbol)
+
     def __enter__(self):
         self.previous_state = interpreter.data
         interpreter.data = self
@@ -404,13 +448,18 @@ class DataState(object):
         """
         for symbol, value in self.symbol_values.iteritems():
             if symbol.const and value is None:
-                # TODO: Need to retain information about declaration/assignment
-                # positions of symbols so we can actually include a useful
-                # source code position in this error message... otherwise
-                # this message is useless when it comes to fixing the issue.
-                raise NotConstantError(
-                    "Value of constant not known at compile time"
-                )
+                if symbol.decl_position and symbol.decl_name:
+                    raise NotConstantError(
+                        "Value of constant '%s' from " % symbol.decl_name,
+                        pos_link(symbol.decl_position),
+                        " does not have a definite value"
+                    )
+                else:
+                    # Should never happen if everything's behaving well,
+                    # unless the symbol is a dummy one created in a test.
+                    raise NotConstantError(
+                        "Value of anonymous constant not known at compile time"
+                    )
 
             symbol.final_value = value
 
@@ -420,16 +469,26 @@ class DataState(object):
         for item, runtime_usage_position in self.used_at_runtime.iteritems():
             item.final_runtime_usage_position = runtime_usage_position
 
+        for symbol, init_position in self.symbol_init_positions.iteritems():
+            symbol.final_init_position = init_position
+
+        for symbol, assign_position in self.symbol_assign_positions.iteritems():
+            symbol.final_assign_position = assign_position
+
 
 class Symbol(object):
 
-    def __init__(self, const=False):
+    def __init__(self, const=False, decl_position=None, decl_name=None):
         self.const = const
         # These will be populated by DataState.finalize_values once we're
         # done with the interpreter phase.
         self.final_type = None
         self.final_value = None
         self.final_runtime_usage_position = None
+        self.final_init_position = None
+        self.final_assign_position = None
+        self.decl_position = decl_position
+        self.decl_name = decl_name
 
     @property
     def codegen_name(self):

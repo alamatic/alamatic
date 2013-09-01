@@ -76,7 +76,7 @@ class TestInterpreterExec(unittest.TestCase):
                 name,
             )
             decl_stmt = DataDeclStmt(
-                None,
+                ('test', 1, 0),
                 decl,
                 expr,
             )
@@ -107,6 +107,23 @@ class TestInterpreterExec(unittest.TestCase):
         self.assertFalse(
             result.data.symbol_is_initialized(symbol),
             "Symbol is initialized but it shouldn't be"
+        )
+        self.assertEqual(
+            symbol.decl_name,
+            'baz',
+        )
+        self.assertEqual(
+            symbol.decl_position,
+            ('test', 1, 0),
+        )
+        self.assertRaises(
+            KeyError,
+            lambda: result.data.get_symbol_init_position(symbol)
+        )
+        import logging
+        self.assertRaises(
+            KeyError,
+            lambda: result.data.get_symbol_assign_position(symbol)
         )
 
         # Var declaration with a constant value: populates the symbol table,
@@ -144,6 +161,18 @@ class TestInterpreterExec(unittest.TestCase):
         self.assertEqual(
             result.runtime_stmts[0].expr.lhs.symbol,
             symbol,
+        )
+        self.assertEqual(
+            symbol.decl_name,
+            'baz',
+        )
+        self.assertEqual(
+            result.data.get_symbol_init_position(symbol),
+            ('test', 1, 0),
+        )
+        self.assertEqual(
+            result.data.get_symbol_assign_position(symbol),
+            ('test', 1, 0),
         )
 
         # Var declaration with a non-constant value: populates the symbol

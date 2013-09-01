@@ -328,6 +328,7 @@ class DataDeclStmt(Statement):
                 # Create symbol but leave it uninitialized
                 interpreter.declare(
                     self.decl.name,
+                    position=self.position,
                 )
         else:
             val_expr = self.expr.evaluate()
@@ -348,12 +349,14 @@ class DataDeclStmt(Statement):
                     self.decl.name,
                     initial_value,
                     const=const,
+                    position=self.position,
                 )
             else:
                 interpreter.declare(
                     self.decl.name,
                     val_expr.result_type,
                     const=const,
+                    position=self.position,
                 )
 
             symbol = interpreter.get_symbol(self.decl.name)
