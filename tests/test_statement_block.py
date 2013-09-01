@@ -11,6 +11,7 @@ class TestStatementBlock(LanguageTestCase):
             DataState,
             SymbolTable,
             Symbol,
+            UnknownSymbolError,
         )
 
         stmts = [
@@ -65,7 +66,7 @@ class TestStatementBlock(LanguageTestCase):
         )
         # The new symbol should not be in our root symbol table, though
         self.assertRaises(
-            KeyError,
+            UnknownSymbolError,
             lambda: symbols.get_symbol("a"),
         )
 

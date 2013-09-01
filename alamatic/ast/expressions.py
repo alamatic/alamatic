@@ -7,6 +7,7 @@ from alamatic.interpreter import (
     IncompatibleTypesError,
     SymbolNotInitializedError,
     InvalidAssignmentError,
+    SymbolValueNotKnownError,
 )
 
 
@@ -46,29 +47,20 @@ class SymbolNameExpr(Expression):
     def evaluate(self):
         # If we know the value of the symbol then we can just return it.
         name = self.name
-        if not interpreter.name_is_defined(name):
-            raise UnknownSymbolError(name, self)
 
-        if not interpreter.is_initialized(name):
-            symbol = interpreter.get_symbol(name)
-            error_noun = "constant" if symbol.const else "variable"
-            raise SymbolNotInitializedError(
-                "Can't use %s '%s' at " % (error_noun, name),
-                pos_link(self.position),
-                ": it has not yet been definitively initialized"
-            )
-
-        if interpreter.value_is_known(name):
-            return ValueExpr(
-                self,
-                interpreter.retrieve(name),
-            )
-        else:
-            symbol = interpreter.get_symbol(name)
+        try:
+            value = interpreter.retrieve(name, position=self.position)
+        except SymbolValueNotKnownError:
+            symbol = interpreter.get_symbol(name, position=self.position)
             interpreter.mark_symbol_used_at_runtime(symbol, self.position)
             return SymbolExpr(
                 self,
                 symbol,
+            )
+        else:
+            return ValueExpr(
+                self,
+                interpreter.retrieve(name),
             )
 
     def assign(self, expr):
@@ -178,21 +170,11 @@ class UnaryOpExpr(Expression):
 class AssignExpr(BinaryOpExpr):
 
     def evaluate(self):
-        from alamatic.interpreter import CannotChangeConstantError
         # FIXME: This only supports the simple assign operation, but
         # this node type also needs to support all of the shorthands
         # like +=, -=, etc.
         rhs = self.rhs.evaluate()
-        try:
-            ret = self.lhs.assign(rhs)
-        except CannotChangeConstantError, ex:
-            # Re-raise with the position populated.
-            raise CannotChangeConstantError(
-                usage_position=ex.usage_position,
-                symbol_name=ex.symbol_name,
-                assign_position=self.position,
-            )
-        return ret
+        return self.lhs.assign(rhs)
 
     @property
     def c_operator(self):

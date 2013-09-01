@@ -6,6 +6,7 @@ from alamatic.interpreter import (
     DataState,
     Symbol,
     CallFrame,
+    UnknownSymbolError,
     IncompatibleTypesError,
     SymbolNotInitializedError,
     SymbolValueAmbiguousError,
@@ -52,7 +53,7 @@ class TestInterpreterState(unittest.TestCase):
             b_sym,
         )
         self.assertRaises(
-            KeyError,
+            UnknownSymbolError,
             lambda: root_table.get_symbol("b")
         )
 

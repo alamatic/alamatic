@@ -108,18 +108,11 @@ class Interpreter(object):
 
     def assign(self, name, value, position=None):
         symbol = self.symbols.get_symbol(name)
-        try:
-            self.data.set_symbol_value(
-                symbol,
-                value,
-                position=position,
-            )
-        except CannotChangeConstantError, ex:
-            # re-raise with the symbol_name populated
-            raise CannotChangeConstantError(
-                usage_position=ex.usage_position,
-                symbol_name=name,
-            )
+        self.data.set_symbol_value(
+            symbol,
+            value,
+            position=position,
+        )
 
     def mark_unknown(self, name, known_type=None, position=None):
         symbol = self.symbols.get_symbol(name)
@@ -143,15 +136,15 @@ class Interpreter(object):
             position=position,
         )
 
-    def get_symbol(self, name):
-        return self.symbols.get_symbol(name)
+    def get_symbol(self, name, position=None):
+        return self.symbols.get_symbol(name, position=position)
 
-    def retrieve(self, name):
-        symbol = self.symbols.get_symbol(name)
-        return self.data.get_symbol_value(symbol)
+    def retrieve(self, name, position=None):
+        symbol = self.symbols.get_symbol(name, position=position)
+        return self.data.get_symbol_value(symbol, position=position)
 
-    def get_symbol_type(self, symbol):
-        return self.data.get_symbol_type(symbol)
+    def get_symbol_type(self, symbol, position=None):
+        return self.data.get_symbol_type(symbol, position=position)
 
     def symbol_is_initialized(self, symbol):
         return self.data.symbol_is_initialized(symbol)
@@ -159,8 +152,11 @@ class Interpreter(object):
     def is_initialized(self, name):
         return self.symbol_is_initialized(self.get_symbol(name))
 
-    def get_type(self, name):
-        return self.get_symbol_type(self.get_symbol(name))
+    def get_type(self, name, position=None):
+        return self.get_symbol_type(
+            self.get_symbol(name, position=position),
+            position=position,
+        )
 
     def name_is_defined(self, name):
         try:
@@ -329,8 +325,14 @@ class SymbolTable(object):
         self.parent = parent_table
         self.symbols = {}
 
-    def get_symbol(self, name):
-        return _search_tables(self, "symbols", name)
+    def get_symbol(self, name, position=None):
+        try:
+            return _search_tables(self, "symbols", name)
+        except KeyError:
+            raise UnknownSymbolError(
+                "Symbol '%s' is not defined at " % name,
+                pos_link(position),
+            )
 
     def create_symbol(self, name, const=False, decl_position=None):
         # If the name was already used then we'll "lose" the symbol
@@ -387,7 +389,7 @@ class DataState(object):
         else:
             return True
 
-    def get_symbol_type(self, symbol):
+    def get_symbol_type(self, symbol, position=None):
         try:
             result = _search_tables(self, "symbol_types", symbol)
         except KeyError:
@@ -397,19 +399,21 @@ class DataState(object):
             raise SymbolTypeAmbiguousError(
                 "Symbol '%s' does not have a consistent type" % (
                     symbol.decl_name
-                )
+                ),
+                " at ", pos_link(position)
             )
         elif result is None:
             raise SymbolNotInitializedError(
-                "Symbol '%s' has not yet been initialized" % symbol.decl_name
+                "Symbol '%s' has not yet been initialized" % symbol.decl_name,
+                " at ", pos_link(position)
             )
         else:
             return result
 
-    def get_symbol_value(self, symbol):
+    def get_symbol_value(self, symbol, position=None):
         # First look up the symbol's type just so we can fail early if it's
         # not in a consistent state yet.
-        self.get_symbol_type(symbol)
+        self.get_symbol_type(symbol, position=position)
 
         try:
             result = _search_tables(self, "symbol_values", symbol)
@@ -418,15 +422,17 @@ class DataState(object):
 
         if result is None:
             raise SymbolValueNotKnownError(
-                "Value of symbol '%s' is not known here." % (
+                "Value of symbol '%s' is not known at " % (
                     symbol.decl_name
-                )
+                ),
+                pos_link(position),
             )
         elif type(result) is MergeConflict:
             raise SymbolValueAmbiguousError(
-                "Value of symbol '%s' is ambiguous here." % (
+                "Value of symbol '%s' is ambiguous  at " % (
                     symbol.decl_name
-                )
+                ),
+                pos_link(position)
             )
         else:
             return result
@@ -448,17 +454,21 @@ class DataState(object):
             runtime_usage_pos = self.get_runtime_usage_position(symbol)
             if runtime_usage_pos is not None:
                 raise CannotChangeConstantError(
-                    usage_position=runtime_usage_pos,
+                    "Can't change constant '%s' at " % symbol.decl_name,
+                    pos_link(position),
+                    " because it was already used at runtime at ",
+                    pos_link(runtime_usage_pos),
                 )
 
         if self.symbol_is_initialized(symbol):
             symbol_type = self.get_symbol_type(symbol)
             if type(value) is not symbol_type:
-                # Caller should catch this error and re-raise it with a better
-                # error message.
                 raise IncompatibleTypesError(
-                    "Can't assign a ", type(value), " value to a ",
-                    "symbol of type ", symbol_type, "."
+                    "Can't assign ", type(value), " to symbol '%s' " % (
+                        symbol.decl_name,
+                    ),
+                    "(of type ", symbol_type, "), at ",
+                    pos_link(position)
                 )
         else:
             self.symbol_types.set_with_position(symbol, type(value), position)
@@ -471,11 +481,12 @@ class DataState(object):
             if self.symbol_is_initialized(symbol):
                 symbol_type = self.get_symbol_type(symbol)
                 if known_type is not symbol_type:
-                    # Caller should catch this error and re-raise it with a
-                    # better error message.
                     raise IncompatibleTypesError(
-                        "Can't assign a ", known_type, " value to a ",
-                        "symbol of type ", symbol_type, "."
+                        "Can't assign ", known_type, " to symbol '%s' " % (
+                            symbol.decl_name,
+                        ),
+                        "(of type ", symbol_type, "), at ",
+                        pos_link(position)
                     )
             else:
                 self.symbol_types.set_with_position(
@@ -516,12 +527,6 @@ class DataState(object):
         such as is the case when there's an ``if`` statement with no ``else``
         clause.
         """
-        # FIXME: when merging the types we should fail hard if multiple
-        # children initialize a variable with different types. Since we don't
-        # right now, conflicts result in the variable being considered to
-        # be uninitialized, which means the user will get a confusing error
-        # message at the point of use, rather than a useful error message
-        # pointing to the conflicting initializations.
         _merge_possible_child_tables(
             self, "symbol_types", children, or_none=or_none
         )
@@ -628,12 +633,7 @@ class MergeConflict(object):
 
 
 class UnknownSymbolError(CompilerError):
-    def __init__(self, symbol_name, node):
-        CompilerError.__init__(
-            self,
-            "Unknown symbol '", symbol_name,
-            "' at ", pos_link(node.position),
-        )
+    pass
 
 
 class IncompatibleTypesError(CompilerError):
@@ -665,33 +665,6 @@ class NotConstantError(CompilerError):
 
 
 class CannotChangeConstantError(CompilerError):
-    # This is a bit of a weird one since the data required to build this
-    # exception is spread across multiple layers. Therefore we raise this
-    # error initially with just usage_position defined, and then the caller
-    # that knows the symbol_name catches it and re-raises it, and finally
-    # the caller that knows the assign position (if any) catches it and
-    # re-raises it once more.
-    def __init__(self, usage_position, symbol_name=None, assign_position=None):
-        self.usage_position = usage_position
-        self.symbol_name = symbol_name
-        self.assign_position = assign_position
-        if symbol_name is not None:
-            symbol_disp = "constant '%s'" % symbol_name
-        else:
-            symbol_disp = "constant"
-        if assign_position:
-            message = [
-                "Can't assign to ", symbol_disp, " at ",
-                pos_link(assign_position), " because it was used at runtime ",
-                " at ", pos_link(usage_position)
-            ]
-        else:
-            message = [
-                "Can't assign to ", symbol_disp,
-                " because it was used at runtime ",
-                " at ", pos_link(usage_position)
-            ]
-        CompilerError.__init__(self, *message)
     pass
 
 
