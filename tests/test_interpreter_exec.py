@@ -54,6 +54,7 @@ class TestInterpreterExec(unittest.TestCase):
             SymbolTable,
             Symbol,
             NotConstantError,
+            SymbolValueNotKnownError,
         )
 
         class ConstantExpr(Expression):
@@ -210,9 +211,9 @@ class TestInterpreterExec(unittest.TestCase):
             symbol.const,
             "Symbol is const but expected var",
         )
-        self.assertEqual(
-            type(result.data.get_symbol_value(symbol)),
-            type(None),
+        self.assertRaises(
+            SymbolValueNotKnownError,
+            lambda: result.data.get_symbol_value(symbol),
         )
         self.assertEqual(
             result.data.get_symbol_type(symbol),

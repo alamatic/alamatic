@@ -8,6 +8,7 @@ from alamatic.interpreter import (
     CallFrame,
     IncompatibleTypesError,
     SymbolNotInitializedError,
+    SymbolValueAmbiguousError,
 )
 from alamatic.testutil import DummyType
 
@@ -297,9 +298,9 @@ class TestInterpreterState(unittest.TestCase):
                 # And now the root state has the updated values of "a"
                 # and "b", with "a" being unknown because its value
                 # differed in each clause.
-                self.assertEqual(
-                    interpreter.retrieve("a"),
-                    None,
+                self.assertRaises(
+                    SymbolValueAmbiguousError,
+                    lambda: interpreter.retrieve("a"),
                 )
                 self.assertEqual(
                     interpreter.retrieve("b"),

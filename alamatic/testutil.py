@@ -79,12 +79,13 @@ def get_scope_values(symbols, data):
     works on the symbols directly in the symbol table. Any objects inside
     that have their own symbols will not be resolved automatically.
     """
+    from interpreter import SymbolValueNotKnownError
     ret = {}
     for name in symbols.all_names:
         symbol = symbols.get_symbol(name)
         try:
             ret[name] = data.get_symbol_value(symbol)
-        except KeyError:
+        except SymbolValueNotKnownError:
             ret[name] = None
     return ret
 

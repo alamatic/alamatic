@@ -179,13 +179,10 @@ class Interpreter(object):
             return False
         try:
             value = self.data.get_symbol_value(symbol)
-        except KeyError:
+        except SymbolValueNotKnownError:
             return False
         else:
-            if value is None:
-                return False
-            else:
-                return True
+            return True
 
     def mark_symbol_used_at_runtime(self, symbol, position):
         self.data.mark_symbol_used_at_runtime(symbol, position)
@@ -383,30 +380,56 @@ class DataState(object):
     def symbol_is_initialized(self, symbol):
         try:
             symbol_type = self.get_symbol_type(symbol)
-        except KeyError, ex:
-            symbol_type = None
-        return symbol_type is not None
+        except SymbolTypeAmbiguousError:
+            return True
+        except SymbolNotInitializedError:
+            return False
+        else:
+            return True
 
     def get_symbol_type(self, symbol):
-        result = _search_tables(self, "symbol_types", symbol)
+        try:
+            result = _search_tables(self, "symbol_types", symbol)
+        except KeyError:
+            result = None
+
         if type(result) is MergeConflict:
-            return None
+            raise SymbolTypeAmbiguousError(
+                "Symbol '%s' does not have a consistent type" % (
+                    symbol.decl_name
+                )
+            )
+        elif result is None:
+            raise SymbolNotInitializedError(
+                "Symbol '%s' has not yet been initialized" % symbol.decl_name
+            )
         else:
             return result
 
     def get_symbol_value(self, symbol):
-        if self.symbol_is_initialized(symbol):
+        # First look up the symbol's type just so we can fail early if it's
+        # not in a consistent state yet.
+        self.get_symbol_type(symbol)
+
+        try:
             result = _search_tables(self, "symbol_values", symbol)
-            if type(result) is MergeConflict:
-                return None
-            else:
-                return result
-        else:
-            # Caller should catch this error and re-raise it with a better
-            # error message.
-            raise SymbolNotInitializedError(
-                "Can't use a symbol that may not be initialized."
+        except KeyError:
+            result = None
+
+        if result is None:
+            raise SymbolValueNotKnownError(
+                "Value of symbol '%s' is not known here." % (
+                    symbol.decl_name
+                )
             )
+        elif type(result) is MergeConflict:
+            raise SymbolValueAmbiguousError(
+                "Value of symbol '%s' is ambiguous here." % (
+                    symbol.decl_name
+                )
+            )
+        else:
+            return result
 
     def set_symbol_value(self, symbol, value, position=None):
         """
@@ -617,7 +640,23 @@ class IncompatibleTypesError(CompilerError):
     pass
 
 
-class SymbolNotInitializedError(CompilerError):
+class SymbolTypeNotKnownError(CompilerError):
+    pass
+
+
+class SymbolNotInitializedError(SymbolTypeNotKnownError):
+    pass
+
+
+class SymbolTypeAmbiguousError(SymbolTypeNotKnownError):
+    pass
+
+
+class SymbolValueNotKnownError(CompilerError):
+    pass
+
+
+class SymbolValueAmbiguousError(SymbolValueNotKnownError):
     pass
 
 
