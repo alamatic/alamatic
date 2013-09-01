@@ -5,6 +5,7 @@ from alamatic.interpreter import (
     interpreter,
     UnknownSymbolError,
     IncompatibleTypesError,
+    SymbolNotInitializedError,
 )
 
 
@@ -41,6 +42,15 @@ class SymbolNameExpr(Expression):
         name = self.name
         if not interpreter.name_is_defined(name):
             raise UnknownSymbolError(name, self)
+
+        if not interpreter.is_initialized(name):
+            symbol = interpreter.get_symbol(name)
+            error_noun = "constant" if symbol.const else "variable"
+            raise SymbolNotInitializedError(
+                "Can't use %s '%s' at " % (error_noun, name),
+                pos_link(self.position),
+                ": it has not yet been definitively initialized"
+            )
 
         if interpreter.value_is_known(name):
             return ValueExpr(
@@ -292,7 +302,8 @@ class SymbolExpr(Expression):
 
     @property
     def result_type(self):
-        return self.symbol.type
+        from alamatic.interpreter import interpreter
+        return interpreter.get_symbol_type(self.symbol)
 
     def generate_c_code(self, state, writer):
         writer.write(

@@ -41,8 +41,8 @@ class TestInterpreterEval(unittest.TestCase):
 
     @state
     def test_symbol_expr(self):
-        interpreter.declare('a', int, 1)
-        interpreter.declare('b', int, 2)
+        interpreter.declare_and_init('a', 1)
+        interpreter.declare_and_init('b', 2)
 
         interpreter.mark_unknown('b', known_type=int)
 

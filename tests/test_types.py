@@ -3,6 +3,7 @@ import unittest
 from alamatic.types import *
 from alamatic.ast import *
 from alamatic.interpreter import Symbol
+from alamatic.testutil import *
 
 
 class TestTypes(unittest.TestCase):
@@ -119,10 +120,8 @@ class TestTypes(unittest.TestCase):
         )
 
     def test_integer_arithmetic(self):
-        class DummyNode(object):
-            position = ("dummy", 1, 0)
 
-        dummy_node = DummyNode
+        dummy_node = DummyStmtCompileTime('placeholder')
 
         # For testing the constant folding behavior.
         def assert_binop_value(meth, lhs_value, rhs_value, result_value):
@@ -149,8 +148,8 @@ class TestTypes(unittest.TestCase):
             meth, lhs_type, rhs_type,
             result_node_type, result_node_op, result_type,
         ):
-            lhs = SymbolExpr(dummy_node, Symbol(lhs_type))
-            rhs = SymbolExpr(dummy_node, Symbol(rhs_type))
+            lhs = DummyExprRuntime('lhs', lhs_type)
+            rhs = DummyExprRuntime('rhs', rhs_type)
             result = meth(
                 dummy_node,
                 lhs,

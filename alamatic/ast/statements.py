@@ -325,10 +325,9 @@ class DataDeclStmt(Statement):
                     ", must be assigned an initial value",
                 )
             else:
-                raise NotConstantError(
-                    "Variable '%s'," % self.decl.name,
-                    " declared at ", pos_link(self.position),
-                    ", must be assigned an initial value",
+                # Create symbol but leave it uninitialized
+                interpreter.declare(
+                    self.decl.name,
                 )
         else:
             val_expr = self.expr.evaluate()
@@ -344,12 +343,18 @@ class DataDeclStmt(Statement):
                         ", can't be determined at compile time",
                     )
 
-            interpreter.declare(
-                self.decl.name,
-                val_expr.result_type,
-                initial_value,
-                const=const,
-            )
+            if initial_value is not None:
+                interpreter.declare_and_init(
+                    self.decl.name,
+                    initial_value,
+                    const=const,
+                )
+            else:
+                interpreter.declare(
+                    self.decl.name,
+                    val_expr.result_type,
+                    const=const,
+                )
 
             symbol = interpreter.get_symbol(self.decl.name)
 

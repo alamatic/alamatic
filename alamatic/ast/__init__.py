@@ -71,7 +71,12 @@ class StatementBlock(AstNode):
                 continue
             if symbol.const:
                 writer.write("const ")
-            writer.write(symbol.type.c_type_spec(), " ")
+            if symbol.final_type is None:
+                # Should never happen
+                raise Exception(
+                    "Symbol used at runtime but never initialized"
+                )
+            writer.write(symbol.final_type.c_type_spec(), " ")
             writer.write(symbol.codegen_name)
             if symbol.const:
                 writer.write(" = ")

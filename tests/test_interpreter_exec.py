@@ -92,6 +92,23 @@ class TestInterpreterExec(unittest.TestCase):
             ret.symbols = symbols
             return ret
 
+        # Var declaration with no value: populates the symbol table but leaves
+        # the symbol uninitialized.
+        result = try_decl(VarDeclClause, "baz", None)
+        self.assertEqual(
+            len(result.runtime_stmts),
+            0,
+        )
+        symbol = result.symbols.get_symbol("baz")
+        self.assertFalse(
+            symbol.const,
+            "Symbol is const but expected var",
+        )
+        self.assertFalse(
+            result.data.symbol_is_initialized(symbol),
+            "Symbol is initialized but it shouldn't be"
+        )
+
         # Var declaration with a constant value: populates the symbol table,
         # assigns a value, and generates an assignment in runtime code.
         result = try_decl(VarDeclClause, "baz", ConstantExpr())
@@ -166,7 +183,7 @@ class TestInterpreterExec(unittest.TestCase):
             type(None),
         )
         self.assertEqual(
-            symbol.type,
+            result.data.get_symbol_type(symbol),
             UInt8,
         )
         self.assertEqual(

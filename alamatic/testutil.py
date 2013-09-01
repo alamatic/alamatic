@@ -119,7 +119,7 @@ def execute_stmts(stmts, global_data={}):
         with SymbolTable() as root_symbols:
             with DataState() as root_data:
                 for name, value in global_data.iteritems():
-                    interpreter.declare(name, type(value), value)
+                    interpreter.declare_and_init(name, value)
 
                 runtime_stmts = []
                 for stmt in stmts:
@@ -261,7 +261,7 @@ class DummyDataDeclStmt(alamatic.ast.Statement):
 
     def execute(self, runtime_stmts):
         from alamatic.interpreter import interpreter
-        interpreter.declare(self.name, type(self.value), self.value)
+        interpreter.declare_and_init(self.name, self.value)
         self.executed = True
 
 

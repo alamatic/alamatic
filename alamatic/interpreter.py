@@ -50,15 +50,28 @@ class Interpreter(object):
     def child_symbol_table(self):
         return self.symbols.create_child()
 
-    def declare(self, name, type_, initial_value=None, const=False):
+    def declare(self, name, type=None, const=False):
+       self._declare(name, type_=type, const=const)
+
+    def declare_and_init(self, name, initial_value, const=False):
+        self._declare(name, initial_value=initial_value, const=const)
+
+    def _declare(self, name, type_=None, initial_value=None, const=False):
         symbol = self.symbols.create_symbol(
             name,
-            type_,
             const=const,
         )
+        if type_ is not None and initial_value is not None:
+            raise Exception(
+                "When declaring a symbol, set either type_ or initial_value "
+                "but not both."
+            )
         if initial_value is not None:
             self.data.set_symbol_value(symbol, initial_value)
         else:
+            # type_ might still be None here, meaning we don't know
+            # what the type is at declaration time. We'll figure it out
+            # when the symbol is initialized (assigned for the first time)
             self.data.clear_symbol_value(symbol, type_)
 
     def assign(self, name, value):
@@ -83,6 +96,18 @@ class Interpreter(object):
         symbol = self.symbols.get_symbol(name)
         return self.data.get_symbol_value(symbol)
 
+    def get_symbol_type(self, symbol):
+        return self.data.get_symbol_type(symbol)
+
+    def symbol_is_initialized(self, symbol):
+        return self.data.symbol_is_initialized(symbol)
+
+    def is_initialized(self, name):
+        return self.symbol_is_initialized(self.get_symbol(name))
+
+    def get_type(self, name):
+        return self.get_symbol_type(self.get_symbol(name))
+
     def name_is_defined(self, name):
         try:
             symbol = self.symbols.get_symbol(name)
@@ -96,6 +121,8 @@ class Interpreter(object):
 
     def value_is_known(self, name):
         symbol = self.symbols.get_symbol(name)
+        if not self.data.symbol_is_initialized(symbol):
+            return False
         try:
             value = self.data.get_symbol_value(symbol)
         except KeyError:
@@ -196,12 +223,12 @@ class SymbolTable(object):
     def get_symbol(self, name):
         return _search_tables(self, "symbols", name)
 
-    def create_symbol(self, name, type_, const=False):
+    def create_symbol(self, name, const=False):
         # If the name was already used then we'll "lose" the symbol
         # that was there before, but that's okay because any code we
         # already generated that refers to the old symbol will still
         # have a reference to it.
-        self.symbols[name] = Symbol(type_, const=const)
+        self.symbols[name] = Symbol(const=const)
         return self.symbols[name]
 
     def create_child(self):
@@ -234,10 +261,28 @@ class DataState(object):
     def __init__(self, parent_state=None):
         self.parent = parent_state
         self.symbol_values = {}
+        self.symbol_types = {}
         self.used_at_runtime = {}
 
+    def symbol_is_initialized(self, symbol):
+        try:
+            symbol_type = self.get_symbol_type(symbol)
+        except KeyError, ex:
+            symbol_type = None
+        return symbol_type is not None
+
+    def get_symbol_type(self, symbol):
+        return _search_tables(self, "symbol_types", symbol)
+
     def get_symbol_value(self, symbol):
-        return _search_tables(self, "symbol_values", symbol)
+        if self.symbol_is_initialized(symbol):
+            return _search_tables(self, "symbol_values", symbol)
+        else:
+            # Caller should catch this error and re-raise it with a better
+            # error message.
+            raise SymbolNotInitializedError(
+                "Can't use a symbol that may not be initialized."
+            )
 
     def set_symbol_value(self, symbol, value):
         """
@@ -248,10 +293,9 @@ class DataState(object):
         :py:meth:`clear_symbol_value` instead, to make the undefined
         nature of it known to subsequent code.
 
-        A symbol can change type over the lifetime of the program, but
-        it can only have one type at a time. When multiple types are used,
-        the largest of the set will decide the amount of memory allocated
-        to the type at runtime, if the symbol is used at runtime.
+        The first call for a particular symbol is the initializer for that
+        symbol, which defines its type. All subsequent assignments must then
+        conform to that type.
         """
         if symbol.const:
             runtime_usage_pos = self.get_runtime_usage_position(symbol)
@@ -260,25 +304,34 @@ class DataState(object):
                     usage_position=runtime_usage_pos,
                 )
 
-        if type(value) is not symbol.type:
-            # We can't generate a very helpful error message in this context
-            # so a caller handling an assignment ought to catch and re-raise
-            # this with a bit more context about what's being assigned to.
-            raise IncompatibleTypesError(
-                "Can't assign a ", type(value), " value to a ",
-                "symbol of type ", symbol.type, "."
-            )
+        if self.symbol_is_initialized(symbol):
+            symbol_type = self.get_symbol_type(symbol)
+            if type(value) is not symbol_type:
+                # Caller should catch this error and re-raise it with a better
+                # error message.
+                raise IncompatibleTypesError(
+                    "Can't assign a ", type(value), " value to a ",
+                    "symbol of type ", symbol_type, "."
+                )
+        else:
+            self.symbol_types[symbol] = type(value)
 
         self.symbol_values[symbol] = value
 
     def clear_symbol_value(self, symbol, known_type=None):
 
         if known_type is not None:
-            if known_type is not symbol.type:
-                raise IncompatibleTypesError(
-                    "Can't assign a ", known_type, " value to a ",
-                    "symbol of type ", symbol.type, "."
-                )
+            if self.symbol_is_initialized(symbol):
+                symbol_type = self.get_symbol_type(symbol)
+                if known_type is not symbol_type:
+                    # Caller should catch this error and re-raise it with a
+                    # better error message.
+                    raise IncompatibleTypesError(
+                        "Can't assign a ", known_type, " value to a ",
+                        "symbol of type ", symbol_type, "."
+                    )
+            else:
+                self.symbol_types[symbol] = known_type
 
         self.symbol_values[symbol] = None
 
@@ -314,6 +367,15 @@ class DataState(object):
         such as is the case when there's an ``if`` statement with no ``else``
         clause.
         """
+        # FIXME: when merging the types we should fail hard if multiple
+        # children initialize a variable with different types. Since we don't
+        # right now, conflicts result in the variable being considered to
+        # be uninitialized, which means the user will get a confusing error
+        # message at the point of use, rather than a useful error message
+        # pointing to the conflicting initializations.
+        _merge_possible_child_tables(
+            self, "symbol_types", children, or_none=or_none
+        )
         _merge_possible_child_tables(
             self, "symbol_values", children, or_none=or_none
         )
@@ -352,18 +414,21 @@ class DataState(object):
 
             symbol.final_value = value
 
+        for symbol, type_ in self.symbol_types.iteritems():
+            symbol.final_type = type_
+
         for item, runtime_usage_position in self.used_at_runtime.iteritems():
             item.final_runtime_usage_position = runtime_usage_position
 
 
 class Symbol(object):
 
-    def __init__(self, type_, const=False):
-        self.type = type_
+    def __init__(self, const=False):
         self.const = const
         # These will be populated by DataState.finalize_values once we're
         # done with the interpreter phase.
         self.final_type = None
+        self.final_value = None
         self.final_runtime_usage_position = None
 
     @property
@@ -403,6 +468,10 @@ class UnknownSymbolError(CompilerError):
 
 
 class IncompatibleTypesError(CompilerError):
+    pass
+
+
+class SymbolNotInitializedError(CompilerError):
     pass
 
 

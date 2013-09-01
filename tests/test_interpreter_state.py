@@ -7,6 +7,7 @@ from alamatic.interpreter import (
     Symbol,
     CallFrame,
     IncompatibleTypesError,
+    SymbolNotInitializedError,
 )
 from alamatic.testutil import DummyType
 
@@ -72,9 +73,9 @@ class TestInterpreterState(unittest.TestCase):
         child_state = root_state.create_child()
         child_child_state = child_state.create_child()
 
-        symbol_a = Symbol(int)
-        symbol_b = Symbol(int)
-        symbol_c = Symbol(int)
+        symbol_a = Symbol()
+        symbol_b = Symbol()
+        symbol_c = Symbol()
 
         # For the sake of this test we use Python's native types as our
         # value types. In real use, however, our interpreter has its own
@@ -124,7 +125,7 @@ class TestInterpreterState(unittest.TestCase):
         # value in a data state whose lifetime is greater than or equal
         # to the symbol table itself.
         self.assertRaises(
-            KeyError,
+            SymbolNotInitializedError,
             lambda: root_state.get_symbol_value(symbol_c)
         )
         self.assertEqual(
@@ -156,10 +157,10 @@ class TestInterpreterState(unittest.TestCase):
 
         with root_state:
             with root_table:
-                interpreter.declare("a", int, 1)
-                interpreter.declare("b", int, 32)
-                interpreter.declare("c", int, 54)
-                interpreter.declare("d", int, 89)
+                interpreter.declare_and_init("a", 1)
+                interpreter.declare_and_init("b", 32)
+                interpreter.declare_and_init("c", 54)
+                interpreter.declare_and_init("d", 89)
 
                 self.assertEqual(
                     interpreter.retrieve("a"),
@@ -178,13 +179,35 @@ class TestInterpreterState(unittest.TestCase):
                     89,
                 )
 
+                # Delayed initialization
+                interpreter.declare('k')
+                self.assertFalse(
+                    interpreter.is_initialized('k'),
+                )
+                self.assertRaises(
+                    SymbolNotInitializedError,
+                    lambda: interpreter.retrieve('k')
+                )
+                interpreter.assign('k', 78)
+                self.assertTrue(
+                    interpreter.is_initialized('k'),
+                )
+                self.assertEqual(
+                    interpreter.retrieve('k'),
+                    78,
+                )
+                self.assertEqual(
+                    interpreter.get_type('k'),
+                    int,
+                )
+
                 # this table stands in for the members of some object whose
                 # class is declared in the module. It doesn't inherit the root
                 # table because class members are a separate namespace.
                 class_table = SymbolTable()
 
                 with class_table:
-                    interpreter.declare("baz", int, 2)
+                    interpreter.declare_and_init("baz", 2)
 
                 # if we encounter an if statement whose expression can't be
                 # evaluated at compile time, we must in fact execute both the
@@ -198,7 +221,7 @@ class TestInterpreterState(unittest.TestCase):
                     with if_state:
                         interpreter.assign("a", 3)
                         interpreter.assign("b", 19)
-                        interpreter.declare("c", int, 109)
+                        interpreter.declare_and_init("c", 109)
                         interpreter.mark_symbol_used_at_runtime(
                             interpreter.get_symbol("a"),
                             ("if", 0, 0),
