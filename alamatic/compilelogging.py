@@ -5,9 +5,10 @@ ERROR = 3
 
 
 class LogLine(object):
-    def __init__(self, level, parts):
+    def __init__(self, level, parts, additional_info_lines=[]):
         self.level = level
         self.parts = parts
+        self.additional_info_lines = additional_info_lines
 
     def __unicode__(self):
         return self.as_string
@@ -53,8 +54,19 @@ class pos_link(object):
 
 class CompilerError(Exception):
     def __init__(self, *log_parts):
-        self.log_line = LogLine(ERROR, log_parts)
+        additional_info_lines = [
+            LogLine(ERROR, parts) for parts in self.additional_info_items
+        ]
+        self.log_line = LogLine(
+            ERROR,
+            log_parts,
+            additional_info_lines=additional_info_lines,
+        )
         Exception.__init__(self, self.log_line.as_string)
+
+    @property
+    def additional_info_items(self):
+        return []
 
 
 class CompileLogHandler(object):
@@ -109,7 +121,15 @@ class TerminalCompileLogHandler(CompileLogHandler):
             level = " INFO  "
             stream = self.out_stream
 
+        if len(line.additional_info_lines) > 0:
+            stream.write("\n")
+
         stream.write("[ %s ] %s\n" % (level, msg))
+
+        if len(line.additional_info_lines) > 0:
+            for additional_line in line.additional_info_lines:
+                stream.write("            %s\n" % str(additional_line))
+            stream.write("\n")
 
 
 class MultiCompileLogHandler(CompileLogHandler):
