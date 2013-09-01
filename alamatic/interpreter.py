@@ -249,6 +249,22 @@ def _search_tables(start, table_name, key):
     raise KeyError(key)
 
 
+def _search_tables_with_position(start, table_name, key):
+    current = start
+    value = None
+
+    while current is not None:
+        table = getattr(current, table_name)
+        try:
+            value = table.get_with_position(key)
+        except KeyError:
+            current = current.parent
+        else:
+            return value
+
+    raise KeyError(key)
+
+
 def _merge_possible_child_tables(orig, table_name, possibles, or_none=False):
     if len(possibles) == 0:
         return
@@ -283,25 +299,32 @@ def _merge_possible_child_tables(orig, table_name, possibles, or_none=False):
         try:
             for possible in possibles:
                 chosen_values.append(
-                    _search_tables(possible, table_name, key)
+                    _search_tables_with_position(possible, table_name, key)
                 )
         except KeyError:
-            chosen_values.append(None)
+            chosen_values.append((None, None))
 
         if or_none:
             chosen_values.append(
-                _search_tables(orig, table_name, key)
+                _search_tables_with_position(orig, table_name, key)
             )
 
+        print chosen_values
         all_agreed = all(
-            chosen_values[0] == chosen_value
+            chosen_values[0][0] == chosen_value[0]
             for chosen_value in chosen_values
         )
         if all_agreed:
-            orig_table[key] = chosen_values[0]
+            orig_table.set_with_position(
+                key,
+                chosen_values[0][0],
+                chosen_values[0][1],
+            )
         else:
             # Signal that the true result is unknown
-            orig_table[key] = None
+            orig_table[key] = MergeConflict(
+                chosen_values
+            )
 
 
 class SymbolTable(object):
@@ -366,11 +389,19 @@ class DataState(object):
         return symbol_type is not None
 
     def get_symbol_type(self, symbol):
-        return _search_tables(self, "symbol_types", symbol)
+        result = _search_tables(self, "symbol_types", symbol)
+        if type(result) is MergeConflict:
+            return None
+        else:
+            return result
 
     def get_symbol_value(self, symbol):
         if self.symbol_is_initialized(symbol):
-            return _search_tables(self, "symbol_values", symbol)
+            result = _search_tables(self, "symbol_values", symbol)
+            if type(result) is MergeConflict:
+                return None
+            else:
+                return result
         else:
             # Caller should catch this error and re-raise it with a better
             # error message.
@@ -563,6 +594,15 @@ class CallFrame(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.frame = self.previous_frame
+
+
+class MergeConflict(object):
+
+    def __init__(self, possibilities):
+        self.possibilities = possibilities
+
+    def __repr__(self):
+        return "<MergeConflict %r>" % self.possibilities
 
 
 class UnknownSymbolError(CompilerError):
