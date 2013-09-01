@@ -309,7 +309,6 @@ def _merge_possible_child_tables(orig, table_name, possibles, or_none=False):
                 _search_tables_with_position(orig, table_name, key)
             )
 
-        print chosen_values
         all_agreed = all(
             chosen_values[0][0] == chosen_value[0]
             for chosen_value in chosen_values
