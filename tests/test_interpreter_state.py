@@ -387,3 +387,41 @@ class TestInterpreterState(unittest.TestCase):
             sym_a.final_init_position,
             ('testa', 1, 0),
         )
+
+    def test_position_tracking_dict(self):
+        from alamatic.interpreter import PositionTrackingDict
+        d = PositionTrackingDict()
+
+        d.set_with_position("a", 1, "loca")
+        d["b"] = 2
+
+        self.assertEqual(
+            d.get_with_position("a"),
+            (1, "loca"),
+        )
+        self.assertEqual(
+            d.get_with_position("b"),
+            (2, None),
+        )
+        self.assertEqual(
+            d["a"],
+            1,
+        )
+        self.assertEqual(
+            d["b"],
+            2,
+        )
+        self.assertEqual(
+            list(sorted(d.iteritems())),
+            [
+                ("a", 1),
+                ("b", 2),
+            ]
+        )
+        self.assertEqual(
+            list(sorted(d.iteritems_with_position())),
+            [
+                ("a", 1, 'loca'),
+                ("b", 2, None),
+            ]
+        )

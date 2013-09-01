@@ -125,15 +125,6 @@ class TestInterpreterExec(unittest.TestCase):
             symbol.decl_position,
             ('test', 1, 0),
         )
-        self.assertRaises(
-            KeyError,
-            lambda: result.data.get_symbol_init_position(symbol)
-        )
-        import logging
-        self.assertRaises(
-            KeyError,
-            lambda: result.data.get_symbol_assign_position(symbol)
-        )
 
         # Var declaration with a constant value: populates the symbol table,
         # assigns a value, and generates an assignment in runtime code.
@@ -175,12 +166,15 @@ class TestInterpreterExec(unittest.TestCase):
             symbol.decl_name,
             'baz',
         )
+        # These two are testing internal state rather than public interface,
+        # since we don't directly expose these things at this point. Instead,
+        # these positions are used when formulating error messages.
         self.assertEqual(
-            result.data.get_symbol_init_position(symbol),
+            result.data.symbol_types.get_position(symbol),
             ('test', 1, 0),
         )
         self.assertEqual(
-            result.data.get_symbol_assign_position(symbol),
+            result.data.symbol_values.get_position(symbol),
             ('test', 1, 0),
         )
 

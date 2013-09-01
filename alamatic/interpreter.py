@@ -197,6 +197,42 @@ class Interpreter(object):
 interpreter = Interpreter()
 
 
+class PositionTrackingDict(dict):
+    """
+    Dictionary that can keep track of the source position responsible for
+    each of its current values.
+
+    The normal :py:class:`dict` methods work as normal, but additional
+    methods are provided to get and set items annotated with position
+    information.
+
+    This class does not comprehensively support the dict interface, but rather
+    just provides the parts that are used for interpreter state tables.
+    """
+    def __init__(self):
+        self.positions = {}
+
+    def set_with_position(self, key, value, position):
+        self[key] = value
+        self.positions[key] = position
+
+    def get_with_position(self, key):
+        return (self[key], self.positions.get(key, None))
+
+    def get_position(self, key):
+        return self.positions[key]
+
+    def iteritems_with_position(self):
+        for k, v in self.iteritems():
+            yield (k, v, self.positions.get(k, None))
+
+    def __delitem__(self, key):
+        raise NotImplementedError("Can't delete from a PositionTrackingDict")
+
+    def clear(self):
+        raise NotImplementedError("Can't clear a PositionTrackingDict")
+
+
 def _search_tables(start, table_name, key):
     current = start
     value = None
@@ -318,11 +354,9 @@ class DataState(object):
 
     def __init__(self, parent_state=None):
         self.parent = parent_state
-        self.symbol_values = {}
-        self.symbol_types = {}
+        self.symbol_values = PositionTrackingDict()
+        self.symbol_types = PositionTrackingDict()
         self.used_at_runtime = {}
-        self.symbol_init_positions = {}
-        self.symbol_assign_positions = {}
 
     def symbol_is_initialized(self, symbol):
         try:
@@ -374,11 +408,9 @@ class DataState(object):
                     "symbol of type ", symbol_type, "."
                 )
         else:
-            self.symbol_types[symbol] = type(value)
-            self.symbol_init_positions[symbol] = position
+            self.symbol_types.set_with_position(symbol, type(value), position)
 
-        self.symbol_assign_positions[symbol] = position
-        self.symbol_values[symbol] = value
+        self.symbol_values.set_with_position(symbol, value, position)
 
     def clear_symbol_value(self, symbol, known_type=None, position=None):
 
@@ -393,16 +425,11 @@ class DataState(object):
                         "symbol of type ", symbol_type, "."
                     )
             else:
-                self.symbol_types[symbol] = known_type
-                self.symbol_init_positions[symbol] = position
+                self.symbol_types.set_with_position(
+                    symbol, known_type, position,
+                )
 
-        self.symbol_values[symbol] = None
-
-        # Clearing only counts as an assign if we're now initialized.
-        # otherwise, we're just stating that we don't know the type *or*
-        # the value, which isn't an assignment at all.
-        if self.symbol_is_initialized(symbol):
-            self.symbol_assign_positions[symbol] = position
+        self.symbol_values.set_with_position(symbol, None, position)
 
     def mark_symbol_used_at_runtime(self, symbol, position):
         try:
@@ -456,12 +483,6 @@ class DataState(object):
                 if item not in self.used_at_runtime:
                     self.used_at_runtime[item] = position
 
-    def get_symbol_init_position(self, symbol):
-        return _search_tables(self, "symbol_init_positions", symbol)
-
-    def get_symbol_assign_position(self, symbol):
-        return _search_tables(self, "symbol_assign_positions", symbol)
-
     def __enter__(self):
         self.previous_state = interpreter.data
         interpreter.data = self
@@ -477,7 +498,7 @@ class DataState(object):
         to the objects themselves, so that it's visible to the code
         generation phase.
         """
-        for symbol, value in self.symbol_values.iteritems():
+        for symbol, value, pos in self.symbol_values.iteritems_with_position():
             if symbol.const and value is None:
                 if symbol.decl_position and symbol.decl_name:
                     raise NotConstantError(
@@ -492,19 +513,15 @@ class DataState(object):
                         "Value of anonymous constant not known at compile time"
                     )
 
+            symbol.final_assign_position = pos
             symbol.final_value = value
 
-        for symbol, type_ in self.symbol_types.iteritems():
+        for symbol, type_, pos in self.symbol_types.iteritems_with_position():
             symbol.final_type = type_
+            symbol.final_init_position = pos
 
         for item, runtime_usage_position in self.used_at_runtime.iteritems():
             item.final_runtime_usage_position = runtime_usage_position
-
-        for symbol, init_pos in self.symbol_init_positions.iteritems():
-            symbol.final_init_position = init_pos
-
-        for symbol, assign_pos in self.symbol_assign_positions.iteritems():
-            symbol.final_assign_position = assign_pos
 
 
 class Symbol(object):
