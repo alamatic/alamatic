@@ -315,8 +315,18 @@ def _merge_possible_child_tables(orig, table_name, possibles, or_none=False):
             )
         else:
             # Signal that the true result is unknown
-            orig_table[key] = MergeConflict(
-                chosen_values
+            possibilities = []
+            for possibility in chosen_values:
+                if type(possibility[0]) is MergeConflict:
+                    possibilities.extend(possibility[0].possibilities)
+                else:
+                    possibilities.append(possibility)
+            orig_table.set_with_position(
+                key,
+                MergeConflict(
+                    possibilities
+                ),
+                None,
             )
 
 
