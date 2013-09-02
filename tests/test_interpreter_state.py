@@ -221,7 +221,7 @@ class TestInterpreterState(unittest.TestCase):
                 else_state = interpreter.child_data_state()
                 with interpreter.child_symbol_table() as if_table:
                     with if_state:
-                        interpreter.assign("a", 3)
+                        interpreter.assign("a", 3, position=("if", 1, 0))
                         interpreter.assign("b", 19)
                         interpreter.declare_and_init("c", 109)
                         interpreter.mark_symbol_used_at_runtime(
@@ -264,7 +264,7 @@ class TestInterpreterState(unittest.TestCase):
                 )
                 with interpreter.child_symbol_table() as else_table:
                     with else_state:
-                        interpreter.assign("a", 4)
+                        interpreter.assign("a", 4, position=("else", 2, 0))
                         interpreter.assign("b", 19)
                         self.assertEqual(
                             interpreter.retrieve("a"),
@@ -303,6 +303,18 @@ class TestInterpreterState(unittest.TestCase):
                     SymbolValueAmbiguousError,
                     lambda: interpreter.retrieve("a"),
                 )
+                try:
+                    interpreter.retrieve("a")
+                except SymbolValueAmbiguousError, ex:
+                    self.assertEqual(
+                        ex.conflict.possibilities,
+                        [
+                            (3, ('if', 1, 0)),
+                            (4, ('else', 2, 0)),
+                        ],
+                    )
+                else:
+                    raise Exception("Didn't raise SymbolValueAmbiguousError?")
                 self.assertEqual(
                     interpreter.retrieve("b"),
                     19,

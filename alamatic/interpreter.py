@@ -404,7 +404,8 @@ class DataState(object):
                 "Symbol '%s' does not have a consistent type" % (
                     symbol.decl_name
                 ),
-                " at ", pos_link(position)
+                " at ", pos_link(position),
+                conflict=result,
             )
         elif result is None:
             raise SymbolNotInitializedError(
@@ -436,7 +437,8 @@ class DataState(object):
                 "Value of symbol '%s' is ambiguous  at " % (
                     symbol.decl_name
                 ),
-                pos_link(position)
+                pos_link(position),
+                conflict=result,
             )
         else:
             return result
@@ -653,7 +655,25 @@ class SymbolNotInitializedError(SymbolTypeNotKnownError):
 
 
 class SymbolTypeAmbiguousError(SymbolTypeNotKnownError):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.conflict = kwargs.get("conflict")
+        super(SymbolTypeAmbiguousError, self).__init__(*args)
+
+    @property
+    def additional_info_items(self):
+        for possibility in self.conflict.possibilities:
+            type_ = possibility[0]
+            position = possibility[1]
+            if type_ is not None:
+                yield (
+                    "Initialized as %s at " % type_.__name__,
+                    pos_link(position),
+                )
+            else:
+                yield (
+                    "Declared without initialization at ",
+                    pos_link(position),
+                )
 
 
 class SymbolValueNotKnownError(CompilerError):
@@ -661,7 +681,9 @@ class SymbolValueNotKnownError(CompilerError):
 
 
 class SymbolValueAmbiguousError(SymbolValueNotKnownError):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.conflict = kwargs.get("conflict")
+        super(SymbolValueAmbiguousError, self).__init__(*args)
 
 
 class NotConstantError(CompilerError):
