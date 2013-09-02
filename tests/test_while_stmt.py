@@ -321,3 +321,20 @@ class TestExec(LanguageTestCase):
                 ]),
             ],
         )
+
+
+class TestCodegen(LanguageTestCase):
+
+    def test_simple(self):
+        self.assertCCode(
+            WhileStmt(
+                None,
+                DummyExprRuntime("test_expr", Bool),
+                DummyStatementBlock([
+                    DummyStmtRuntime("body"),
+                ]),
+            ),
+            "while (DUMMY(test_expr)) {\n"
+            "  // DUMMY body\n"
+            "}\n"
+        )

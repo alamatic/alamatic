@@ -289,6 +289,12 @@ class WhileStmt(Statement):
                 interpreter.data.merge_children([data], or_none=True)
                 break
 
+    def generate_c_code(self, state, writer):
+        writer.write("while (")
+        self.test_expr.generate_c_code(state, writer)
+        writer.write(")")
+        self.block.generate_c_code(state, writer)
+
 
 class ForStmt(Statement):
 
