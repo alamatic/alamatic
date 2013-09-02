@@ -1,26 +1,6 @@
 
+from alamatic.types.base import *
 from alamatic.compilelogging import pos_link
-
-
-class Type(type):
-    def __new__(cls, name, bases, dict):
-        return type.__new__(cls, name, bases, dict)
-
-
-def is_our_type(some_type):
-    return type(some_type) is Type
-
-
-def is_our_value(some_value):
-    return is_our_type(type(some_value))
-
-
-class Value(object):
-    __metaclass__ = Type
-
-
-class Number(Value):
-    pass
 
 
 class Integer(Number):
@@ -260,40 +240,3 @@ class UInt8(Integer):
     @classmethod
     def c_type_spec(self):
         return "uint8_t"
-
-
-class String(Value):
-    pass
-
-
-class ArrayType(Type):
-
-    def __new__(cls, element_type, element_count):
-        d = {}
-        d["element_type"] = element_type
-        d["element_count"] = element_count
-        name = "Array(%i %r)" % (element_count, element_type)
-        return Type.__new__(cls, name, (Value,), d)
-
-    def __init__(self, element_type, element_count):
-        pass
-
-
-class Bool(Value):
-    def __init__(self, value):
-        if type(value) is not bool:
-            raise Exception(
-                "Value %r is not boolean" % value
-            )
-
-        self.value = value
-
-    def __repr__(self):
-        return "<alamatic.types.%s: %r>" % (type(self).__name__, self.value)
-
-    def generate_c_code(self, state, writer):
-        writer.write("1" if self.value else "0")
-
-    @classmethod
-    def c_type_spec(self):
-        return "_Bool"
