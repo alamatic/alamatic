@@ -65,10 +65,8 @@ class SymbolNameExpr(Expression):
 
     def assign(self, expr):
         name = self.name
-        if not interpreter.name_is_defined(name):
-            raise UnknownSymbolError(name, self)
 
-        symbol = interpreter.get_symbol(name)
+        symbol = interpreter.get_symbol(name, self.position)
 
         symbol_expr = SymbolExpr(
             self,

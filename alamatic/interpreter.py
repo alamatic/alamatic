@@ -108,7 +108,7 @@ class Interpreter(object):
             )
 
     def assign(self, name, value, position=None):
-        symbol = self.symbols.get_symbol(name)
+        symbol = self.symbols.get_symbol(name, position=position)
         self.data.set_symbol_value(
             symbol,
             value,
@@ -162,7 +162,7 @@ class Interpreter(object):
     def name_is_defined(self, name):
         try:
             symbol = self.symbols.get_symbol(name)
-        except KeyError:
+        except UnknownSymbolError:
             return False
         else:
             if symbol is None:
