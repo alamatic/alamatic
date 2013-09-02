@@ -411,7 +411,7 @@ class DataState(object):
 
         if type(result) is MergeConflict:
             raise SymbolTypeAmbiguousError(
-                "Symbol '%s' does not have a consistent type" % (
+                "Symbol '%s' does not have a definite type" % (
                     symbol.decl_name
                 ),
                 " at ", pos_link(position),
@@ -477,7 +477,7 @@ class DataState(object):
                 )
 
         if self.symbol_is_initialized(symbol):
-            symbol_type = self.get_symbol_type(symbol)
+            symbol_type = self.get_symbol_type(symbol, position=position)
             if type(value) is not symbol_type:
                 raise IncompatibleTypesError(
                     "Can't assign ", type(value), " to symbol '%s' " % (
@@ -676,7 +676,7 @@ class SymbolTypeAmbiguousError(SymbolTypeNotKnownError):
             position = possibility[1]
             if type_ is not None:
                 yield (
-                    "Initialized as %s at " % type_.__name__,
+                    "Possibly initialized as %s at " % type_.__name__,
                     pos_link(position),
                 )
             else:
