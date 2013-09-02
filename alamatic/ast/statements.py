@@ -21,7 +21,7 @@ class ExpressionStmt(Statement):
     def execute(self, runtime_stmts):
         from alamatic.ast import ValueExpr
         eval_expr = self.expr.evaluate()
-        if type(eval_expr) != ValueExpr:
+        if not isinstance(eval_expr, ValueExpr):
             runtime_stmts.append(
                 ExpressionStmt(
                     self.position,
@@ -72,7 +72,11 @@ class IfStmt(Statement):
     def execute(self, runtime_stmts):
         from alamatic.ast import ValueExpr
         from alamatic.types import Bool
-        from alamatic.interpreter import interpreter, IncompatibleTypesError
+        from alamatic.interpreter import (
+            interpreter,
+            IncompatibleTypesError,
+            NotConstantError,
+        )
         from alamatic.compilelogging import pos_link
 
         runtime_clauses = []
@@ -100,8 +104,12 @@ class IfStmt(Statement):
                 )
 
             test_result = None
-            if type(test_expr) is ValueExpr:
-                test_result = test_expr.value.value
+            try:
+                test_result = test_expr.constant_value.value
+            except NotConstantError:
+                # Let the result fall through as None
+                pass
+
             if test_result is False:
                 # This clause can never run, so skip it.
                 continue
@@ -212,7 +220,11 @@ class WhileStmt(Statement):
     def execute(self, runtime_stmts):
         from alamatic.ast import ValueExpr
         from alamatic.types import Bool
-        from alamatic.interpreter import interpreter, IncompatibleTypesError
+        from alamatic.interpreter import (
+            interpreter,
+            IncompatibleTypesError,
+            NotConstantError,
+        )
         from alamatic.compilelogging import pos_link
 
         test_expr = self.test_expr.evaluate()
@@ -235,8 +247,8 @@ class WhileStmt(Statement):
                     " at ", pos_link(clause.test_expr.position),
                 )
 
-            if type(test_expr) is ValueExpr:
-                test_result = test_expr.value.value
+            try:
+                test_result = test_expr.constant_value.value
                 if test_result is False:
                     # Done iterating
                     break
@@ -258,7 +270,7 @@ class WhileStmt(Statement):
                 else:
                     # should never happen
                     raise Exception("boolean expr has non-boolean value")
-            else:
+            except NotConstantError:
                 # If we can't evaluate the value expression at compile time
                 # anymore, we have no idea how many more iterations the
                 # loop will run for. Therefore we analyze what state changes
@@ -357,9 +369,9 @@ class DataDeclStmt(Statement):
             val_expr = self.expr.evaluate()
             initial_value = None
 
-            if type(val_expr) is ValueExpr:
-                initial_value = val_expr.value
-            else:
+            try:
+                initial_value = val_expr.constant_value
+            except NotConstantError:
                 if const:
                     raise NotConstantError(
                         "Initial value for constant '%s'," % self.decl.name,

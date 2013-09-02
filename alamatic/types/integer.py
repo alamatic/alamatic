@@ -60,7 +60,10 @@ class Integer(Number):
     @classmethod
     def add(cls, source_node, lhs, rhs):
         from alamatic.ast import SumExpr, ValueExpr
-        from alamatic.interpreter import IncompatibleTypesError
+        from alamatic.interpreter import (
+            IncompatibleTypesError,
+            NotConstantError,
+        )
 
         lhs_result_type = lhs.result_type
         rhs_result_type = rhs.result_type
@@ -90,15 +93,17 @@ class Integer(Number):
         if should_be_signed and not result_type.signed:
             result_type = result_type.as_signed()
 
-        if type(lhs) == type(rhs) and type(lhs) == ValueExpr:
+        try:
+            lhs_value = lhs.constant_value
+            rhs_value = rhs.constant_value
             # FIXME: Need to make this do the correct overflow behavior
             # if the result is too big for the target type, or else we'll
             # fail here assigning a value that's too big.
             return ValueExpr(
                 source_node,
-                result_type(lhs.value.value + rhs.value.value),
+                result_type(lhs_value.value + rhs_value.value),
             )
-        else:
+        except NotConstantError:
             # FIXME: If either of these operands don't match the result
             # value, we need to generate an explicit cast for them so
             # that our codegen can generate the right C cast to ensure that
@@ -111,7 +116,7 @@ class Integer(Number):
 
     @classmethod
     def equals(cls, source_node, lhs, rhs):
-        from alamatic.ast import ComparisonExpr, ValueExpr
+        from alamatic.ast import ComparisonExpr
         from alamatic.interpreter import IncompatibleTypesError
 
         lhs_result_type = lhs.result_type
@@ -126,12 +131,14 @@ class Integer(Number):
                 pos_link(source_node.position)
             )
 
-        if type(lhs) == type(rhs) and type(lhs) == ValueExpr:
+        try:
+            lhs_value = lhs.constant_value
+            rhs_value = rhs.constant_value
             return ValueExpr(
                 source_node,
-                Bool(lhs.value.value == rhs.value.value),
+                Bool(lhs_value.value == rhs_value.value),
             )
-        else:
+        except NotConstantError:
             return ComparisonExpr(
                 source_node.position,
                 lhs, "==", rhs,

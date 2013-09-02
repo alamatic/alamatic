@@ -8,6 +8,7 @@ from alamatic.interpreter import (
     SymbolNotInitializedError,
     InvalidAssignmentError,
     SymbolValueNotKnownError,
+    NotConstantError,
 )
 
 
@@ -32,6 +33,22 @@ class Expression(AstNode):
         raise InvalidAssignmentError(
             "Invalid assignment target at ", pos_link(self.position)
         )
+
+    @property
+    def constant_value(self):
+        raise NotConstantError(
+            "Value of expression at ", pos_link(self.position),
+            "cannot be determined at compile time."
+        )
+
+    @property
+    def has_constant_value(self):
+        try:
+            value = self.constant_value
+        except NotConstantError:
+            return False
+        else:
+            return True
 
 
 class SymbolNameExpr(Expression):
@@ -291,6 +308,10 @@ class ValueExpr(Expression):
     def generate_c_code(self, state, writer):
         self.value.generate_c_code(state, writer)
 
+    @property
+    def constant_value(self):
+        return self.value
+
 
 class SymbolExpr(Expression):
     def __init__(self, source_node, symbol):
@@ -310,18 +331,20 @@ class SymbolExpr(Expression):
 
     def assign(self, expr):
         from alamatic.interpreter import interpreter
-        if type(expr) is ValueExpr:
+        try:
+            value = expr.constant_value
             interpreter.set_symbol_value(
                 self.symbol,
-                expr.value,
+                value,
                 position=self.position,
             )
-        else:
+        except NotConstantError:
             interpreter.mark_symbol_unknown(
                 self.symbol,
                 expr.result_type,
                 position=self.position,
             )
+
         if self.symbol.const:
             # Just return the expression alone if the symbol is a constant,
             # since we can't assign to it at runtime anyway. The resulting
