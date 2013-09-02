@@ -85,6 +85,7 @@ class Interpreter(object):
             const=const,
             decl_position=position,
         )
+        self.data.declare_symbol(symbol, position=position)
         if type_ is not None and initial_value is not None:
             raise Exception(
                 "When declaring a symbol, set either type_ or initial_value "
@@ -378,6 +379,9 @@ class DataState(object):
         self.symbol_values = PositionTrackingDict()
         self.symbol_types = PositionTrackingDict()
         self.used_at_runtime = {}
+
+    def declare_symbol(self, symbol, position=None):
+        self.symbol_types.set_with_position(symbol, None, position)
 
     def symbol_is_initialized(self, symbol):
         try:
