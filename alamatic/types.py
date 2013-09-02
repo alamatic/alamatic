@@ -64,7 +64,7 @@ class Integer(Number):
         return cls.limits[1]
 
     def __eq__(self, other):
-        if other is None:
+        if not isinstance(other, Integer):
             return False
         return self.value == other.value
 
