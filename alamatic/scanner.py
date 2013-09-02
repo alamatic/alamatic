@@ -36,7 +36,18 @@ class Scanner(plex.Scanner):
 
         if new_level > current_level:
             self.indents.append(new_level)
-            self.produce('INDENT', '')
+            indent_change = new_level - current_level
+            if indent_change != 4:
+                position = self.position()
+                # report it from the end of the whitespace rather than
+                # the start.
+                position = (position[0], position[1], indent_change - 1)
+                self.state.warn(
+                    "Blocks should be indented by 4 spaces, but ",
+                    pos_link(position),
+                    " indents by ", indent_change,
+                )
+            self.produce('INDENT', indent_change)
         elif new_level < current_level:
             self.outdent_to(new_level)
         self.begin('')

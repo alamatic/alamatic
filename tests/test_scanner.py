@@ -7,7 +7,7 @@ from plex.errors import UnrecognizedInput
 
 
 NEWLINE = ('NEWLINE', '\n')
-INDENT = ('INDENT', '')
+INDENT = ('INDENT', 4)
 OUTDENT = ('OUTDENT', '')
 
 
