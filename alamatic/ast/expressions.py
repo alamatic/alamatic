@@ -66,7 +66,7 @@ class SymbolNameExpr(Expression):
     def assign(self, expr):
         name = self.name
 
-        symbol = interpreter.get_symbol(name, self.position)
+        symbol = interpreter.get_symbol(name, position=self.position)
 
         symbol_expr = SymbolExpr(
             self,
