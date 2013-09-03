@@ -116,8 +116,12 @@ class Integer(Number):
 
     @classmethod
     def equals(cls, source_node, lhs, rhs):
-        from alamatic.ast import ComparisonExpr
-        from alamatic.interpreter import IncompatibleTypesError
+        from alamatic.ast import ComparisonExpr, ValueExpr
+        from alamatic.types.boolean import Bool
+        from alamatic.interpreter import (
+            IncompatibleTypesError,
+            NotConstantError,
+        )
 
         lhs_result_type = lhs.result_type
         rhs_result_type = rhs.result_type
