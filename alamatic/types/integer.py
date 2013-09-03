@@ -139,7 +139,7 @@ class Integer(Number):
             lhs_value = lhs.constant_value
             rhs_value = rhs.constant_value
             return ValueExpr(
-                source_node,
+                position,
                 Bool(lhs_value.value == rhs_value.value),
             )
         except NotConstantError:

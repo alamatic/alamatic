@@ -71,12 +71,12 @@ class SymbolNameExpr(Expression):
             symbol = interpreter.get_symbol(name, position=self.position)
             interpreter.mark_symbol_used_at_runtime(symbol, self.position)
             return SymbolExpr(
-                self,
+                self.position,
                 symbol,
             )
         else:
             return ValueExpr(
-                self,
+                self.position,
                 interpreter.retrieve(name),
             )
 
@@ -86,7 +86,7 @@ class SymbolNameExpr(Expression):
         symbol = interpreter.get_symbol(name, position=self.position)
 
         symbol_expr = SymbolExpr(
-            self,
+            self.position,
             symbol,
         )
         return symbol_expr.assign(expr)
@@ -118,7 +118,7 @@ class IntegerLiteralExpr(LiteralExpr):
             limits = possible_type.get_limits()
             if src_value >= limits[0] and src_value <= limits[1]:
                 return ValueExpr(
-                    self,
+                    self.position,
                     possible_type(src_value),
                 )
 
@@ -286,12 +286,8 @@ class BitwiseNotExpr(UnaryOpExpr):
 # the code generator.
 
 class ValueExpr(Expression):
-    def __init__(self, source_node, value):
-        self.source_node = source_node
-        if source_node is not None:
-            self.position = source_node.position
-        else:
-            self.position = None
+    def __init__(self, position, value):
+        self.position = position
         self.value = value
 
     @property
@@ -314,12 +310,8 @@ class ValueExpr(Expression):
 
 
 class SymbolExpr(Expression):
-    def __init__(self, source_node, symbol):
-        self.source_node = source_node
-        if source_node is not None:
-            self.position = source_node.position
-        else:
-            self.position = None
+    def __init__(self, position, symbol):
+        self.position = position
         self.symbol = symbol
 
     @property
@@ -359,7 +351,7 @@ class SymbolExpr(Expression):
             return AssignExpr(
                 self.position,
                 SymbolExpr(
-                    self,
+                    self.position,
                     self.symbol,
                 ),
                 "=",

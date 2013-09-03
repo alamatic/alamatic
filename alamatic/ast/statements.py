@@ -400,7 +400,7 @@ class DataDeclStmt(Statement):
             # so we just need to assign a value to it in the runtime stmts.
             if not const:
                 symbol_expr = SymbolExpr(
-                    self,
+                    self.position,
                     symbol,
                 )
                 assign_expr = symbol_expr.assign(val_expr)

@@ -47,9 +47,9 @@ class TestInterpreterEval(unittest.TestCase):
 
         interpreter.mark_unknown('b', known_type=int)
 
-        src_a = SymbolNameExpr(None, "a")
-        src_b = SymbolNameExpr(None, "b")
-        src_d = SymbolNameExpr(None, "d")
+        src_a = SymbolNameExpr(("src_a", 1, 0), "a")
+        src_b = SymbolNameExpr(("src_b", 1, 0), "b")
+        src_d = SymbolNameExpr(("src_d", 1, 0), "d")
 
         result_a = src_a.evaluate()
         result_b = src_b.evaluate()
@@ -59,8 +59,8 @@ class TestInterpreterEval(unittest.TestCase):
             ValueExpr,
         )
         self.assertEqual(
-            result_a.source_node,
-            src_a,
+            result_a.position[0],
+            "src_a",
         )
         self.assertEqual(
             result_a.result_type,
@@ -71,8 +71,8 @@ class TestInterpreterEval(unittest.TestCase):
             SymbolExpr,
         )
         self.assertEqual(
-            result_b.source_node,
-            src_b,
+            result_b.position[0],
+            "src_b",
         )
         self.assertEqual(
             result_b.result_type,

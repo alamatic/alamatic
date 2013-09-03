@@ -63,7 +63,7 @@ class TestInterpreterExec(unittest.TestCase):
                 pass
 
             def evaluate(self):
-                return ValueExpr(self, UInt8(1))
+                return ValueExpr(None, UInt8(1))
 
         class NotConstantExpr(Expression):
 

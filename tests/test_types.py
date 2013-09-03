@@ -126,8 +126,8 @@ class TestTypes(unittest.TestCase):
         # For testing the constant folding behavior.
         def assert_binop_value(meth, lhs_value, rhs_value, result_value):
             result = meth(
-                ValueExpr(dummy_node, lhs_value),
-                ValueExpr(dummy_node, rhs_value),
+                ValueExpr(None, lhs_value),
+                ValueExpr(None, rhs_value),
             )
             self.assertEqual(
                 type(result),
