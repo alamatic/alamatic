@@ -480,10 +480,11 @@ class DataState(object):
             symbol_type = self.get_symbol_type(symbol, position=position)
             if type(value) is not symbol_type:
                 raise IncompatibleTypesError(
-                    "Can't assign ", type(value), " to symbol '%s' " % (
+                    "Can't assign ", type(value).__name__,
+                    " to symbol '%s' " % (
                         symbol.decl_name,
                     ),
-                    "(of type ", symbol_type, "), at ",
+                    "(of type ", symbol_type.__name__, "), at ",
                     pos_link(position)
                 )
         else:
