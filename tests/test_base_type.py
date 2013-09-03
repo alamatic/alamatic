@@ -27,9 +27,9 @@ class TestBaseType(LanguageTestCase):
             "shift_right",
         ]
 
-        lhs = DummyExprCompileTime('lhs').evaluate()
-        rhs = DummyExprCompileTime('rhs').evaluate()
-        source_node = DummyExprCompileTime('source')
+        lhs = DummyExprRuntime('lhs').evaluate()
+        rhs = DummyExprRuntime('rhs').evaluate()
+        source_node = DummyExprRuntime('source')
 
         for op_name in binary_ops:
             op_method = getattr(Value, op_name, None)
@@ -39,5 +39,5 @@ class TestBaseType(LanguageTestCase):
             )
             self.assertRaises(
                 OperationNotSupportedError,
-                lambda: op_method(source_node, lhs, rhs)
+                lambda: op_method(lhs, rhs, ("test", 1, 0))
             )

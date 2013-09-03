@@ -156,7 +156,7 @@ class BinaryOpExpr(Expression):
         lhs = self.lhs.evaluate()
         rhs = self.rhs.evaluate()
         method = getattr(lhs.result_type, method_name)
-        return method(self, lhs, rhs)
+        return method(lhs, rhs, position=self.position)
 
     def generate_c_code(self, state, writer):
         writer.write("(")

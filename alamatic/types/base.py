@@ -32,7 +32,7 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
 
         @classmethod
         @wraps(f)
-        def op(cls, source_node, lhs, rhs):
+        def op(cls, lhs, rhs, position=None):
             if lhs_first:
                 tmp = rhs
                 rhs = lhs
@@ -40,7 +40,7 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
             raise OperationNotSupportedError(
                 "Cannot ", verb, " ", rhs.result_type.__name__,
                 " ", preposition, " ", lhs.result_type.__name__,
-                " at ", pos_link(source_node.position),
+                " at ", pos_link(position),
             )
         return op
     return decorator

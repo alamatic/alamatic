@@ -294,6 +294,7 @@ class DummyType(alamatic.types.Value):
         )
 
     def auto_op_method(f):
+        @classmethod
         @functools.wraps(f)
         def op_method(*args, **kwargs):
             return alamatic.ast.ValueExpr(
@@ -304,6 +305,7 @@ class DummyType(alamatic.types.Value):
         return op_method
 
     def auto_binop_method(f):
+        @classmethod
         @functools.wraps(f)
         def op_method(source_node, lhs, rhs, *args, **kwargs):
             return alamatic.ast.ValueExpr(
@@ -314,11 +316,11 @@ class DummyType(alamatic.types.Value):
         return op_method
 
     @auto_binop_method
-    def add(self, lhs, rhs):
+    def add(self, lhs, rhs, position=None):
         return lhs + rhs
 
     @auto_binop_method
-    def equals(self, lhs, rhs):
+    def equals(self, lhs, rhs, position=None):
         return lhs == rhs
 
     def __eq__(self, other):

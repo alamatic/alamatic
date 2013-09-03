@@ -132,31 +132,31 @@ class TestInterpreterEval(unittest.TestCase):
         class Dummy1(Value):
 
             @classmethod
-            def add(cls, source_node, lhs, rhs):
+            def add(cls, lhs, rhs, position=None):
                 performed.append("add")
-                return source_node
+                return lhs
 
             @classmethod
-            def multiply(cls, source_node, lhs, rhs):
+            def multiply(cls, lhs, rhs, position=None):
                 performed.append("multiply")
-                return source_node
+                return lhs
 
         class Dummy2(Value):
 
             @classmethod
-            def subtract(cls, source_node, lhs, rhs):
+            def subtract(cls, lhs, rhs, position=None):
                 performed.append("subtract")
-                return source_node
+                return lhs
 
             @classmethod
-            def divide(cls, source_node, lhs, rhs):
+            def divide(cls, lhs, rhs, position=None):
                 performed.append("divide")
-                return source_node
+                return lhs
 
             @classmethod
-            def modulo(cls, source_node, lhs, rhs):
+            def modulo(cls, lhs, rhs, position=None):
                 performed.append("modulo")
-                return source_node
+                return lhs
 
         val1 = Dummy1()
         val2 = Dummy2()
@@ -169,7 +169,7 @@ class TestInterpreterEval(unittest.TestCase):
         src_node = SumExpr(None, lhs, "+", rhs)
         eval_node = src_node.evaluate()
         self.assertEqual(
-            src_node,
+            lhs,
             eval_node,
         )
 
@@ -180,7 +180,7 @@ class TestInterpreterEval(unittest.TestCase):
         src_node = SumExpr(None, lhs, "-", rhs)
         eval_node = src_node.evaluate()
         self.assertEqual(
-            src_node,
+            lhs,
             eval_node,
         )
 
@@ -191,7 +191,7 @@ class TestInterpreterEval(unittest.TestCase):
         src_node = MultiplyExpr(None, lhs, "*", rhs)
         eval_node = src_node.evaluate()
         self.assertEqual(
-            src_node,
+            lhs,
             eval_node,
         )
 
@@ -202,7 +202,7 @@ class TestInterpreterEval(unittest.TestCase):
         src_node = MultiplyExpr(None, lhs, "/", rhs)
         eval_node = src_node.evaluate()
         self.assertEqual(
-            src_node,
+            lhs,
             eval_node,
         )
 
@@ -213,7 +213,7 @@ class TestInterpreterEval(unittest.TestCase):
         src_node = MultiplyExpr(None, lhs, "%", rhs)
         eval_node = src_node.evaluate()
         self.assertEqual(
-            src_node,
+            lhs,
             eval_node,
         )
 

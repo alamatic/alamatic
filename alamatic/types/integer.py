@@ -58,7 +58,7 @@ class Integer(Number):
         writer.write(str(self.value))
 
     @classmethod
-    def add(cls, source_node, lhs, rhs):
+    def add(cls, lhs, rhs, position=None):
         from alamatic.ast import SumExpr, ValueExpr
         from alamatic.interpreter import (
             IncompatibleTypesError,
@@ -100,7 +100,7 @@ class Integer(Number):
             # if the result is too big for the target type, or else we'll
             # fail here assigning a value that's too big.
             return ValueExpr(
-                source_node,
+                position,
                 result_type(lhs_value.value + rhs_value.value),
             )
         except NotConstantError:
@@ -109,13 +109,13 @@ class Integer(Number):
             # that our codegen can generate the right C cast to ensure that
             # we respect our own type conversion rules rather than C's.
             return SumExpr(
-                source_node.position,
+                position,
                 lhs, "+", rhs,
                 result_type=result_type,
             )
 
     @classmethod
-    def equals(cls, source_node, lhs, rhs):
+    def equals(cls, lhs, rhs, position=None):
         from alamatic.ast import ComparisonExpr, ValueExpr
         from alamatic.types.boolean import Bool
         from alamatic.interpreter import (
