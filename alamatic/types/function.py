@@ -7,10 +7,23 @@ import weakref
 
 class FunctionTemplate(Value):
 
-    def __init__(self, decl, block, decl_scope):
-        self.decl = decl
-        self.block = block
+    def __init__(self, decl_node, decl_scope):
+        self.decl_node = decl_node
         self.decl_scope = decl_scope
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+        return (
+            self.decl_node is other.decl_node
+            and self.decl_scope is other.decl_scope
+        )
+
+    def __repr__(self):
+        return "<alamatic.types.FunctionTemplate %r in %r>" % (
+            self.decl_node,
+            self.decl_scope,
+        )
 
 
 function_types = weakref.WeakValueDictionary()

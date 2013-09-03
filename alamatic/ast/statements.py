@@ -423,6 +423,25 @@ class FuncDeclStmt(Statement):
         yield self.decl
         yield self.block
 
+    def execute(self, runtime_stmts):
+        # A function declaration is really just a funny sort of
+        # declaration that forces a function type.
+        from alamatic.types import FunctionTemplate
+        from alamatic.interpreter import interpreter
+
+        # Need to retain the scope the function was declared in so that
+        # we can execute its body in a child of it later.
+        decl_scope = interpreter.symbols
+
+        template_value = FunctionTemplate(self, decl_scope)
+
+        interpreter.declare_and_init(
+            self.decl.name,
+            template_value,
+            const=True,  # function templates are always constant
+            position=self.position,
+        )
+
 
 class InlineStatementBlock(Statement):
     """

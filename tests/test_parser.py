@@ -257,25 +257,6 @@ class TestParser(LanguageTestCase):
             ]
         )
 
-    def test_func_decl_statement(self):
-        self.assertStmtParseTree(
-            'func doot(a, b as foo):\n'
-            '    pass',
-            [
-                ('FuncDeclStmt', (), [
-                    ('FuncDeclClause', ('doot',), [
-                        ('ParamDeclClause', ('a',), []),
-                        ('ParamDeclClause', ('b',), [
-                            ('SymbolNameExpr', ('foo',), []),
-                        ]),
-                    ]),
-                    ('StatementBlock', (), [
-                        ('PassStmt', (), []),
-                    ]),
-                ]),
-            ]
-        )
-
     def test_symbol_expression(self):
         self.assertExprParseTree(
             "baz",
