@@ -137,6 +137,8 @@ def execute_stmts(stmts, global_data={}):
                     root_symbols,
                     root_data,
                 )
+                ret.root_symbols = root_symbols
+                ret.root_data = root_data
                 root_data.finalize_values()
                 return ret
     finally:
