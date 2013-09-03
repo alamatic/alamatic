@@ -32,6 +32,11 @@ class pos_link(object):
             self.text = text
         else:
             if position is not None:
+                if type(position) is not tuple:
+                    raise Exception(
+                        "Position is defined but it's a %s when it should "
+                        "be a tuple" % type(position)
+                    )
                 self.text = "%s:%s,%s" % position
             else:
                 self.text = "unknown position"
