@@ -121,7 +121,7 @@ class Scanner(plex.Scanner):
     )
 
     punct = (
-        Any("|&^=<>*/%~+-:,") |
+        Any("|&^=<>*/%~+-:,.") |
         Str("==") |
         Str("!=") |
         Str("<=") |

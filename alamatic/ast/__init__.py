@@ -99,6 +99,15 @@ class StatementBlock(AstNode):
             self.generate_body_c_code(state, writer)
 
 
+class ExpressionList(AstNode):
+    def __init__(self, exprs):
+        self.exprs = exprs
+
+    @property
+    def child_nodes(self):
+        return self.exprs
+
+
 class Module(AstNode):
 
     def __init__(self, position, name, block):

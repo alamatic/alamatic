@@ -281,6 +281,45 @@ class BitwiseNotExpr(UnaryOpExpr):
     pass
 
 
+class CallExpr(Expression):
+    def __init__(self, position, callee_expr, args):
+        self.position = position
+        self.callee_expr = callee_expr
+        self.args = args
+
+    @property
+    def child_nodes(self):
+        yield self.callee_expr
+        yield self.args
+
+
+class SubscriptExpr(Expression):
+    def __init__(self, position, target_expr, args):
+        self.position = position
+        self.target_expr = target_expr
+        self.args = args
+
+    @property
+    def child_nodes(self):
+        yield self.target_expr
+        yield self.args
+
+
+class AttributeExpr(Expression):
+    def __init__(self, position, target_expr, attr_name):
+        self.position = position
+        self.target_expr = target_expr
+        self.attr_name = attr_name
+
+    @property
+    def params(self):
+        yield self.attr_name
+
+    @property
+    def child_nodes(self):
+        yield self.target_expr
+
+
 # The remaining nodes are never produced by the parser, but get substituted
 # for literals and variable references when we produce the tree to feed into
 # the code generator.

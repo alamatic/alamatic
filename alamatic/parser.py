@@ -48,6 +48,24 @@ def p_indented_block(state, scanner):
     return StatementBlock(stmts)
 
 
+def p_expr_list(state, scanner, terminator_punct):
+    exprs = []
+    if scanner.next_is_punct(terminator_punct):
+        scanner.read()
+    else:
+        while True:
+            exprs.append(p_expression(state, scanner))
+            if scanner.next_is_punct(terminator_punct):
+                scanner.read()
+                break
+            scanner.require_punct(",")
+            if scanner.next_is_punct(terminator_punct):
+                scanner.read()
+                break
+
+    return ExpressionList(exprs)
+
+
 def p_statement(state, scanner):
     pos = scanner.position()
 
@@ -226,29 +244,66 @@ def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
 def p_expr_factor(state, scanner):
     pos = scanner.position()
 
+    ret_expr = None
+
     if scanner.next_is_punct("("):
         scanner.read()
-        expr = p_expression(state, scanner)
+        ret_expr = p_expression(state, scanner)
         scanner.require_punct(")")
-        return expr
+    else:
+        peek = scanner.peek()
 
-    peek = scanner.peek()
+        if peek[0] == "NUMBER":
+            ret_expr = p_expr_number(state, scanner)
+        elif peek[0] == "STRINGLIT":
+            ret_expr = p_expr_string(state, scanner)
+        elif peek[0] == "IDENT":
+            scanner.read()
+            ret_expr = SymbolNameExpr(pos, peek[1])
+        else:
+            raise CompilerError(
+                "Expected expression but found ",
+                scanner.token_display_name(scanner.peek()),
+                " at ", pos_link(pos),
+            )
 
-    if peek[0] == "NUMBER":
-        return p_expr_number(state, scanner)
+    # Now handle calls, subscripts and attribute access, if present.
+    # These can be chained indefinitely.
+    while True:
+        if scanner.next_is_punct("("):
+            scanner.read()
+            args = p_expr_list(state, scanner, ")")
+            ret_expr = CallExpr(
+                pos,
+                ret_expr,
+                args,
+            )
+        elif scanner.next_is_punct("["):
+            scanner.read()
+            args = p_expr_list(state, scanner, "]")
+            ret_expr = SubscriptExpr(
+                pos,
+                ret_expr,
+                args,
+            )
+        elif scanner.next_is_punct("."):
+            scanner.read()
+            if scanner.peek()[0] != "IDENT":
+                raise CompilerError(
+                    "Expected attribute name but got ",
+                    scanner.token_display_name(scanner.peek()),
+                    " at ", pos_link(scanner.position()),
+                )
+            attr_name = scanner.read()[1]
+            ret_expr = AttributeExpr(
+                pos,
+                ret_expr,
+                attr_name,
+            )
+        else:
+            break
 
-    if peek[0] == "STRINGLIT":
-        return p_expr_string(state, scanner)
-
-    if peek[0] == "IDENT":
-        scanner.read()
-        return SymbolNameExpr(pos, peek[1])
-
-    raise CompilerError(
-        "Expected expression but found ",
-        scanner.token_display_name(scanner.peek()),
-        " at ", pos_link(pos),
-    )
+    return ret_expr
 
 
 p_expr_bitwise_not = make_p_expr_prefix_unary_op(
