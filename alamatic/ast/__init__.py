@@ -107,6 +107,27 @@ class ExpressionList(AstNode):
     def child_nodes(self):
         return self.exprs
 
+    def evaluate(self):
+        # Note that ExpressionList isn't an Expression, so this is not the
+        # expression evaluate() interface even though the method has the
+        # same name.
+        evaled_exprs = [
+            x.evaluate() for x in self.exprs
+        ]
+        return ExpressionList(
+            evaled_exprs,
+        )
+
+    @property
+    def has_all_constant_values(self):
+        return all(x.has_constant_value for x in self.exprs)
+
+    @property
+    def constant_values(self):
+        return [
+            x.constant_value for x in self.exprs
+        ]
+
 
 class Module(AstNode):
 
