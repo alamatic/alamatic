@@ -8,6 +8,7 @@ __all__ = [
     "is_our_value",
     "Value",
     "Number",
+    "Void",
     "OperationNotSupportedError",
 ]
 
@@ -120,6 +121,17 @@ class Value(object):
 
 class Number(Value):
     pass
+
+
+class Void(Value):
+    def __init__(self):
+        raise Exception(
+            "Can't instantiate Void"
+        )
+
+    @classmethod
+    def c_type_spec(self):
+        return "void"
 
 
 class OperationNotSupportedError(CompilerError):

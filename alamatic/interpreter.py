@@ -493,6 +493,7 @@ class DataState(object):
         self.symbol_values.set_with_position(symbol, value, position)
 
     def clear_symbol_value(self, symbol, known_type=None, position=None):
+        from alamatic.types import Void
 
         if known_type is not None:
             if self.symbol_is_initialized(symbol):
@@ -506,6 +507,14 @@ class DataState(object):
                         pos_link(position)
                     )
             else:
+                # This case will arise if someone tries to initialize a
+                # variable using a function call that returns no value.
+                if known_type is Void:
+                    raise InvalidAssignmentError(
+                        "Can't initialize '%s' " % symbol.decl_name,
+                        "with an expression that returns no value ",
+                        "at ", pos_link(position),
+                    )
                 self.symbol_types.set_with_position(
                     symbol, known_type, position,
                 )

@@ -79,6 +79,15 @@ class TestInterpreterState(unittest.TestCase):
         symbol_b = Symbol()
         symbol_c = Symbol()
 
+        # First we'll try initializing one of these variables as Void,
+        # which is invalid.
+        from alamatic.types import Void
+        from alamatic.interpreter import InvalidAssignmentError
+        self.assertRaises(
+            InvalidAssignmentError,
+            lambda: root_state.clear_symbol_value(symbol_a, Void),
+        )
+
         # For the sake of this test we use Python's native types as our
         # value types. In real use, however, our interpreter has its own
         # tree of types that are instantiated from a specialized metaclass.

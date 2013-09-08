@@ -406,3 +406,20 @@ class SymbolExpr(Expression):
         writer.write(
             self.symbol.codegen_name,
         )
+
+
+class VoidExpr(Expression):
+
+    def __init__(self, position):
+        self.position = position
+
+    @property
+    def result_type(self):
+        from alamatic.types import Void
+        return Void
+
+    def generate_c_code(self, state, writer):
+        # This should never get called if our type system is doing its work,
+        # but just to complete the interface we'll produce something that'll
+        # cause valid C syntax, though presumably not valid semantics.
+        writer.write("((void)0)")
