@@ -81,7 +81,9 @@ class RuntimeProgram(object):
                 call_expr = RuntimeFunctionCallExpr(
                     None,
                     self.entry_point_function,
-                    ExpressionList([]),
+                    self.entry_point_function.args_type(
+                        ExpressionList([]),
+                    ),
                 )
                 call_expr.generate_c_code(state, writer)
                 writer.writeln(";")

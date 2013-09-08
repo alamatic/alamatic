@@ -158,6 +158,7 @@ class Module(AstNode):
         from alamatic.interpreter import (
             interpreter,
             RuntimeFunction,
+            RuntimeFunctionArgs,
             SymbolTable,
         )
         from alamatic.types import (
@@ -174,10 +175,12 @@ class Module(AstNode):
 
         interpreter.register_top_level_scope(runtime_block.symbols)
 
+        args_type = RuntimeFunctionArgs.make_args_type([])
+
         function = RuntimeFunction(
             self.position,
             runtime_block,
-            param_symbols,
+            args_type,
             # Modules never return anything.
             Void,
         )

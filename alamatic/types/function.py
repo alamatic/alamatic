@@ -10,6 +10,7 @@ class FunctionTemplate(Value):
     def __init__(self, decl_node, decl_scope):
         self.decl_node = decl_node
         self.decl_scope = decl_scope
+        self.instances = []
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):
@@ -26,11 +27,12 @@ class FunctionTemplate(Value):
         )
 
     def _assert_correct_args(self, args, position=None):
+        from alamatic.interpreter import InvalidParameterListError
         param_decls = self.decl_node.decl.param_decls
         if len(param_decls) != len(args.exprs):
             raise InvalidParameterListError(
-                "Function '", callee.decl_node.decl.name,
-                "' (declared at ", pos_link(callee.decl_node.position), ")",
+                "Function '", self.decl_node.decl.name,
+                "' (declared at ", pos_link(self.decl_node.position), ")",
                 " expects ", len(param_decls),
                 # FIXME: Make this say "parameter" when there's only one?
                 " parameters, but call at ", pos_link(position),
@@ -83,8 +85,13 @@ class FunctionTemplate(Value):
         from alamatic.interpreter import (
             interpreter,
             RuntimeFunction,
+            RuntimeFunctionArgs,
         )
         from alamatic.types import Void
+
+        for key, instance in self.instances:
+            if key == template_key:
+                return instance
 
         param_decls = self.decl_node.decl.param_decls
         if len(param_decls) != len(template_key):
@@ -98,6 +105,7 @@ class FunctionTemplate(Value):
 
         frame = interpreter.child_call_frame()
         symbols = self.decl_scope.create_child()
+        symbols_list = []
 
         with frame:
             with symbols:
@@ -120,18 +128,32 @@ class FunctionTemplate(Value):
                         # to do for now.
                         position=call_position,
                     )
+                    symbols_list.append(
+                        interpreter.get_symbol(
+                            param_decl.name,
+                            position=call_position,
+                        )
+                    )
 
                 runtime_block = self.decl_node.block.execute()
 
-        return RuntimeFunction(
+        args_type = RuntimeFunctionArgs.make_args_type(symbols_list)
+
+        instance = RuntimeFunction(
             self.decl_node.position,
             runtime_block,
-            symbols,
+            args_type,
             Void,
         )
 
+        self.instances.append(
+            (template_key, instance),
+        )
+
+        return instance
+
     @classmethod
-    def call(cls, callee_expr, args, position=None):
+    def call(cls, callee_expr, arg_exprs, position=None):
         from alamatic.interpreter import (
             interpreter,
             NotConstantError,
@@ -155,7 +177,7 @@ class FunctionTemplate(Value):
         try:
             data = interpreter.child_data_state()
             with data:
-                result = callee.constant_call(args, position=position)
+                result = callee.constant_call(arg_exprs, position=position)
             interpreter.data.merge_child(data)
             if result is not None:
                 return ValueExpr(
@@ -165,10 +187,10 @@ class FunctionTemplate(Value):
             else:
                 return VoidExpr(position)
         except NotConstantError:
-            callee._assert_correct_args(args, position=position)
+            callee._assert_correct_args(arg_exprs, position=position)
             param_decls = callee.decl_node.decl.param_decls
             template_key = []
-            for i, arg_expr in enumerate(args.exprs):
+            for i, arg_expr in enumerate(arg_exprs.exprs):
                 param_decl = param_decls[i]
 
                 # TODO: handle const params, once the parser and AST actually
@@ -182,6 +204,8 @@ class FunctionTemplate(Value):
                 template_key,
                 call_position=position,
             )
+
+            args = function.args_type(arg_exprs)
 
             interpreter.register_runtime_function(function)
 

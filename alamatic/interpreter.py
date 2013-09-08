@@ -13,6 +13,7 @@ compile time.
 """
 
 from alamatic.compilelogging import CompilerError, pos_link
+import weakref
 
 
 def make_runtime_program(state, entry_point_module):
@@ -699,12 +700,12 @@ class RuntimeFunction(object):
         self,
         decl_position,
         runtime_block,
-        param_symbols,
+        args_type,
         return_type,
     ):
         self.decl_position = decl_position
         self.runtime_block = runtime_block
-        self.param_symbols = param_symbols
+        self.args_type = args_type
         self.return_type = return_type
 
     @property
@@ -715,7 +716,7 @@ class RuntimeFunction(object):
         writer.write(self.return_type.c_type_spec(), " ")
         writer.write(self.codegen_name)
         writer.write("(")
-        # TODO: generate the arguments
+        self.args_type.generate_c_args_decl(state, writer)
         writer.write(")")
 
     def generate_c_forward_decl(self, state, writer):
@@ -728,6 +729,53 @@ class RuntimeFunction(object):
             if include_data_decls:
                 self.runtime_block.generate_decl_c_code(state, writer)
             self.runtime_block.generate_body_c_code(state, writer)
+
+
+class RuntimeFunctionArgs(object):
+
+    subtypes = weakref.WeakValueDictionary()
+
+    def __init__(self, arg_exprs):
+        if type(self) is RuntimeFunctionArgs:
+            raise Exception(
+                "RuntimeFunctionArgs is an abstract class. "
+                "Call RuntimeFunctionArgs.make_args_type to make a concrete "
+                "subclass you can instantiate."
+            )
+        self.arg_exprs = arg_exprs
+
+    @classmethod
+    def make_args_type(cls, param_symbols):
+        names_str = ",".join(
+            ("const " if x.const else "") +
+            interpreter.get_symbol_type(x).__name__
+            for x in param_symbols
+        )
+        if names_str not in cls.subtypes:
+            cls.subtypes[names_str] = type(
+                "RuntimeFunctionArgs(%s)" % names_str,
+                (RuntimeFunctionArgs,),
+                {
+                    "param_symbols": param_symbols,
+                }
+            )
+        return cls.subtypes[names_str]
+
+    @classmethod
+    def generate_c_args_decl(cls, state, writer):
+        first = True
+        for symbol in cls.param_symbols:
+            if symbol.const:
+                continue
+            if first:
+                first = False
+            else:
+                writer.write(", ")
+            writer.write(symbol.final_type.c_type_spec(), " ")
+            writer.write(symbol.codegen_name)
+
+    def generate_c_args_call(self, state, writer):
+        pass
 
 
 class CallFrame(object):

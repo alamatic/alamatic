@@ -435,10 +435,10 @@ class SymbolExpr(Expression):
 
 
 class RuntimeFunctionCallExpr(Expression):
-    def __init__(self, position, function, arg_exprs):
+    def __init__(self, position, function, args):
         self.position = position
         self.function = function
-        self.arg_exprs = arg_exprs
+        self.args = args
 
     @property
     def result_type(self):
@@ -450,7 +450,7 @@ class RuntimeFunctionCallExpr(Expression):
         )
         writer.write("(")
         first = True
-        for arg_expr in self.arg_exprs.exprs:
+        for arg_expr in self.args.arg_exprs.exprs:
             if not first:
                 writer.write(", ")
             else:
