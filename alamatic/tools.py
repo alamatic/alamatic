@@ -8,7 +8,7 @@ def alac():
     from alamatic.parser import parse_module
     from alamatic.compiler import CompileState
     from alamatic.compilelogging import TerminalCompileLogHandler
-    from alamatic.interpreter import execute_module
+    from alamatic.interpreter import make_runtime_program
     from alamatic.codegen import generate_c_unit_for_module
     fn = sys.argv[1]
     state = CompileState(log_handler=TerminalCompileLogHandler(
@@ -25,12 +25,8 @@ def alac():
     if state.error_count > 0:
         return 1
 
-    runtime_module = execute_module(state, module)
+    runtime_program = make_runtime_program(state, module)
     if state.error_count > 0:
         return 1
 
-    #for row in runtime_module.as_tree_rows():
-    #    print row
-
-    #print "\n"
-    generate_c_unit_for_module(state, runtime_module, sys.stdout)
+    runtime_program.generate_c_unit(state, sys.stdout)

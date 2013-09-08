@@ -10,9 +10,9 @@ class TestInterpreterExec(unittest.TestCase):
     assertCodegenTree = testcase_assertCodegenTree
     assertDataResult = testcase_assertDataResult
 
-    def test_execute_module(self):
+    def test_make_runtime_program(self):
         from alamatic.interpreter import (
-            execute_module,
+            make_runtime_program,
             DataState,
             SymbolTable,
         )
@@ -34,9 +34,9 @@ class TestInterpreterExec(unittest.TestCase):
         module = Module((1, 0, "test.ala"), "test", MockBlock())
 
         state = CompileState()
-        runtime_module = execute_module(state, module)
+        runtime_program = make_runtime_program(state, module)
         self.assertEqual(
-            runtime_module.block,
+            runtime_program.entry_point_function.runtime_block,
             dummy_block,
         )
         self.assertEqual(

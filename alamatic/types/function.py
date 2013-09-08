@@ -183,6 +183,8 @@ class FunctionTemplate(Value):
                 call_position=position,
             )
 
+            interpreter.register_runtime_function(function)
+
             # FIXME: Need to filter out the constant args somewhere,
             # since we don't want them to appear in the runtime function
             # declaration or calls.

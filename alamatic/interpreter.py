@@ -15,8 +15,8 @@ compile time.
 from alamatic.compilelogging import CompilerError, pos_link
 
 
-def execute_module(state, module):
-    from alamatic.ast import Module
+def make_runtime_program(state, entry_point_module):
+    from alamatic.codegen import RuntimeProgram
     old_state = interpreter.state
     interpreter.state = state
     try:
@@ -24,12 +24,13 @@ def execute_module(state, module):
             with DataState() as root_data:
                 with CallFrame() as root_frame:
                     try:
-                        runtime_block = module.block.execute()
+                        entry_point_function = entry_point_module.execute()
                         root_data.finalize_values()
-                        return Module(
-                            module.position,
-                            module.name,
-                            runtime_block,
+                        return RuntimeProgram(
+                            root_data.runtime_functions,
+                            root_data.runtime_types,
+                            root_data.top_level_scopes,
+                            entry_point_function,
                         )
                     except CompilerError, ex:
                         state.error(ex)
@@ -191,6 +192,15 @@ class Interpreter(object):
 
     def get_runtime_usage_position(self, symbol):
         return self.data.get_runtime_usage_position(symbol)
+
+    def register_runtime_function(self, function):
+        self.data.register_runtime_function(function)
+
+    def register_runtime_type(self, type_):
+        self.data.register_runtime_type(type_)
+
+    def register_top_level_scope(self, symbols):
+        self.data.register_top_level_scope(symbols)
 
 
 interpreter = Interpreter()
@@ -378,6 +388,10 @@ class SymbolTable(object):
         ret.update(self.symbols.keys())
         return ret
 
+    def generate_c_decls(self, state, writer):
+        for symbol in self.local_symbols:
+            symbol.generate_c_decl(state, writer)
+
     def __enter__(self):
         self.previous_table = interpreter.symbols
         interpreter.symbols = self
@@ -393,6 +407,9 @@ class DataState(object):
         self.parent = parent_state
         self.symbol_values = PositionTrackingDict()
         self.symbol_types = PositionTrackingDict()
+        self.runtime_functions = set()
+        self.runtime_types = set()
+        self.top_level_scopes = set()
         self.used_at_runtime = {}
 
     def declare_symbol(self, symbol, position=None):
@@ -546,6 +563,15 @@ class DataState(object):
     def create_child(self):
         return DataState(parent_state=self)
 
+    def register_runtime_function(self, function):
+        self.runtime_functions.add(function)
+
+    def register_runtime_type(self, type_):
+        self.runtime_types.add(type_)
+
+    def register_top_level_scope(self, symbols):
+        self.top_level_scopes.add(symbols)
+
     def merge_children(self, children, or_none=False):
         """
         Given an iterable of child states representing possible outcomes,
@@ -571,6 +597,15 @@ class DataState(object):
             for item, position in child.used_at_runtime.iteritems():
                 if item not in self.used_at_runtime:
                     self.used_at_runtime[item] = position
+            self.runtime_functions = self.runtime_functions.union(
+                child.runtime_functions
+            )
+            self.runtime_types = self.runtime_types.union(
+                child.runtime_types
+            )
+            self.top_level_scopes = self.top_level_scopes.union(
+                child.top_level_scopes
+            )
 
     def __enter__(self):
         self.previous_state = interpreter.data
@@ -638,6 +673,25 @@ class Symbol(object):
     def codegen_name(self):
         return "_ala_%x" % id(self)
 
+    def generate_c_decl(self, state, writer):
+        if self.final_runtime_usage_position is None:
+            # Don't bother generating any symbols that aren't used
+            # at runtime.
+            return
+        if self.const:
+            writer.write("const ")
+        if self.final_type is None:
+            # Should never happen
+            raise Exception(
+                "Symbol used at runtime but never initialized"
+            )
+        writer.write(self.final_type.c_type_spec(), " ")
+        writer.write(self.codegen_name)
+        if self.const:
+            writer.write(" = ")
+            self.final_value.generate_c_code(state, writer)
+        writer.writeln(";")
+
 
 class RuntimeFunction(object):
 
@@ -656,6 +710,24 @@ class RuntimeFunction(object):
     @property
     def codegen_name(self):
         return "_ala_%x" % id(self)
+
+    def _generate_c_header(self, state, writer):
+        writer.write(self.return_type.c_type_spec(), " ")
+        writer.write(self.codegen_name)
+        writer.write("(")
+        # TODO: generate the arguments
+        writer.write(")")
+
+    def generate_c_forward_decl(self, state, writer):
+        self._generate_c_header(state, writer)
+        writer.writeln(";")
+
+    def generate_c_decl(self, state, writer, include_data_decls=True):
+        self._generate_c_header(state, writer)
+        with writer.braces():
+            if include_data_decls:
+                self.runtime_block.generate_decl_c_code(state, writer)
+            self.runtime_block.generate_body_c_code(state, writer)
 
 
 class CallFrame(object):

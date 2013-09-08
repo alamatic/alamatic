@@ -50,6 +50,14 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
 class Value(object):
     __metaclass__ = Type
 
+    @classmethod
+    def generate_c_forward_decl(self, state, writer):
+        pass
+
+    @classmethod
+    def generate_c_decl(self, state, writer):
+        pass
+
     @_binop_stub("add")
     def add():
         pass
