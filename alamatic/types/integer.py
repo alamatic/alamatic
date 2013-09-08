@@ -132,7 +132,7 @@ class Integer(Number):
                     lhs_result_type.__name__,
                     rhs_result_type.__name__,
                 ),
-                pos_link(source_node.position)
+                pos_link(position)
             )
 
         try:
@@ -144,7 +144,7 @@ class Integer(Number):
             )
         except NotConstantError:
             return ComparisonExpr(
-                source_node.position,
+                position,
                 lhs, "==", rhs,
             )
 
