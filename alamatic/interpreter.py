@@ -622,6 +622,13 @@ class Symbol(object):
         self.decl_position = decl_position
         self.decl_name = decl_name
 
+    def __repr__(self):
+        return "<alamatic.interpreter.Symbol %r (%s) from %r>" % (
+            self.decl_name,
+            self.codegen_name,
+            self.decl_position,
+        )
+
     @property
     def codegen_name(self):
         return "_ala_%x" % id(self)
