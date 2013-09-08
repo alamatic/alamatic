@@ -118,6 +118,12 @@ class Value(object):
     def shift_right():
         pass
 
+    @classmethod
+    def call(cls, callee_expr, args, position=None):
+        raise OperationNotSupportedError(
+            "Cannot call ", cls.__name__, " at ", pos_link(position),
+        )
+
 
 class Number(Value):
     pass
