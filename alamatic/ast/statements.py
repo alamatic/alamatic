@@ -35,7 +35,9 @@ class ExpressionStmt(Statement):
 
 
 class PassStmt(Statement):
-    pass
+
+    def execute(self, runtime_stmts):
+        return
 
 
 class BreakStmt(Statement):
