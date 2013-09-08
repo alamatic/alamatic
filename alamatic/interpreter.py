@@ -22,14 +22,19 @@ def execute_module(state, module):
     try:
         with SymbolTable() as root_symbols:
             with DataState() as root_data:
-                try:
-                    runtime_block = module.block.execute()
-                    root_data.finalize_values()
-                    return Module(module.position, module.name, runtime_block)
-                except CompilerError, ex:
-                    state.error(ex)
-                else:
-                    return None
+                with CallFrame() as root_frame:
+                    try:
+                        runtime_block = module.block.execute()
+                        root_data.finalize_values()
+                        return Module(
+                            module.position,
+                            module.name,
+                            runtime_block,
+                        )
+                    except CompilerError, ex:
+                        state.error(ex)
+                    else:
+                        return None
     finally:
         interpreter.state = old_state
 
@@ -47,8 +52,8 @@ class Interpreter(object):
     def child_data_state(self):
         return self.data.create_child()
 
-    def child_symbol_table(self):
-        return self.symbols.create_child()
+    def child_call_frame(self):
+        return self.frame.create_child()
 
     def declare(self, name, type=None, const=False, position=None):
         self._declare(
@@ -634,6 +639,25 @@ class Symbol(object):
         return "_ala_%x" % id(self)
 
 
+class RuntimeFunction(object):
+
+    def __init__(
+        self,
+        decl_position,
+        runtime_block,
+        param_symbols,
+        return_type,
+    ):
+        self.decl_position = decl_position
+        self.runtime_block = runtime_block
+        self.param_symbols = param_symbols
+        self.return_type = return_type
+
+    @property
+    def codegen_name(self):
+        return "_ala_%x" % id(self)
+
+
 class CallFrame(object):
     def __init__(self, parent=None):
         self.parent = parent
@@ -722,4 +746,8 @@ class CannotChangeConstantError(CompilerError):
 
 
 class InvalidAssignmentError(CompilerError):
+    pass
+
+
+class InvalidParameterListError(CompilerError):
     pass

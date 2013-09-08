@@ -415,6 +415,31 @@ class SymbolExpr(Expression):
         )
 
 
+class RuntimeFunctionCallExpr(Expression):
+    def __init__(self, position, function, arg_exprs):
+        self.position = position
+        self.function = function
+        self.arg_exprs = arg_exprs
+
+    @property
+    def result_type(self):
+        return self.function.return_type
+
+    def generate_c_code(self, state, writer):
+        writer.write(
+            self.function.codegen_name,
+        )
+        writer.write("(")
+        first = True
+        for arg_expr in self.arg_exprs.exprs:
+            if not first:
+                writer.write(", ")
+            else:
+                first = False
+            arg_expr.generate_c_code(state, writer)
+        writer.write(")")
+
+
 class VoidExpr(Expression):
 
     def __init__(self, position):
