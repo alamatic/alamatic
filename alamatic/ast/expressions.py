@@ -221,6 +221,7 @@ class ComparisonExpr(BinaryOpExpr):
 
     @property
     def result_type(self):
+        from alamatic.types import Bool
         return Bool
 
     @property
