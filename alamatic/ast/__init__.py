@@ -48,7 +48,7 @@ class StatementBlock(AstNode):
 
     @property
     def is_empty(self):
-        return len(self.stmts) > 0
+        return len(self.stmts) == 0
 
     def execute(self):
         # Note that StatementBlock isn't a Statement, so this is not the
