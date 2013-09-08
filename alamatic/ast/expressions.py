@@ -223,6 +223,15 @@ class ComparisonExpr(BinaryOpExpr):
     def result_type(self):
         return Bool
 
+    @property
+    def c_operator(self):
+        if self.op == "==":
+            return "=="
+        elif self.op == "!=":
+            return "!="
+        else:
+            raise Exception("Unknown ComparisonExpr operator " + self.op)
+
 
 class BitwiseOrExpr(BinaryOpExpr):
     pass
