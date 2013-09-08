@@ -258,6 +258,15 @@ class SumExpr(BinaryOpArithmeticExpr):
         else:
             raise Exception("Unknown SumExpr operator " + self.op)
 
+    @property
+    def c_operator(self):
+        if self.op == "+":
+            return "+"
+        elif self.op == "-":
+            return "-"
+        else:
+            raise Exception("Unknown SumExpr operator " + self.op)
+
 
 class MultiplyExpr(BinaryOpArithmeticExpr):
 
