@@ -2,9 +2,10 @@
 from alamatic.ast import *
 from alamatic.types import *
 from alamatic.testutil import *
+from mock import MagicMock
 
 
-class TestFunctionTypes(LanguageTestCase):
+class TestFunctionType(LanguageTestCase):
 
     def test_get_function_type(self):
         no_args_void = Function((), None, None)
@@ -59,3 +60,66 @@ class TestFunctionTypes(LanguageTestCase):
             isinstance(no_args_void_instance, FunctionBase),
             "no_args_void_instance inherits FunctionBase",
         )
+
+
+class TestFunctionTemplateType(LanguageTestCase):
+
+    def test_correct_arg_count(self):
+        from alamatic.interpreter import InvalidParameterListError
+
+        stmt = MagicMock(name='stmt')
+        decl = MagicMock(name='decl')
+        scope = MagicMock(name='scope')
+        param_decls = []
+
+        stmt.decl = decl
+        decl.param_decls = param_decls
+
+        stmt.position = ('test.ala', 1, 0)
+
+        template = FunctionTemplate(stmt, scope)
+
+        args = MagicMock(name='args')
+        args.exprs = []
+
+        try:
+            template._assert_correct_args(args)
+        except InvalidParameterListError:
+            self.fail("Unexpected InvalidParameterListError")
+
+        args.exprs = [MagicMock(name='arg_expr')]
+
+        self.assertRaises(
+            InvalidParameterListError,
+            lambda: template._assert_correct_args(args)
+        )
+
+        param_decls.append(MagicMock(name='param_decl'))
+
+        try:
+            template._assert_correct_args(args)
+        except InvalidParameterListError:
+            self.fail("Unexpected InvalidParameterListError")
+
+        args.exprs = []
+        self.assertRaises(
+            InvalidParameterListError,
+            lambda: template._assert_correct_args(args)
+        )
+
+        try:
+            template._assert_correct_args(args, position=('test.ala', 2, 0))
+        except InvalidParameterListError, ex:
+            positions_mentioned = ex.log_line.positions_mentioned
+            self.assertTrue(
+                ('test.ala', 1, 0) in positions_mentioned,
+            )
+            self.assertTrue(
+                ('test.ala', 2, 0) in positions_mentioned,
+            )
+            self.assertEqual(
+                len(positions_mentioned),
+                2,
+            )
+        else:
+            self.fail("Expected InvalidParameterListError")
