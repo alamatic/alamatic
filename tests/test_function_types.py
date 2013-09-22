@@ -61,6 +61,12 @@ class TestFunctionType(LanguageTestCase):
             "no_args_void_instance inherits FunctionBase",
         )
 
+    def test_abstract_base(self):
+        self.assertRaises(
+            Exception,
+            lambda: FunctionBase()
+        )
+
 
 class TestFunctionTemplateType(LanguageTestCase):
 
