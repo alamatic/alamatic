@@ -123,3 +123,21 @@ class TestFunctionTemplateType(LanguageTestCase):
             )
         else:
             self.fail("Expected InvalidParameterListError")
+
+    def test_call_unknown_template(self):
+        from alamatic.interpreter import (
+            interpreter,
+            NotConstantError,
+        )
+
+        expr = DummyExprRuntime('callee')
+        arg_exprs = MagicMock()
+        arg_exprs.exprs = []
+
+        self.assertRaises(
+            NotConstantError,
+            lambda: FunctionTemplate.call(
+                expr,
+                arg_exprs,
+            )
+        )
