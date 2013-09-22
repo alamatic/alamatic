@@ -86,6 +86,7 @@ class FunctionTemplate(Value):
             interpreter,
             RuntimeFunction,
             RuntimeFunctionArgs,
+            InvalidParameterListError,
         )
         from alamatic.types import Void
 
@@ -97,10 +98,11 @@ class FunctionTemplate(Value):
         if len(param_decls) != len(template_key):
             raise InvalidParameterListError(
                 "Template key for function template '",
-                callee.decl_node.decl.name,
-                "' (declared at ", pos_link(callee.decl_node.position), ")",
+                self.decl_node.decl.name,
+                "' (declared at ", pos_link(self.decl_node.position), ")",
                 " must have ", len(param_decls), " elements, but ",
-                len(template_key), " were passed.",
+                len(template_key), " were passed at ",
+                pos_link(call_position), ".",
             )
 
         frame = interpreter.child_call_frame()

@@ -313,3 +313,129 @@ class TestFunctionTemplateType(LanguageTestCase):
             args,
             position=position,
         )
+
+    def test_instantiate(self):
+        from alamatic.interpreter import (
+            SymbolTable,
+            DataState,
+            CallFrame,
+            RuntimeFunction,
+            InvalidParameterListError,
+        )
+
+        decl_stmt = FuncDeclStmt(
+            ('decl_stmt', 1, 0),
+            FuncDeclClause(
+                ('decl', 1, 0),
+                'foo',
+                [
+                    ParamDeclClause(
+                        ('param1', 1, 0),
+                        'param1',
+                        None,
+                    ),
+                    ParamDeclClause(
+                        ('param2', 1, 0),
+                        'param2',
+                        None,
+                    ),
+                ]
+            ),
+            DummyStatementBlock([
+                DummyStmtRuntime('body_runtime'),
+                DummyStmtCompileTime('body_compiletime'),
+                # To test that param1 and param2 aren't known at compile time
+                ExpressionStmt(
+                    None,
+                    DummyLessThanTestExpr('param1', 0),
+                ),
+                ExpressionStmt(
+                    None,
+                    DummyLessThanTestExpr('param2', 0),
+                )
+            ])
+        )
+
+        parent_scope = SymbolTable()
+        root_data = DataState()
+        root_frame = CallFrame()
+
+        template = FunctionTemplate(decl_stmt, parent_scope)
+
+        with root_data:
+            with root_frame:
+                dummy_dummy_result = template.instantiate(
+                    (DummyType, DummyType),
+                    ('call', 1, 0),
+                )
+
+        self.assertEqual(
+            type(dummy_dummy_result),
+            RuntimeFunction,
+        )
+        self.assertEqual(
+            dummy_dummy_result.decl_position,
+            ('decl_stmt', 1, 0),
+        )
+        self.assertEqual(
+            ast_comparison_node(dummy_dummy_result.runtime_block),
+            ('StatementBlock', (), [
+                ('DummyStmtRuntime', ('body_runtime',), []),
+                # These are still here because param1 and param2 are treated
+                # as not being known at compile time.
+                ('ExpressionStmt', (), [
+                    ('DummyLessThanTestExpr', ('param1', 0), []),
+                ]),
+                ('ExpressionStmt', (), [
+                    ('DummyLessThanTestExpr', ('param2', 0), []),
+                ]),
+            ]),
+        )
+        self.assertEqual(
+            [x.decl_name for x in dummy_dummy_result.args_type.param_symbols],
+            ['param1', 'param2'],
+        )
+        self.assertEqual(
+            dummy_dummy_result.return_type,
+            Void,
+        )
+
+        with root_data:
+            with root_frame:
+                self.assertRaises(
+                    InvalidParameterListError,
+                    lambda: template.instantiate(
+                        (DummyType,),
+                        ('call', 1, 0),
+                    )
+                )
+                self.assertRaises(
+                    InvalidParameterListError,
+                    lambda: template.instantiate(
+                        (DummyType, DummyType, DummyType),
+                        ('call', 1, 0),
+                    )
+                )
+
+        # Test that if we instantiate again with the same key
+        # we get back the same instance.
+        with root_data:
+            with root_frame:
+                dummy_dummy_result_2 = template.instantiate(
+                    (DummyType, DummyType),
+                    ('call', 1, 0),
+                )
+        self.assertTrue(
+            dummy_dummy_result_2 is dummy_dummy_result
+        )
+
+        # But different key gets a different instance.
+        with root_data:
+            with root_frame:
+                int32_dummy_result = template.instantiate(
+                    (Int32, DummyType),
+                    ('call', 1, 0),
+                )
+        self.assertTrue(
+            int32_dummy_result is not dummy_dummy_result
+        )
