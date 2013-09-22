@@ -178,7 +178,7 @@ class FunctionTemplate(Value):
             data = interpreter.child_data_state()
             with data:
                 result = callee.constant_call(arg_exprs, position=position)
-            interpreter.data.merge_child(data)
+            interpreter.data.merge_children([data])
             if result is not None:
                 return ValueExpr(
                     position,
