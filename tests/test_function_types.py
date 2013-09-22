@@ -207,3 +207,49 @@ class TestFunctionTemplateType(LanguageTestCase):
             call_position=position,
         )
         mock_function.args_type.assert_called_with(args)
+
+    def test_call_constant_void(self):
+        from alamatic.interpreter import (
+            interpreter,
+            DataState,
+            NotConstantError,
+        )
+
+        position = ('foo.ala', 8, 0)
+
+        mock_template = MagicMock('template')
+        mock_template.constant_call = MagicMock()
+        mock_template.constant_call.return_value = None
+
+        expr = DummyExprCompileTime('expr', mock_template)
+
+        args = ExpressionList([
+            DummyExprCompileTime('arg1'),
+            DummyExprCompileTime('arg2'),
+        ])
+
+        data = DataState()
+        data.merge_children = MagicMock('merge_children')
+
+        with data:
+            result = FunctionTemplate.call(
+                expr,
+                args,
+                position=position,
+            )
+
+        self.assertEqual(
+            type(result),
+            VoidExpr,
+        )
+        self.assertEqual(
+            result.position,
+            position,
+        )
+        self.assertTrue(
+            data.merge_children.called
+        )
+        mock_template.constant_call.assert_called_with(
+            args,
+            position=position,
+        )
