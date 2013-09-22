@@ -141,3 +141,69 @@ class TestFunctionTemplateType(LanguageTestCase):
                 arg_exprs,
             )
         )
+
+    def test_call_not_pure_function(self):
+        from alamatic.interpreter import (
+            interpreter,
+            DataState,
+            NotConstantError,
+        )
+
+        position = ('foo.ala', 6, 0)
+
+        mock_function = MagicMock('function')
+        mock_function.args_type = MagicMock('args_type')
+        mock_function.args_type.return_value = DummyType(1)
+
+        mock_template = MagicMock('template')
+        mock_template.constant_call = MagicMock()
+        mock_template.constant_call.side_effect = NotConstantError('')
+        mock_template._assert_correct_args = MagicMock()
+        mock_template._assert_correct_args.return_value = None
+        mock_template.instantiate = MagicMock()
+        mock_template.instantiate.return_value = mock_function
+
+        expr = DummyExprCompileTime('expr', mock_template)
+
+        args = ExpressionList([
+            DummyExprCompileTime('arg1'),
+            DummyExprCompileTime('arg2'),
+        ])
+
+        with DataState():
+            result = FunctionTemplate.call(
+                expr,
+                args,
+                position=position,
+            )
+
+        self.assertEqual(
+            type(result),
+            RuntimeFunctionCallExpr,
+        )
+        self.assertEqual(
+            result.position,
+            ('foo.ala', 6, 0),
+        )
+        self.assertEqual(
+            result.function,
+            mock_function,
+        )
+        self.assertEqual(
+            type(result.args),
+            DummyType,
+        )
+        self.assertEqual(
+            result.args.value,
+            1,
+        )
+
+        mock_template.constant_call.assert_called_with(
+            args,
+            position=position,
+        )
+        mock_template.instantiate.assert_called_with(
+            [DummyType, DummyType],
+            call_position=position,
+        )
+        mock_function.args_type.assert_called_with(args)
