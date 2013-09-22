@@ -188,10 +188,8 @@ class FunctionTemplate(Value):
                 return VoidExpr(position)
         except NotConstantError:
             callee._assert_correct_args(arg_exprs, position=position)
-            param_decls = callee.decl_node.decl.param_decls
             template_key = []
             for i, arg_expr in enumerate(arg_exprs.exprs):
-                param_decl = param_decls[i]
 
                 # TODO: handle const params, once the parser and AST actually
                 # supports that concept. In that case, we'll put the constant
