@@ -351,6 +351,14 @@ class DummyExprCompileTime(alamatic.ast.Expression):
             self.value,
         )
 
+    @property
+    def constant_value(self):
+        return self.value
+
+    @property
+    def result_type(self):
+        return type(self.value)
+
 
 class DummyExprRuntime(alamatic.ast.Expression):
     def __init__(self, sigil, result_type=DummyType):
