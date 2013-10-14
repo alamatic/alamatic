@@ -15,6 +15,45 @@ class OperationGeneratedErrors(Exception):
     pass
 
 
+def interpreter_context_for_tests(func=None):
+    if func is not None:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with interpreter_context_for_tests():
+                return func(*args, **kwargs)
+        return wrapper
+
+    from alamatic.interpreter import (
+        SymbolTable,
+        Registry,
+        CallFrame,
+    )
+
+    root_registry = Registry()
+    root_symbols = SymbolTable()
+    root_frame = CallFrame()
+
+    class TestState(object):
+        registry = root_registry
+        symbols = root_symbols
+        frame = root_frame
+
+    class TestStateContext(object):
+
+        def __enter__(self):
+            root_registry.__enter__()
+            root_symbols.__enter__()
+            root_frame.__enter__()
+            return TestState()
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            root_frame.__exit__(exc_type, exc_value, traceback)
+            root_symbols.__exit__(exc_type, exc_value, traceback)
+            root_registry.__exit__(exc_type, exc_value, traceback)
+
+    return TestStateContext()
+
+
 def ast_comparison_nodes(nodes):
     ret = []
     for node in nodes:
@@ -69,7 +108,7 @@ def generate_c_code_for_tree(root):
     return stream.getvalue()
 
 
-def get_scope_values(symbols, data):
+def get_scope_values(symbols):
     """
     Given a symbol table and a data state, return a dictionary of symbol
     names mapping to values, thus flattening all of the indirection
@@ -84,7 +123,7 @@ def get_scope_values(symbols, data):
     for name in symbols.all_names:
         symbol = symbols.get_symbol(name)
         try:
-            ret[name] = data.get_symbol_value(symbol)
+            ret[name] = symbol.get_value()
         except SymbolValueNotKnownError:
             ret[name] = None
     return ret
@@ -108,7 +147,7 @@ def execute_stmts(stmts, global_data={}):
         stmts = (stmts,)
 
     from alamatic.compiler import CompileState
-    from alamatic.interpreter import interpreter, SymbolTable, DataState
+    from alamatic.interpreter import interpreter
     from alamatic.compilelogging import LoggingCompileLogHandler
     old_state = interpreter.state
     interpreter.state = CompileState(log_handler=LoggingCompileLogHandler())
@@ -117,30 +156,29 @@ def execute_stmts(stmts, global_data={}):
         pass
 
     try:
-        with SymbolTable() as root_symbols:
-            with DataState() as root_data:
-                for name, value in global_data.iteritems():
-                    interpreter.declare_and_init(name, value)
+        with interpreter_context_for_tests() as context:
+            root_symbols = context.symbols
+            root_registry = context.registry
+            for name, value in global_data.iteritems():
+                interpreter.declare_and_init(name, value)
 
-                runtime_stmts = []
-                for stmt in stmts:
-                    stmt.execute(runtime_stmts)
+            runtime_stmts = []
+            for stmt in stmts:
+                stmt.execute(runtime_stmts)
 
-                    if interpreter.state.error_count > 0:
-                        raise OperationGeneratedErrors(
-                            "Errors during execution (see logging)"
-                        )
+                if interpreter.state.error_count > 0:
+                    raise OperationGeneratedErrors(
+                        "Errors during execution (see logging)"
+                    )
 
-                ret = ExecuteStmtsReturn()
-                ret.runtime_stmts = runtime_stmts
-                ret.global_data = get_scope_values(
-                    root_symbols,
-                    root_data,
-                )
-                ret.root_symbols = root_symbols
-                ret.root_data = root_data
-                root_data.finalize_values()
-                return ret
+            ret = ExecuteStmtsReturn()
+            ret.runtime_stmts = runtime_stmts
+            ret.global_data = get_scope_values(
+                root_symbols,
+            )
+            ret.root_symbols = root_symbols
+            ret.root_registry = root_registry
+            return ret
     finally:
         interpreter.state = old_state
 

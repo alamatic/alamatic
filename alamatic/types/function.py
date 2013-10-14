@@ -177,10 +177,10 @@ class FunctionTemplate(Value):
             )
 
         try:
-            data = interpreter.child_data_state()
-            with data:
+            registry = interpreter.child_registry()
+            with registry:
                 result = callee.constant_call(arg_exprs, position=position)
-            interpreter.data.merge_children([data])
+            interpreter.registry.merge_children([registry])
             if result is not None:
                 return ValueExpr(
                     position,

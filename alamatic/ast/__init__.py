@@ -71,22 +71,22 @@ class StatementBlock(AstNode):
 
     def generate_decl_c_code(self, state, writer):
         for symbol in self.symbols.local_symbols:
-            if symbol.final_runtime_usage_position is None:
+            if not symbol.is_used_at_runtime:
                 # Don't bother generating any symbols that aren't used
                 # at runtime.
                 continue
             if symbol.const:
                 writer.write("const ")
-            if symbol.final_type is None:
+            if not symbol.is_definitely_initialized:
                 # Should never happen
                 raise Exception(
                     "Symbol used at runtime but never initialized"
                 )
-            writer.write(symbol.final_type.c_type_spec(), " ")
+            writer.write(symbol.get_type().c_type_spec(), " ")
             writer.write(symbol.codegen_name)
             if symbol.const:
                 writer.write(" = ")
-                symbol.final_value.generate_c_code(state, writer)
+                symbol.get_value().generate_c_code(state, writer)
             writer.writeln(";")
 
     def generate_body_c_code(self, state, writer):

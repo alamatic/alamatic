@@ -82,7 +82,7 @@ class IfStmt(Statement):
         from alamatic.compilelogging import pos_link
 
         runtime_clauses = []
-        clause_datas = []
+        clause_registries = []
         have_else_clause = False
 
         for clause in self.clauses:
@@ -122,8 +122,8 @@ class IfStmt(Statement):
                 runtime_stmts.append(runtime_block.inlined)
                 return
             else:
-                data = interpreter.child_data_state()
-                with data:
+                registry = interpreter.child_registry()
+                with registry:
                     runtime_block = clause.block.execute()
                 if test_result is True:
                     # If we've already generated some clauses but
@@ -142,13 +142,13 @@ class IfStmt(Statement):
                         runtime_block,
                     )
                 runtime_clauses.append(runtime_clause)
-                clause_datas.append(data)
+                clause_registries.append(registry)
                 if test_result is True:
                     # No need to visit the rest of the clauses.
                     break
 
-        interpreter.data.merge_children(
-            clause_datas,
+        interpreter.registry.merge_children(
+            clause_registries,
             or_none=not have_else_clause,
         )
 
@@ -280,8 +280,8 @@ class WhileStmt(Statement):
                 # being unknown, and then execute the body in *that* context
                 # to produce a body that is capable of executing all possible
                 # code paths for the remainder of the loop.
-                data = interpreter.child_data_state()
-                with data:
+                registry = interpreter.child_registry()
+                with registry:
                     for assigned_symbol in self.find_assigned_symbols():
                         interpreter.mark_symbol_unknown(assigned_symbol)
 
@@ -291,7 +291,7 @@ class WhileStmt(Statement):
 
                 # Now merge the state that resulted from 'executing' the
                 # while loop body, including all of those unknowns.
-                interpreter.data.merge_children([data], or_none=True)
+                interpreter.registry.merge_children([registry], or_none=True)
 
                 runtime_stmt = WhileStmt(
                     self.position,
@@ -300,7 +300,7 @@ class WhileStmt(Statement):
                 )
                 runtime_stmts.append(runtime_stmt)
                 # We don't know if the body will run at runtime
-                interpreter.data.merge_children([data], or_none=True)
+                interpreter.registry.merge_children([registry], or_none=True)
                 break
 
     def generate_c_code(self, state, writer):

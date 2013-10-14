@@ -2,45 +2,16 @@
 import unittest
 import functools
 from alamatic.ast import *
+from alamatic.testutil import interpreter_context_for_tests
 from alamatic.interpreter import (
     interpreter,
     UnknownSymbolError,
-    SymbolTable,
-    DataState,
 )
-
-
-def state(func=None):
-    if func is not None:
-        @functools.wraps(func)
-        def ret(self):
-            with state():
-                func(self)
-        return ret
-
-    class TestState:
-
-        def __init__(self, symbols, data):
-            self.symbols = symbols
-            self.data = data
-
-        def __enter__(self):
-            self.symbols.__enter__()
-            self.data.__enter__()
-
-        def __exit__(self, *args):
-            self.symbols.__exit__(*args)
-            self.data.__exit__(*args)
-
-    return TestState(
-        SymbolTable(),
-        DataState(),
-    )
 
 
 class TestInterpreterEval(unittest.TestCase):
 
-    @state
+    @interpreter_context_for_tests
     def test_symbol_expr(self):
         interpreter.declare_and_init('a', 1)
         interpreter.declare_and_init('b', 2)
@@ -84,7 +55,7 @@ class TestInterpreterEval(unittest.TestCase):
             src_d.evaluate,
         )
 
-    @state
+    @interpreter_context_for_tests
     def test_integer_literal_expr(self):
         from alamatic.types import (
             Int8,
@@ -119,7 +90,7 @@ class TestInterpreterEval(unittest.TestCase):
                 expected_type,
             )
 
-    @state
+    @interpreter_context_for_tests
     def test_arithmetic_ops(self):
         from alamatic.types import Value
 

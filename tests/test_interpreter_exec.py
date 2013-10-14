@@ -13,7 +13,7 @@ class TestInterpreterExec(unittest.TestCase):
     def test_make_runtime_program(self):
         from alamatic.interpreter import (
             make_runtime_program,
-            DataState,
+            Registry,
             SymbolTable,
         )
         from alamatic.compiler import CompileState
@@ -28,7 +28,7 @@ class TestInterpreterExec(unittest.TestCase):
                 # Grab these so we can verify that execute_module
                 # did indeed create a symbol table and a data state.
                 state_stuff["symbols"] = interpreter.symbols
-                state_stuff["data"] = interpreter.data
+                state_stuff["registry"] = interpreter.registry
                 return dummy_block
 
         module = Module((1, 0, "test.ala"), "test", MockBlock())
@@ -44,14 +44,12 @@ class TestInterpreterExec(unittest.TestCase):
             SymbolTable,
         )
         self.assertEqual(
-            type(state_stuff["data"]),
-            DataState,
+            type(state_stuff["registry"]),
+            Registry,
         )
 
     def test_decl_stmt(self):
         from alamatic.interpreter import (
-            DataState,
-            SymbolTable,
             Symbol,
             NotConstantError,
             SymbolValueNotKnownError,
@@ -91,15 +89,12 @@ class TestInterpreterExec(unittest.TestCase):
                 expr,
             )
             runtime_stmts = []
-            data = DataState()
-            symbols = SymbolTable()
-            with data:
-                with symbols:
-                    decl_stmt.execute(runtime_stmts)
             ret = Result()
+            with interpreter_context_for_tests() as context:
+                ret.registry = context.registry
+                ret.symbols = context.symbols
+                decl_stmt.execute(runtime_stmts)
             ret.runtime_stmts = runtime_stmts
-            ret.data = data
-            ret.symbols = symbols
             return ret
 
         # Var declaration with no value: populates the symbol table but leaves
@@ -115,7 +110,7 @@ class TestInterpreterExec(unittest.TestCase):
             "Symbol is const but expected var",
         )
         self.assertFalse(
-            result.data.symbol_is_initialized(symbol),
+            symbol.is_definitely_initialized,
             "Symbol is initialized but it shouldn't be"
         )
         self.assertEqual(
@@ -171,11 +166,11 @@ class TestInterpreterExec(unittest.TestCase):
         # since we don't directly expose these things at this point. Instead,
         # these positions are used when formulating error messages.
         self.assertEqual(
-            result.data.symbol_types.get_position(symbol),
+            symbol.init_position,
             ('test', 1, 0),
         )
         self.assertEqual(
-            result.data.symbol_values.get_position(symbol),
+            symbol.assign_position,
             ('test', 1, 0),
         )
 
@@ -213,10 +208,10 @@ class TestInterpreterExec(unittest.TestCase):
         )
         self.assertRaises(
             SymbolValueNotKnownError,
-            lambda: result.data.get_symbol_value(symbol),
+            lambda: symbol.get_value(),
         )
         self.assertEqual(
-            result.data.get_symbol_type(symbol),
+            symbol.get_type(),
             UInt8,
         )
         self.assertEqual(
@@ -240,7 +235,7 @@ class TestInterpreterExec(unittest.TestCase):
             "Symbol is var but expected const",
         )
         self.assertEqual(
-            result.data.get_symbol_value(symbol).value,
+            symbol.get_value().value,
             1,
         )
 

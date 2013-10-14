@@ -8,7 +8,6 @@ class TestStatementBlock(LanguageTestCase):
 
     def test_execute(self):
         from alamatic.interpreter import (
-            DataState,
             SymbolTable,
             Symbol,
             UnknownSymbolError,
@@ -24,11 +23,9 @@ class TestStatementBlock(LanguageTestCase):
             DummyStmtCompileTime(15),
         ]
         block = StatementBlock(stmts)
-        data = DataState()
-        symbols = SymbolTable()
-        with data:
-            with symbols:
-                runtime_block = block.execute()
+        with interpreter_context_for_tests() as context:
+            root_symbols = context.symbols
+            runtime_block = block.execute()
 
         got = ast_comparison_node(runtime_block)
         self.assertEqual(
@@ -53,7 +50,7 @@ class TestStatementBlock(LanguageTestCase):
         # Parent symbol table should be our symbol table.
         self.assertEqual(
             runtime_block.symbols.parent,
-            symbols,
+            root_symbols,
         )
         symbol = runtime_block.symbols.get_symbol("a")
         self.assertEqual(
@@ -61,17 +58,17 @@ class TestStatementBlock(LanguageTestCase):
             Symbol,
         )
         self.assertEqual(
-            data.get_symbol_value(symbol),
+            symbol.get_value(),
             1,
         )
         # The new symbol should not be in our root symbol table, though
         self.assertRaises(
             UnknownSymbolError,
-            lambda: symbols.get_symbol("a"),
+            lambda: root_symbols.get_symbol("a"),
         )
 
     def test_codegen(self):
-        from alamatic.interpreter import SymbolTable
+        from alamatic.interpreter import SymbolTable, Registry
         self.assertCCode(
             StatementBlock(
                 [
@@ -87,16 +84,17 @@ class TestStatementBlock(LanguageTestCase):
         )
 
         symbols = SymbolTable()
-        sym_a = symbols.create_symbol("a")
-        sym_b = symbols.create_symbol("b")
-        sym_c = symbols.create_symbol("c")
-        # Tell the codegen that stor_a and stor_b were used,
-        # but skip stor_c to emulate what happens when a symbol
-        # is only used at compile time.
-        sym_a.final_runtime_usage_position = ('', 0, 0)
-        sym_b.final_runtime_usage_position = ('', 0, 0)
-        sym_a.final_type = DummyType
-        sym_b.final_type = DummyType
+        with Registry():
+            sym_a = symbols.create_symbol("a")
+            sym_b = symbols.create_symbol("b")
+            sym_c = symbols.create_symbol("c")
+            sym_a.initialize(DummyType)
+            sym_b.initialize(DummyType)
+            # Tell the codegen that stor_a and stor_b were used,
+            # but skip stor_c to emulate what happens when a symbol
+            # is only used at compile time.
+            sym_a.mark_used_at_runtime(position=('', 0, 0))
+            sym_b.mark_used_at_runtime(position=('', 0, 0))
 
         self.assertCCode(
             StatementBlock(

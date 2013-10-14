@@ -151,7 +151,6 @@ class TestFunctionTemplateType(LanguageTestCase):
     def test_call_not_pure_function(self):
         from alamatic.interpreter import (
             interpreter,
-            DataState,
             NotConstantError,
         )
 
@@ -176,7 +175,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             DummyExprCompileTime('arg2'),
         ])
 
-        with DataState():
+        with interpreter_context_for_tests():
             result = FunctionTemplate.call(
                 expr,
                 args,
@@ -217,7 +216,7 @@ class TestFunctionTemplateType(LanguageTestCase):
     def test_call_constant_void(self):
         from alamatic.interpreter import (
             interpreter,
-            DataState,
+            Registry,
             NotConstantError,
         )
 
@@ -234,10 +233,10 @@ class TestFunctionTemplateType(LanguageTestCase):
             DummyExprCompileTime('arg2'),
         ])
 
-        data = DataState()
-        data.merge_children = MagicMock('merge_children')
+        registry = Registry()
+        registry.merge_children = MagicMock('merge_children')
 
-        with data:
+        with registry:
             result = FunctionTemplate.call(
                 expr,
                 args,
@@ -253,7 +252,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             position,
         )
         self.assertTrue(
-            data.merge_children.called
+            registry.merge_children.called
         )
         mock_template.constant_call.assert_called_with(
             args,
@@ -263,7 +262,7 @@ class TestFunctionTemplateType(LanguageTestCase):
     def test_call_constant_not_void(self):
         from alamatic.interpreter import (
             interpreter,
-            DataState,
+            Registry,
             NotConstantError,
         )
 
@@ -280,10 +279,10 @@ class TestFunctionTemplateType(LanguageTestCase):
             DummyExprCompileTime('arg2'),
         ])
 
-        data = DataState()
-        data.merge_children = MagicMock('merge_children')
+        registry = Registry()
+        registry.merge_children = MagicMock('merge_children')
 
-        with data:
+        with registry:
             result = FunctionTemplate.call(
                 expr,
                 args,
@@ -307,7 +306,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             position,
         )
         self.assertTrue(
-            data.merge_children.called
+            registry.merge_children.called
         )
         mock_template.constant_call.assert_called_with(
             args,
@@ -317,8 +316,6 @@ class TestFunctionTemplateType(LanguageTestCase):
     def test_instantiate(self):
         from alamatic.interpreter import (
             SymbolTable,
-            DataState,
-            CallFrame,
             RuntimeFunction,
             InvalidParameterListError,
         )
@@ -357,17 +354,14 @@ class TestFunctionTemplateType(LanguageTestCase):
         )
 
         parent_scope = SymbolTable()
-        root_data = DataState()
-        root_frame = CallFrame()
 
         template = FunctionTemplate(decl_stmt, parent_scope)
 
-        with root_data:
-            with root_frame:
-                dummy_dummy_result = template.instantiate(
-                    (DummyType, DummyType),
-                    ('call', 1, 0),
-                )
+        with interpreter_context_for_tests():
+            dummy_dummy_result = template.instantiate(
+                (DummyType, DummyType),
+                ('call', 1, 0),
+            )
 
         self.assertEqual(
             type(dummy_dummy_result),
@@ -400,42 +394,39 @@ class TestFunctionTemplateType(LanguageTestCase):
             Void,
         )
 
-        with root_data:
-            with root_frame:
-                self.assertRaises(
-                    InvalidParameterListError,
-                    lambda: template.instantiate(
-                        (DummyType,),
-                        ('call', 1, 0),
-                    )
+        with interpreter_context_for_tests():
+            self.assertRaises(
+                InvalidParameterListError,
+                lambda: template.instantiate(
+                    (DummyType,),
+                    ('call', 1, 0),
                 )
-                self.assertRaises(
-                    InvalidParameterListError,
-                    lambda: template.instantiate(
-                        (DummyType, DummyType, DummyType),
-                        ('call', 1, 0),
-                    )
+            )
+            self.assertRaises(
+                InvalidParameterListError,
+                lambda: template.instantiate(
+                    (DummyType, DummyType, DummyType),
+                    ('call', 1, 0),
                 )
+            )
 
         # Test that if we instantiate again with the same key
         # we get back the same instance.
-        with root_data:
-            with root_frame:
-                dummy_dummy_result_2 = template.instantiate(
-                    (DummyType, DummyType),
-                    ('call', 1, 0),
-                )
+        with interpreter_context_for_tests():
+            dummy_dummy_result_2 = template.instantiate(
+                (DummyType, DummyType),
+                ('call', 1, 0),
+            )
         self.assertTrue(
             dummy_dummy_result_2 is dummy_dummy_result
         )
 
         # But different key gets a different instance.
-        with root_data:
-            with root_frame:
-                int32_dummy_result = template.instantiate(
-                    (Int32, DummyType),
-                    ('call', 1, 0),
-                )
+        with interpreter_context_for_tests():
+            int32_dummy_result = template.instantiate(
+                (Int32, DummyType),
+                ('call', 1, 0),
+            )
         self.assertTrue(
             int32_dummy_result is not dummy_dummy_result
         )

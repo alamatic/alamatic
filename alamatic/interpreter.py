@@ -13,6 +13,7 @@ compile time.
 """
 
 from alamatic.compilelogging import CompilerError, pos_link
+import datafork
 import weakref
 
 
@@ -21,16 +22,15 @@ def make_runtime_program(state, entry_point_module):
     old_state = interpreter.state
     interpreter.state = state
     try:
-        with SymbolTable() as root_symbols:
-            with DataState() as root_data:
+        with Registry() as root_registry:
+            with SymbolTable() as root_symbols:
                 with CallFrame() as root_frame:
                     try:
                         entry_point_function = entry_point_module.execute()
-                        root_data.finalize_values()
                         return RuntimeProgram(
-                            root_data.runtime_functions,
-                            root_data.runtime_types,
-                            root_data.top_level_scopes,
+                            root_registry.runtime_functions,
+                            root_registry.runtime_types,
+                            root_registry.runtime_top_level_scopes,
                             entry_point_function,
                         )
                     except CompilerError, ex:
@@ -44,15 +44,15 @@ def make_runtime_program(state, entry_point_module):
 class Interpreter(object):
 
     symbols = None
-    data = None
+    registry = None
     frame = None
     state = None
 
     def child_symbol_table(self):
         return self.symbols.create_child()
 
-    def child_data_state(self):
-        return self.data.create_child()
+    def child_registry(self):
+        return self.registry.create_child()
 
     def child_call_frame(self):
         return self.frame.create_child()
@@ -92,73 +92,53 @@ class Interpreter(object):
             const=const,
             decl_position=position,
         )
-        self.data.declare_symbol(symbol, position=position)
         if type_ is not None and initial_value is not None:
             raise Exception(
                 "When declaring a symbol, set either type_ or initial_value "
                 "but not both."
             )
         if initial_value is not None:
-            self.data.set_symbol_value(
-                symbol,
-                initial_value,
-                position=position,
-            )
+            symbol.assign(initial_value, position=position)
         else:
             # type_ might still be None here, meaning we don't know
             # what the type is at declaration time. We'll figure it out
             # when the symbol is initialized (assigned for the first time)
-            self.data.clear_symbol_value(
-                symbol,
-                type_,
-                position=position,
-            )
+            if type_ is not None:
+                symbol.initialize(type_, position=position)
 
     def assign(self, name, value, position=None):
         symbol = self.symbols.get_symbol(name, position=position)
-        self.data.set_symbol_value(
-            symbol,
-            value,
-            position=position,
-        )
+        self.set_symbol_value(symbol, value, position=position)
 
     def mark_unknown(self, name, known_type=None, position=None):
         symbol = self.symbols.get_symbol(name)
-        self.data.clear_symbol_value(
+        self.mark_symbol_unknown(
             symbol,
             known_type=known_type,
             position=position,
         )
 
     def set_symbol_value(self, symbol, value, position=None):
-        self.data.set_symbol_value(
-            symbol,
-            value,
-            position=position,
-        )
+        symbol.assign(value, position=position)
 
     def mark_symbol_unknown(self, symbol, known_type=None, position=None):
-        self.data.clear_symbol_value(
-            symbol,
-            known_type=known_type,
-            position=position,
-        )
+        symbol.mark_value_unknown(known_type=known_type, position=position)
 
     def get_symbol(self, name, position=None):
         return self.symbols.get_symbol(name, position=position)
 
     def retrieve(self, name, position=None):
-        symbol = self.symbols.get_symbol(name, position=position)
-        return self.data.get_symbol_value(symbol, position=position)
+        symbol = self.get_symbol(name, position=position)
+        return symbol.get_value(position=position)
 
     def get_symbol_type(self, symbol, position=None):
-        return self.data.get_symbol_type(symbol, position=position)
+        return symbol.get_type(position=position)
 
     def symbol_is_initialized(self, symbol):
-        return self.data.symbol_is_initialized(symbol)
+        return symbol.is_initialized
 
-    def is_initialized(self, name):
-        return self.symbol_is_initialized(self.get_symbol(name))
+    def is_definitely_initialized(self, name):
+        return self.get_symbol(name).is_definitely_initialized
 
     def get_type(self, name, position=None):
         return self.get_symbol_type(
@@ -179,68 +159,32 @@ class Interpreter(object):
 
     def value_is_known(self, name):
         symbol = self.symbols.get_symbol(name)
-        if not self.data.symbol_is_initialized(symbol):
+        if not symbol.is_definitely_initialized:
             return False
         try:
-            value = self.data.get_symbol_value(symbol)
+            value = symbol.get_value()
         except SymbolValueNotKnownError:
             return False
         else:
             return True
 
     def mark_symbol_used_at_runtime(self, symbol, position):
-        self.data.mark_symbol_used_at_runtime(symbol, position)
+        symbol.mark_used_at_runtime(position=position)
 
     def get_runtime_usage_position(self, symbol):
-        return self.data.get_runtime_usage_position(symbol)
+        return symbol.runtime_usage_position
 
     def register_runtime_function(self, function):
-        self.data.register_runtime_function(function)
+        self.registry.register_runtime_function(function)
 
     def register_runtime_type(self, type_):
-        self.data.register_runtime_type(type_)
+        self.registry.register_runtime_type(type_)
 
     def register_top_level_scope(self, symbols):
-        self.data.register_top_level_scope(symbols)
+        self.registry.register_runtime_top_level_scope(symbols)
 
 
 interpreter = Interpreter()
-
-
-class PositionTrackingDict(dict):
-    """
-    Dictionary that can keep track of the source position responsible for
-    each of its current values.
-
-    The normal :py:class:`dict` methods work as normal, but additional
-    methods are provided to get and set items annotated with position
-    information.
-
-    This class does not comprehensively support the dict interface, but rather
-    just provides the parts that are used for interpreter state tables.
-    """
-    def __init__(self):
-        self.positions = {}
-
-    def set_with_position(self, key, value, position):
-        self[key] = value
-        self.positions[key] = position
-
-    def get_with_position(self, key):
-        return (self[key], self.positions.get(key, None))
-
-    def get_position(self, key):
-        return self.positions[key]
-
-    def iteritems_with_position(self):
-        for k, v in self.iteritems():
-            yield (k, v, self.positions.get(k, None))
-
-    def __delitem__(self, key):
-        raise NotImplementedError("Can't delete from a PositionTrackingDict")
-
-    def clear(self):
-        raise NotImplementedError("Can't clear a PositionTrackingDict")
 
 
 def _search_tables(start, table_name, key):
@@ -402,264 +346,16 @@ class SymbolTable(object):
         interpreter.symbols = self.previous_table
 
 
-class DataState(object):
-
-    def __init__(self, parent_state=None):
-        self.parent = parent_state
-        self.symbol_values = PositionTrackingDict()
-        self.symbol_types = PositionTrackingDict()
-        self.runtime_functions = set()
-        self.runtime_types = set()
-        self.top_level_scopes = set()
-        self.used_at_runtime = {}
-
-    def declare_symbol(self, symbol, position=None):
-        self.symbol_types.set_with_position(symbol, None, position)
-
-    def symbol_is_initialized(self, symbol):
-        try:
-            symbol_type = self.get_symbol_type(symbol)
-        except SymbolTypeAmbiguousError:
-            return True
-        except SymbolNotInitializedError:
-            return False
-        else:
-            return True
-
-    def get_symbol_type(self, symbol, position=None):
-        try:
-            result = _search_tables(self, "symbol_types", symbol)
-        except KeyError:
-            result = None
-
-        if type(result) is MergeConflict:
-            raise SymbolTypeAmbiguousError(
-                "Symbol '%s' does not have a definite type" % (
-                    symbol.decl_name
-                ),
-                " at ", pos_link(position),
-                conflict=result,
-            )
-        elif result is None:
-            raise SymbolNotInitializedError(
-                "Symbol '%s' has not yet been initialized" % symbol.decl_name,
-                " at ", pos_link(position)
-            )
-        else:
-            return result
-
-    def get_symbol_value(self, symbol, position=None):
-        # First look up the symbol's type just so we can fail early if it's
-        # not in a consistent state yet.
-        self.get_symbol_type(symbol, position=position)
-
-        try:
-            result = _search_tables(self, "symbol_values", symbol)
-        except KeyError:
-            result = None
-
-        if result is None:
-            raise SymbolValueNotKnownError(
-                "Value of symbol '%s' is not known at " % (
-                    symbol.decl_name
-                ),
-                pos_link(position),
-            )
-        elif type(result) is MergeConflict:
-            raise SymbolValueAmbiguousError(
-                "Value of symbol '%s' is ambiguous  at " % (
-                    symbol.decl_name
-                ),
-                pos_link(position),
-                conflict=result,
-            )
-        else:
-            return result
-
-    def set_symbol_value(self, symbol, value, position=None):
-        """
-        Set the compile-time value for the given symbol, overwriting any
-        previous value in this state.
-
-        If the value is _not_ known at compile time, use
-        :py:meth:`clear_symbol_value` instead, to make the undefined
-        nature of it known to subsequent code.
-
-        The first call for a particular symbol is the initializer for that
-        symbol, which defines its type. All subsequent assignments must then
-        conform to that type.
-        """
-        if symbol.const:
-            runtime_usage_pos = self.get_runtime_usage_position(symbol)
-            if runtime_usage_pos is not None:
-                raise CannotChangeConstantError(
-                    "Can't change constant '%s' at " % symbol.decl_name,
-                    pos_link(position),
-                    " because it was already used at runtime at ",
-                    pos_link(runtime_usage_pos),
-                )
-
-        if self.symbol_is_initialized(symbol):
-            symbol_type = self.get_symbol_type(symbol, position=position)
-            if type(value) is not symbol_type:
-                raise IncompatibleTypesError(
-                    "Can't assign ", type(value).__name__,
-                    " to symbol '%s' " % (
-                        symbol.decl_name,
-                    ),
-                    "(of type ", symbol_type.__name__, "), at ",
-                    pos_link(position)
-                )
-        else:
-            self.symbol_types.set_with_position(symbol, type(value), position)
-
-        self.symbol_values.set_with_position(symbol, value, position)
-
-    def clear_symbol_value(self, symbol, known_type=None, position=None):
-        from alamatic.types import Void
-
-        if known_type is not None:
-            if self.symbol_is_initialized(symbol):
-                symbol_type = self.get_symbol_type(symbol)
-                if known_type is not symbol_type:
-                    raise IncompatibleTypesError(
-                        "Can't assign ", known_type, " to symbol '%s' " % (
-                            symbol.decl_name,
-                        ),
-                        "(of type ", symbol_type, "), at ",
-                        pos_link(position)
-                    )
-            else:
-                # This case will arise if someone tries to initialize a
-                # variable using a function call that returns no value.
-                if known_type is Void:
-                    raise InvalidAssignmentError(
-                        "Can't initialize '%s' " % symbol.decl_name,
-                        "with an expression that returns no value ",
-                        "at ", pos_link(position),
-                    )
-                self.symbol_types.set_with_position(
-                    symbol, known_type, position,
-                )
-
-        self.symbol_values.set_with_position(symbol, None, position)
-
-    def mark_symbol_used_at_runtime(self, symbol, position):
-        try:
-            _search_tables(self, "used_at_runtime", symbol)
-        except KeyError:
-            self.used_at_runtime[symbol] = position
-
-    def get_runtime_usage_position(self, symbol):
-        """
-        Given a symbol, returns the first source position at which the symbol
-        was used (or possibly used) at runtime, or ``None`` if the symbol has
-        not yet been used at runtime.
-        """
-        try:
-            return _search_tables(self, "used_at_runtime", symbol)
-        except KeyError:
-            return None
-
-    def create_child(self):
-        return DataState(parent_state=self)
-
-    def register_runtime_function(self, function):
-        self.runtime_functions.add(function)
-
-    def register_runtime_type(self, type_):
-        self.runtime_types.add(type_)
-
-    def register_top_level_scope(self, symbols):
-        self.top_level_scopes.add(symbols)
-
-    def merge_children(self, children, or_none=False):
-        """
-        Given an iterable of child states representing possible outcomes,
-        merge these back into their parent.
-
-        This method will investigate which data still has a known value
-        if we consider that any one of the given children may be selected
-        at runtime. If `or_none` is set, the method will also allow for the
-        possibility that _none_ of the given children may be selected,
-        such as is the case when there's an ``if`` statement with no ``else``
-        clause.
-        """
-        _merge_possible_child_tables(
-            self, "symbol_types", children, or_none=or_none
-        )
-        _merge_possible_child_tables(
-            self, "symbol_values", children, or_none=or_none
-        )
-        # For the "used at runtime" we don't bother with the "maybe" case
-        # because even a possible use requires us to definitely allocate
-        # the item at runtime, just in case it's used.
-        for child in children:
-            for item, position in child.used_at_runtime.iteritems():
-                if item not in self.used_at_runtime:
-                    self.used_at_runtime[item] = position
-            self.runtime_functions = self.runtime_functions.union(
-                child.runtime_functions
-            )
-            self.runtime_types = self.runtime_types.union(
-                child.runtime_types
-            )
-            self.top_level_scopes = self.top_level_scopes.union(
-                child.top_level_scopes
-            )
-
-    def __enter__(self):
-        self.previous_state = interpreter.data
-        interpreter.data = self
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        interpreter.data = self.previous_state
-
-    def finalize_values(self):
-        """
-        Once the interpreter phase has finished, call this method on the root
-        data state to commit all of the final symbol/storage state directly
-        to the objects themselves, so that it's visible to the code
-        generation phase.
-        """
-        for symbol, value, pos in self.symbol_values.iteritems_with_position():
-            if symbol.const and value is None:
-                if symbol.decl_position and symbol.decl_name:
-                    raise NotConstantError(
-                        "Value of constant '%s' from " % symbol.decl_name,
-                        pos_link(symbol.decl_position),
-                        " does not have a definite value"
-                    )
-                else:
-                    # Should never happen if everything's behaving well,
-                    # unless the symbol is a dummy one created in a test.
-                    raise NotConstantError(
-                        "Value of anonymous constant not known at compile time"
-                    )
-
-            symbol.final_assign_position = pos
-            symbol.final_value = value
-
-        for symbol, type_, pos in self.symbol_types.iteritems_with_position():
-            symbol.final_type = type_
-            symbol.final_init_position = pos
-
-        for item, runtime_usage_position in self.used_at_runtime.iteritems():
-            item.final_runtime_usage_position = runtime_usage_position
-
-
 class Symbol(object):
 
     def __init__(self, const=False, decl_position=None, decl_name=None):
+        if interpreter.registry is None:
+            raise Exception("Can't create a symbol: no active registry")
+        self.value_slot = interpreter.registry.create_slot()
+        self.type_slot = interpreter.registry.create_slot()
+        self.is_initialized_slot = interpreter.registry.create_slot()
+        self.runtime_usage_position_slot = interpreter.registry.create_slot()
         self.const = const
-        # These will be populated by DataState.finalize_values once we're
-        # done with the interpreter phase.
-        self.final_type = None
-        self.final_value = None
-        self.final_runtime_usage_position = None
-        self.final_init_position = None
-        self.final_assign_position = None
         self.decl_position = decl_position
         self.decl_name = decl_name
 
@@ -670,28 +366,236 @@ class Symbol(object):
             self.decl_position,
         )
 
+    def get_value(self, position=None):
+        # first try to retrieve the type, even though we're not going to
+        # do anything with it, just to make sure it's known.
+        dummy = self.get_type(position=position)
+        try:
+            return self.value_slot.value
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: Include the merge conflict possibilities in the error
+            # message for ease of debugging.
+            raise SymbolValueAmbiguousError(
+                "Value of '%s' is not known at " % (self.decl_name),
+                pos_link(position),
+                conflict=ex.conflict,
+            )
+        except datafork.ValueNotKnownError:
+            raise SymbolValueNotKnownError(
+                "Value of '%s' is not known at " % (self.decl_name),
+                pos_link(position),
+            )
+
+    def assign(self, value, position=None):
+        if not self.is_possibly_initialized:
+            # we're initializing the symbol for the first time
+            self.initialize(type(value), position=position)
+        else:
+            try:
+                current_type = self.type_slot.value
+            except datafork.ValueNotKnownError:
+                # FIXME: If it's a merge conflict (which is most likely is)
+                # then include the set of possibilities and their positions
+                # in the error message to help the user debug.
+                raise SymbolTypeNotKnownError(
+                    "Type of '%s' is not known at " % self.decl_name,
+                    pos_link(position)
+                )
+            if type(value) is not current_type:
+                raise IncompatibleTypesError(
+                    "Can't assign %s to %s %s '%s'" % (
+                        type(value).__name__,
+                        current_type.__name__,
+                        'constant' if self.const else 'variable',
+                        self.decl_name,
+                    ),
+                    " at ", pos_link(position),
+                )
+        self.value_slot.set_value(value, position=position)
+
+    def mark_value_unknown(self, known_type=None, position=None):
+        if known_type:
+            if not self.is_possibly_initialized:
+                self.initialize(known_type, position=position)
+            else:
+                try:
+                    current_type = self.type_slot.value
+                except datafork.ValueNotKnownError:
+                    # FIXME: If it's a merge conflict (which is most likely is)
+                    # then include the set of possibilities and their positions
+                    # in the error message to help the user debug.
+                    raise SymbolTypeNotKnownError(
+                        "Type of '%s' is not known at " % self.decl_name,
+                        pos_link(position)
+                    )
+                if known_type is not current_type:
+                    raise IncompatibleTypesError(
+                        "Can't assign %s to %s %s '%s'" % (
+                            known_type.__name__,
+                            current_type.__name__,
+                            'constant' if self.const else 'variable',
+                            self.decl_name,
+                        ),
+                        " at ", pos_link(position),
+                    )
+
+        self.value_slot.set_value_not_known(position=position)
+
+    def get_type(self, position=None):
+        try:
+            return self.type_slot.value
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: include the set of competing initializations in the
+            # error message to help the user debug.
+            raise SymbolValueAmbiguousError(
+                "Type of '%s' is ambiguous at " % self.decl_name,
+                pos_link(position),
+                conflict=ex.conflict,
+            )
+        except datafork.ValueNotKnownError, ex:
+            raise SymbolNotInitializedError(
+                "'%s' has not yet been initialized at " % self.decl_name,
+                pos_link(position),
+            )
+
+    def initialize(self, new_type, position=None):
+        if len(self.type_slot.positions) > 0:
+            # should never happen
+            raise Exception("Can't initialize '%s': already has a type" % (
+                self.decl_name
+            ))
+        else:
+            self.type_slot.set_value(new_type, position=position)
+            self.type_slot.value = new_type
+            self.is_initialized_slot.set_value(True, position=position)
+
+    def mark_used_at_runtime(self, position=None):
+        # if we're already marked as used at runtime then this is a no-op,
+        # because we want to keep the *first* runtime usage position.
+        # We use the positions of this slot and disregard the value, because
+        # the positions combine together nicely when merging datafork states.
+        if len(self.runtime_usage_position_slot.positions) == 0:
+            self.runtime_usage_position_slot.set_value(
+                True,
+                position=position,
+            )
+
+    @property
+    def is_possibly_initialized(self):
+        try:
+            return True if self.is_initialized_slot.value else False
+        except datafork.ValueAmbiguousError:
+            return True
+        except datafork.ValueNotKnownError:
+            return False
+
+    @property
+    def is_definitely_initialized(self):
+        if self.is_initialized_slot.value_is_known:
+            return True if self.is_initialized_slot.value else False
+        else:
+            return False
+
+    @property
+    def is_used_at_runtime(self):
+        return self.runtime_usage_position is not None
+
+    @property
+    def init_position(self):
+        if len(self.is_initialized_slot.positions) > 0:
+            return list(sorted(self.is_initialized_slot.positions))[0]
+        else:
+            return None
+
+    @property
+    def assign_position(self):
+        if len(self.value_slot.positions) > 0:
+            return list(sorted(self.value_slot.positions))[0]
+        else:
+            return None
+
+    @property
+    def runtime_usage_position(self):
+        if len(self.runtime_usage_position_slot.positions) > 0:
+            return list(sorted(self.runtime_usage_position_slot.positions))[0]
+        else:
+            return None
+
     @property
     def codegen_name(self):
         return "_ala_%x" % id(self)
 
     def generate_c_decl(self, state, writer):
-        if self.final_runtime_usage_position is None:
+        if not self.is_used_at_runtime:
             # Don't bother generating any symbols that aren't used
             # at runtime.
             return
         if self.const:
             writer.write("const ")
-        if self.final_type is None:
+        if not self.is_definitely_initialized:
             # Should never happen
             raise Exception(
                 "Symbol used at runtime but never initialized"
             )
-        writer.write(self.final_type.c_type_spec(), " ")
+        writer.write(self.get_type().c_type_spec(), " ")
         writer.write(self.codegen_name)
         if self.const:
             writer.write(" = ")
-            self.final_value.generate_c_code(state, writer)
+            self.get_value().generate_c_code(state, writer)
         writer.writeln(";")
+
+
+class Registry(object):
+
+    def __init__(self, parent=None):
+        self.parent = parent
+        if parent:
+            self.data_state_context = parent.data_state.fork()
+        else:
+            self.data_state_context = datafork.Root()
+        self.runtime_functions = set()
+        self.runtime_types = set()
+        self.runtime_top_level_scopes = set()
+
+    def __enter__(self):
+        self.data_state = self.data_state_context.__enter__()
+        self.previous_registry = interpreter.registry
+        interpreter.registry = self
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        interpreter.registry = self.previous_registry
+        self.data_state_context.__exit__(exc_type, exc_value, traceback)
+
+    def create_child(self):
+        return Registry(self)
+
+    def register_runtime_function(self, function):
+        self.runtime_functions.add(function)
+
+    def register_runtime_type(self, type_):
+        self.runtime_types.add(type_)
+
+    def register_runtime_top_level_scope(self, symbols):
+        self.runtime_top_level_scopes.add(symbols)
+
+    def merge_children(self, children, or_none=False):
+        child_data_states = [
+            x.data_state for x in children
+        ]
+        self.data_state.merge_children(child_data_states, or_none=or_none)
+
+        # The runtime object registries just union together, since they
+        # cannot conflict with one another.
+        for child in children:
+            self.runtime_functions.update(child.runtime_functions)
+            self.runtime_types.update(child.runtime_functions)
+            self.runtime_top_level_scopes.update(
+                child.runtime_top_level_scopes,
+            )
+
+    def create_slot(self):
+        return self.data_state.root.slot()
 
 
 class RuntimeFunction(object):
@@ -771,7 +675,7 @@ class RuntimeFunctionArgs(object):
                 first = False
             else:
                 writer.write(", ")
-            writer.write(symbol.final_type.c_type_spec(), " ")
+            writer.write(symbol.get_type().c_type_spec(), " ")
             writer.write(symbol.codegen_name)
 
     def generate_c_args_call(self, state, writer):
@@ -798,15 +702,6 @@ class CallFrame(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         interpreter.frame = self.previous_frame
-
-
-class MergeConflict(object):
-
-    def __init__(self, possibilities):
-        self.possibilities = possibilities
-
-    def __repr__(self):
-        return "<MergeConflict %r>" % self.possibilities
 
 
 class UnknownSymbolError(CompilerError):

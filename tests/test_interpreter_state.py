@@ -3,7 +3,7 @@ import unittest
 from alamatic.interpreter import (
     interpreter,
     SymbolTable,
-    DataState,
+    Registry,
     Symbol,
     CallFrame,
     UnknownSymbolError,
@@ -17,156 +17,98 @@ from alamatic.testutil import DummyType
 class TestInterpreterState(unittest.TestCase):
 
     def test_symbol_table(self):
-        sym = Symbol(DummyType)
-        root_table = SymbolTable()
-        child_table = root_table.create_child()
-        child_child_table = child_table.create_child()
+        with Registry() as root_registry:
+            sym = Symbol(DummyType)
+            root_table = SymbolTable()
+            child_table = root_table.create_child()
+            child_child_table = child_table.create_child()
 
-        a_sym_1 = root_table.create_symbol("a", DummyType)
-        a_sym_2 = child_child_table.create_symbol("a", DummyType)
-        b_sym = child_table.create_symbol("b", DummyType)
-        c_sym = root_table.create_symbol("c", DummyType)
+            a_sym_1 = root_table.create_symbol("a", DummyType)
+            a_sym_2 = child_child_table.create_symbol("a", DummyType)
+            b_sym = child_table.create_symbol("b", DummyType)
+            c_sym = root_table.create_symbol("c", DummyType)
 
-        self.assertEqual(
-            root_table.get_symbol("a"),
-            child_table.get_symbol("a"),
-        )
-        self.assertEqual(
-            child_table.get_symbol("a"),
-            a_sym_1,
-        )
-        self.assertNotEqual(
-            root_table.get_symbol("a"),
-            child_child_table.get_symbol("a"),
-        )
-        self.assertEqual(
-            child_child_table.get_symbol("a"),
-            a_sym_2,
-        )
+            self.assertEqual(
+                root_table.get_symbol("a"),
+                child_table.get_symbol("a"),
+            )
+            self.assertEqual(
+                child_table.get_symbol("a"),
+                a_sym_1,
+            )
+            self.assertNotEqual(
+                root_table.get_symbol("a"),
+                child_child_table.get_symbol("a"),
+            )
+            self.assertEqual(
+                child_child_table.get_symbol("a"),
+                a_sym_2,
+            )
 
-        self.assertEqual(
-            child_table.get_symbol("b"),
-            b_sym,
-        )
-        self.assertEqual(
-            child_child_table.get_symbol("b"),
-            b_sym,
-        )
-        self.assertRaises(
-            UnknownSymbolError,
-            lambda: root_table.get_symbol("b")
-        )
+            self.assertEqual(
+                child_table.get_symbol("b"),
+                b_sym,
+            )
+            self.assertEqual(
+                child_child_table.get_symbol("b"),
+                b_sym,
+            )
+            self.assertRaises(
+                UnknownSymbolError,
+                lambda: root_table.get_symbol("b")
+            )
 
-        self.assertEqual(
-            root_table.get_symbol("c"),
-            child_child_table.get_symbol("c"),
-        )
-        self.assertEqual(
-            root_table.get_symbol("c"),
-            child_table.get_symbol("c"),
-        )
-        self.assertEqual(
-            root_table.get_symbol("c"),
-            c_sym,
-        )
+            self.assertEqual(
+                root_table.get_symbol("c"),
+                child_child_table.get_symbol("c"),
+            )
+            self.assertEqual(
+                root_table.get_symbol("c"),
+                child_table.get_symbol("c"),
+            )
+            self.assertEqual(
+                root_table.get_symbol("c"),
+                c_sym,
+            )
 
-    def test_data_state(self):
-        root_state = DataState()
-        child_state = root_state.create_child()
-        child_child_state = child_state.create_child()
+    def test_registry(self):
+        import datafork
+        from mock import MagicMock
 
-        symbol_a = Symbol()
-        symbol_b = Symbol()
-        symbol_c = Symbol()
+        mock_finalize = MagicMock('finalize')
+        mock_merge = MagicMock('merge')
 
-        # First we'll try initializing one of these variables as Void,
-        # which is invalid.
-        from alamatic.types import Void
-        from alamatic.interpreter import InvalidAssignmentError
-        self.assertRaises(
-            InvalidAssignmentError,
-            lambda: root_state.clear_symbol_value(symbol_a, Void),
-        )
+        with Registry() as root_registry:
+            root_state = root_registry.data_state
+            self.assertEqual(type(root_state), datafork.Root)
 
-        # For the sake of this test we use Python's native types as our
-        # value types. In real use, however, our interpreter has its own
-        # tree of types that are instantiated from a specialized metaclass.
-        # This object doesn't actually care as long as it can pass the
-        # provided value into type()
+            root_state.finalize_data = mock_finalize
+            root_state.merge_children = mock_merge
 
-        # Simple test of one state overriding another.
-        root_state.set_symbol_value(symbol_a, 1)
-        child_child_state.set_symbol_value(symbol_a, 2)
+            child_registry = root_registry.create_child()
+            with child_registry as returned_child_registry:
+                child_state = child_registry.data_state
+                self.assertEqual(child_registry, returned_child_registry)
+                self.assertEqual(type(child_state), datafork.State)
+                self.assertEqual(child_state.root, root_state)
 
-        self.assertEqual(
-            root_state.get_symbol_value(symbol_a),
-            1,
-        )
-        self.assertEqual(
-            child_state.get_symbol_value(symbol_a),
-            1,
-        )
-        self.assertEqual(
-            child_child_state.get_symbol_value(symbol_a),
-            2,
-        )
+            root_registry.merge_children([child_registry])
 
-        root_state.set_symbol_value(symbol_b, 99)
-        child_child_state.set_symbol_value(symbol_b, 3)
-
-        self.assertEqual(
-            root_state.get_symbol_value(symbol_b),
-            99,
+        mock_merge.assert_called_with(
+            [child_registry.data_state],
+            or_none=False,
         )
-        self.assertEqual(
-            child_state.get_symbol_value(symbol_b),
-            99,
-        )
-        self.assertEqual(
-            child_child_state.get_symbol_value(symbol_b),
-            3,
-        )
-
-        # Symbol that isn't present in the top state.
-        child_state.set_symbol_value(symbol_c, 32)
-
-        # It is an error to request the value for a symbol that isn't
-        # known to the current state, since any code that creates an
-        # entry in a symbol table must also make some statement about its
-        # value in a data state whose lifetime is greater than or equal
-        # to the symbol table itself.
-        self.assertRaises(
-            SymbolNotInitializedError,
-            lambda: root_state.get_symbol_value(symbol_c)
-        )
-        self.assertEqual(
-            child_state.get_symbol_value(symbol_c),
-            32,
-        )
-        self.assertEqual(
-            child_child_state.get_symbol_value(symbol_c),
-            32,
-        )
-
-        # Assigned values must be of the correct type.
-        self.assertRaises(
-            IncompatibleTypesError,
-            lambda: child_state.set_symbol_value(symbol_a, 'hi')
-        )
-        self.assertRaises(
-            IncompatibleTypesError,
-            lambda: child_state.clear_symbol_value(symbol_a, str)
-        )
+        mock_finalize.assert_called_with()
 
     def test_combination(self):
         # This test simulates a realistic combined use of symbol tables
         # and data states together, approximating the machinations of
         # the interpreter executing a program.
 
-        root_state = DataState()
+        root_registry = Registry()
         root_table = SymbolTable()
 
-        with root_state:
+        with root_registry:
             with root_table:
                 interpreter.declare_and_init("a", 1)
                 interpreter.declare_and_init("b", 32)
@@ -193,15 +135,15 @@ class TestInterpreterState(unittest.TestCase):
                 # Delayed initialization
                 interpreter.declare('k')
                 self.assertFalse(
-                    interpreter.is_initialized('k'),
+                    interpreter.is_definitely_initialized('k'),
                 )
                 self.assertRaises(
                     SymbolNotInitializedError,
                     lambda: interpreter.retrieve('k')
                 )
-                interpreter.assign('k', 78)
+                interpreter.assign('k', 78, position=('a', 1))
                 self.assertTrue(
-                    interpreter.is_initialized('k'),
+                    interpreter.is_definitely_initialized('k'),
                 )
                 self.assertEqual(
                     interpreter.retrieve('k'),
@@ -226,10 +168,10 @@ class TestInterpreterState(unittest.TestCase):
                 # for each because their execution contexts are separate.
                 # Also, control flow blocks create new scopes, so each clause
                 # gets its own symbol table too.
-                if_state = interpreter.child_data_state()
-                else_state = interpreter.child_data_state()
+                if_registry = interpreter.child_registry()
+                else_registry = interpreter.child_registry()
                 with interpreter.child_symbol_table() as if_table:
-                    with if_state:
+                    with if_registry:
                         interpreter.assign("a", 3, position=("if", 1, 0))
                         interpreter.assign("b", 19)
                         interpreter.declare_and_init("c", 109)
@@ -272,7 +214,7 @@ class TestInterpreterState(unittest.TestCase):
                     54,
                 )
                 with interpreter.child_symbol_table() as else_table:
-                    with else_state:
+                    with else_registry:
                         interpreter.assign("a", 4, position=("else", 2, 0))
                         interpreter.assign("b", 19)
                         self.assertEqual(
@@ -298,10 +240,10 @@ class TestInterpreterState(unittest.TestCase):
                         32,
                     )
 
-                root_state.merge_children(
+                root_registry.merge_children(
                     [
-                        if_state,
-                        else_state,
+                        if_registry,
+                        else_registry,
                     ]
                 )
 
@@ -316,10 +258,10 @@ class TestInterpreterState(unittest.TestCase):
                     interpreter.retrieve("a")
                 except SymbolValueAmbiguousError, ex:
                     self.assertEqual(
-                        ex.conflict.possibilities,
+                        list(sorted(ex.conflict.possibilities)),
                         [
-                            (3, ('if', 1, 0)),
-                            (4, ('else', 2, 0)),
+                            (3, set([('if', 1, 0)])),
+                            (4, set([('else', 2, 0)])),
                         ],
                     )
                 else:
@@ -340,7 +282,7 @@ class TestInterpreterState(unittest.TestCase):
                     interpreter.get_runtime_usage_position(
                         interpreter.get_symbol("a"),
                     ),
-                    ('if', 0, 0),
+                    ('else', 0, 0),
                 )
 
     def test_call_frame(self):
@@ -367,84 +309,5 @@ class TestInterpreterState(unittest.TestCase):
             list(first_frame.trace),
             [
                 first_frame,
-            ]
-        )
-
-    def test_state_finalize_values(self):
-        root_state = DataState()
-        sym_a = Symbol(int)
-        sym_b = Symbol(int)
-        root_state.set_symbol_value(sym_a, 1, position=('testa', 1, 0))
-        root_state.set_symbol_value(sym_b, 2)
-        root_state.mark_symbol_used_at_runtime(
-            sym_a,
-            ("", 0, 0),
-        )
-        root_state.finalize_values()
-
-        self.assertEqual(
-            sym_a.final_value,
-            1,
-        )
-        self.assertEqual(
-            sym_a.final_type,
-            int,
-        )
-        self.assertEqual(
-            sym_b.final_value,
-            2,
-        )
-        self.assertEqual(
-            sym_a.final_runtime_usage_position,
-            ("", 0, 0),
-        )
-        self.assertEqual(
-            sym_b.final_runtime_usage_position,
-            None,
-        )
-        self.assertEqual(
-            sym_a.final_assign_position,
-            ('testa', 1, 0),
-        )
-        self.assertEqual(
-            sym_a.final_init_position,
-            ('testa', 1, 0),
-        )
-
-    def test_position_tracking_dict(self):
-        from alamatic.interpreter import PositionTrackingDict
-        d = PositionTrackingDict()
-
-        d.set_with_position("a", 1, "loca")
-        d["b"] = 2
-
-        self.assertEqual(
-            d.get_with_position("a"),
-            (1, "loca"),
-        )
-        self.assertEqual(
-            d.get_with_position("b"),
-            (2, None),
-        )
-        self.assertEqual(
-            d["a"],
-            1,
-        )
-        self.assertEqual(
-            d["b"],
-            2,
-        )
-        self.assertEqual(
-            list(sorted(d.iteritems())),
-            [
-                ("a", 1),
-                ("b", 2),
-            ]
-        )
-        self.assertEqual(
-            list(sorted(d.iteritems_with_position())),
-            [
-                ("a", 1, 'loca'),
-                ("b", 2, None),
             ]
         )
