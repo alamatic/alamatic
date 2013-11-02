@@ -23,7 +23,7 @@ class TestStatementBlock(LanguageTestCase):
             DummyStmtCompileTime(15),
         ]
         block = StatementBlock(stmts)
-        with interpreter_context_for_tests() as context:
+        with interpreter_context() as context:
             root_symbols = context.symbols
             runtime_block = block.execute()
 

@@ -90,7 +90,7 @@ class TestInterpreterExec(unittest.TestCase):
             )
             runtime_stmts = []
             ret = Result()
-            with interpreter_context_for_tests() as context:
+            with interpreter_context() as context:
                 ret.registry = context.registry
                 ret.symbols = context.symbols
                 decl_stmt.execute(runtime_stmts)

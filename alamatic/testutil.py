@@ -15,11 +15,11 @@ class OperationGeneratedErrors(Exception):
     pass
 
 
-def interpreter_context_for_tests(func=None):
+def interpreter_context(func=None):
     if func is not None:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            with interpreter_context_for_tests():
+            with interpreter_context():
                 return func(*args, **kwargs)
         return wrapper
 
@@ -156,7 +156,7 @@ def execute_stmts(stmts, global_data={}):
         pass
 
     try:
-        with interpreter_context_for_tests() as context:
+        with interpreter_context() as context:
             root_symbols = context.symbols
             root_registry = context.registry
             for name, value in global_data.iteritems():

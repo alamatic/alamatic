@@ -175,7 +175,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             DummyExprCompileTime('arg2'),
         ])
 
-        with interpreter_context_for_tests():
+        with interpreter_context():
             result = FunctionTemplate.call(
                 expr,
                 args,
@@ -357,7 +357,7 @@ class TestFunctionTemplateType(LanguageTestCase):
 
         template = FunctionTemplate(decl_stmt, parent_scope)
 
-        with interpreter_context_for_tests():
+        with interpreter_context():
             dummy_dummy_result = template.instantiate(
                 (DummyType, DummyType),
                 ('call', 1, 0),
@@ -394,7 +394,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             Void,
         )
 
-        with interpreter_context_for_tests():
+        with interpreter_context():
             self.assertRaises(
                 InvalidParameterListError,
                 lambda: template.instantiate(
@@ -412,7 +412,7 @@ class TestFunctionTemplateType(LanguageTestCase):
 
         # Test that if we instantiate again with the same key
         # we get back the same instance.
-        with interpreter_context_for_tests():
+        with interpreter_context():
             dummy_dummy_result_2 = template.instantiate(
                 (DummyType, DummyType),
                 ('call', 1, 0),
@@ -422,7 +422,7 @@ class TestFunctionTemplateType(LanguageTestCase):
         )
 
         # But different key gets a different instance.
-        with interpreter_context_for_tests():
+        with interpreter_context():
             int32_dummy_result = template.instantiate(
                 (Int32, DummyType),
                 ('call', 1, 0),
