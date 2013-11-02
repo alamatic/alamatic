@@ -23,6 +23,10 @@ def IDENT(val):
     return ('IDENT', str(val))
 
 
+def DOCCOMMENT(val):
+    return ('DOCCOMMENT', str(val))
+
+
 def PUNCT(val):
     return (str(val), str(val))
 
@@ -155,6 +159,154 @@ class TestScanner(unittest.TestCase):
         # An empty string still yields a virtual newline.
         self.assertTokens("", [NEWLINE])
         self.assertTokens("    ", [INDENT, NEWLINE, OUTDENT])
+
+    def test_plain_comments(self):
+        self.assertTokens(
+            "1\n#baz\n2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
+        self.assertTokens(
+            "#baz\n2",
+            [
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
+        self.assertTokens(
+            "1\n#baz\n",
+            [
+                NUMBER(1),
+                NEWLINE,
+                NEWLINE,
+                NEWLINE,
+            ]
+        )
+        self.assertTokens(
+            "1\n#baz",
+            [
+                NUMBER(1),
+                NEWLINE,
+                NEWLINE,
+                NEWLINE,
+            ]
+        )
+
+        # comments participate in indentation just like anything else
+        self.assertTokens(
+            "1\n    #baz",
+            [
+                NUMBER(1),
+                NEWLINE,
+                INDENT,
+                NEWLINE,
+                OUTDENT,
+                NEWLINE,
+            ]
+        )
+        self.assertTokens(
+            "1\n    #baz\n    2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                INDENT,
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+                OUTDENT,
+            ]
+        )
+        self.assertTokens(
+            "1\n    2\n    #baz",
+            [
+                NUMBER(1),
+                NEWLINE,
+                INDENT,
+                NUMBER(2),
+                NEWLINE,
+                NEWLINE,
+                OUTDENT,
+                NEWLINE,
+            ]
+        )
+        # but indentation events don't get fired inside brackets, just
+        # as with normal newlines.
+        self.assertTokens(
+            "(1\n    #baz\n)",
+            [
+                PUNCT('('),
+                NUMBER(1),
+                PUNCT(')'),
+                NEWLINE,
+            ]
+        )
+
+    def test_doc_comments(self):
+        # This test is written under the assumption that doc comments
+        # follow the same code path as normal comments aside from emitting
+        # an extra token, so we don't repeat all of the normal-comment test
+        # cases in here.
+        self.assertTokens(
+            "1\n#: baz\n2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                DOCCOMMENT("baz"),
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
+        # sequence of doc comments
+        self.assertTokens(
+            "1\n#: baz\n#: foo\n2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                DOCCOMMENT("baz"),
+                NEWLINE,
+                DOCCOMMENT("foo"),
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
+        # blank line breaks up doc comment sequence
+        self.assertTokens(
+            "1\n#: baz\n\n#: foo\n2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                DOCCOMMENT("baz"),
+                NEWLINE,
+                NEWLINE,
+                DOCCOMMENT("foo"),
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
+        # plain comment breaks up doc comment sequence
+        self.assertTokens(
+            "1\n#: baz\n#wotz\n#: foo\n2",
+            [
+                NUMBER(1),
+                NEWLINE,
+                DOCCOMMENT("baz"),
+                NEWLINE,
+                NEWLINE,
+                DOCCOMMENT("foo"),
+                NEWLINE,
+                NUMBER(2),
+                NEWLINE,
+            ]
+        )
 
     def test_numbers(self):
         # Decimal

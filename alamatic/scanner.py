@@ -51,6 +51,24 @@ class Scanner(plex.Scanner):
             self.outdent_to(new_level)
         self.begin('')
 
+    def handle_comment(self, text):
+        if text[-1] == "\n":
+            test = text[:-1]
+
+        if text[1] == ":":
+            # if the second character is a colon then this is a doc comment,
+            # which is significant for parsing and thus emitted as a token.
+            import string
+            comment_data = string.strip(text[2:])
+            # Doc comments aren't allowed inside expressions but
+            # we'll catch that during parsing rather than during scanning.
+            self.produce('DOCCOMMENT', comment_data)
+
+        # just treat comments like a funny sort of newline
+        if self.bracket_count == 0:
+            self.begin('indent')
+            self.produce('NEWLINE', "\n")
+
     def handle_open_bracket(self, text):
         self.bracket_count = self.bracket_count + 1
         return text
@@ -144,6 +162,7 @@ class Scanner(plex.Scanner):
         ((Str("\n") | Eof), handle_newline),
         (punct, TEXT),
         (Rep1(Str(' ')), IGNORE),
+        ((Str("#") + Rep(AnyBut("\n")) + Opt(Str("\n"))), handle_comment),
         State('indent', [
             (Rep(Str(" ")) + Opt(Str("\n")), handle_indentation),
         ]),
@@ -331,6 +350,8 @@ class Scanner(plex.Scanner):
             return "outdent"
         elif token[0] == "EOF":
             return "end of file"
+        elif token[0] == "DOCCOMMENT":
+            return "documentation comment"
         else:
             return token[1]
 
