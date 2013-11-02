@@ -83,8 +83,10 @@ class TestScanner(unittest.TestCase):
             "    2\n"
             "\n"
             "    3\n"
+            "\n"  # blank line during indent
             "        4\n"
             "            5\n"
+            "\n"  # blank line during outdent
             "    6",
             [
                 NUMBER(1),
@@ -95,11 +97,13 @@ class TestScanner(unittest.TestCase):
                 NEWLINE,
                 NUMBER(3),
                 NEWLINE,
+                NEWLINE,
                 INDENT,
                 NUMBER(4),
                 NEWLINE,
                 INDENT,
                 NUMBER(5),
+                NEWLINE,
                 NEWLINE,
                 OUTDENT,
                 OUTDENT,

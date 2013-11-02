@@ -31,7 +31,6 @@ class Scanner(plex.Scanner):
         if new_level > 0 and text[-1] == "\n":
             # Blank line, so skip.
             self.produce('NEWLINE', "\n")
-            self.begin('')
             return
 
         if new_level > current_level:
