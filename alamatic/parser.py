@@ -7,10 +7,26 @@ from alamatic.compilelogging import pos_link, CompilerError
 def parse_module(state, stream, name, filename):
     scanner = Scanner(state, stream, filename)
 
+    # doc comments at the immediate start of a module are for the
+    # module itself.
+    doc = p_doc_comments(state, scanner)
+
+    # To avoid ambiguity, a newline is required after a module docstring.
+    if doc is not None:
+        if not (scanner.next_is_newline() or scanner.next_is_eof()):
+            state.error(
+                "Include a blank line after the module doc comments, ",
+                "at ", pos_link(scanner.position()),
+                " (if this was supposed to be a doc comment for the following "
+                "statement instead, add a blank line before it.)"
+            )
+            # but we'll keep parsing anyway, in case there are some other
+            # errors we could report at the same time.
+
     stmts = p_statements(state, scanner, lambda s: s.next_is_eof())
     block = StatementBlock(stmts)
 
-    return Module((filename, 1, 0), name, block)
+    return Module((filename, 1, 0), name, block, doc=doc)
 
 
 def parse_expression(state, stream, filename, allow_assign=False):
@@ -22,6 +38,22 @@ def parse_expression(state, stream, filename, allow_assign=False):
     except CompilerError, ex:
         state.error(ex)
     return expr
+
+
+def p_doc_comments(state, scanner):
+    peek = scanner.peek()
+    if peek[0] == "DOCCOMMENT":
+        parts = []
+        while peek[0] == "DOCCOMMENT":
+            scanner.read()
+            parts.append(peek[1])
+            scanner.require_newline()
+            peek = scanner.peek()
+        return "\n".join(parts)
+    else:
+        # no doc comments at all is signalled as None, to differentiate
+        # between this case an an *empty* doc comment.
+        return None
 
 
 def p_statements(state, scanner, stop_test=lambda s: s.next_is_outdent()):

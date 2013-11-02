@@ -131,10 +131,11 @@ class ExpressionList(AstNode):
 
 class Module(AstNode):
 
-    def __init__(self, position, name, block):
+    def __init__(self, position, name, block, doc=None):
         self.name = name
         self.block = block
         self.position = position
+        self.doc = doc
 
     @property
     def params(self):

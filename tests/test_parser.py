@@ -85,6 +85,47 @@ class TestParser(LanguageTestCase):
         )
         self.assertEqual(len(module.block.stmts), 2)
 
+    def test_module_doc_comments(self):
+        state = CompileState()
+        module = parse_module(
+            state,
+            StringIO("#: doc comment 1\n\npass"),
+            "foo",
+            "foo.ala",
+        )
+        self.assertEqual(module.doc, "doc comment 1")
+        self.assertEqual(state.error_count, 0)
+
+        state = CompileState()
+        module = parse_module(
+            state,
+            StringIO("#: doc comment 2"),
+            "foo",
+            "foo.ala",
+        )
+        self.assertEqual(module.doc, "doc comment 2")
+        self.assertEqual(state.error_count, 0)
+
+        state = CompileState()
+        module = parse_module(
+            state,
+            StringIO("#: doc comment 3\n#: and some more"),
+            "foo",
+            "foo.ala",
+        )
+        self.assertEqual(module.doc, "doc comment 3\nand some more")
+        self.assertEqual(state.error_count, 0)
+
+        state = CompileState()
+        module = parse_module(
+            state,
+            StringIO("#: doc comment 4\npass"),
+            "foo",
+            "foo.ala",
+        )
+        self.assertEqual(module.doc, "doc comment 4")
+        self.assertEqual(state.error_count, 1)
+
     def test_error_recovery(self):
         # Simple line skipping: the two lines that start with ==
         # should be skipped after an error is generated.
