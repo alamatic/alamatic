@@ -58,8 +58,7 @@ class Scanner(plex.Scanner):
         if text[1] == ":":
             # if the second character is a colon then this is a doc comment,
             # which is significant for parsing and thus emitted as a token.
-            import string
-            comment_data = string.strip(text[2:])
+            comment_data = text[2:].strip()
             # Doc comments aren't allowed inside expressions but
             # we'll catch that during parsing rather than during scanning.
             self.produce('DOCCOMMENT', comment_data)
