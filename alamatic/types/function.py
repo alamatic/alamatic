@@ -137,7 +137,8 @@ class FunctionTemplate(Value):
                         )
                     )
 
-                runtime_block = self.decl_node.block.execute()
+                with interpreter.force_runtime():
+                    runtime_block = self.decl_node.block.execute()
 
         args_type = RuntimeFunctionArgs.make_args_type(symbols_list)
 
