@@ -507,8 +507,8 @@ class Registry(object):
                 child.runtime_top_level_scopes,
             )
 
-    def create_slot(self):
-        return self.data_state.root.slot()
+    def create_slot(self, **kwargs):
+        return self.data_state.root.slot(**kwargs)
 
 
 class RuntimeFunction(object):
@@ -598,6 +598,21 @@ class RuntimeFunctionArgs(object):
 class CallFrame(object):
     def __init__(self, parent=None):
         self.parent = parent
+
+        if interpreter.registry is None:
+            raise Exception("Can't create a call frame: no active registry")
+
+        def merge_error_values(cases):
+            ret = set()
+            for case in cases:
+                ret.update(case.value)
+            return ret
+
+        self.error_values_slot = interpreter.registry.create_slot(
+            initial_value=set(),
+            fork=lambda s: set(s),
+            merge=merge_error_values
+        )
 
     def create_child(self):
         return CallFrame(parent=self)

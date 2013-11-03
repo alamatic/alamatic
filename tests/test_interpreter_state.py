@@ -286,28 +286,29 @@ class TestInterpreterState(unittest.TestCase):
                 )
 
     def test_call_frame(self):
-        first_frame = CallFrame()
-        second_frame = first_frame.create_child()
-        third_frame = second_frame.create_child()
+        with Registry() as registry:
+            first_frame = CallFrame()
+            second_frame = first_frame.create_child()
+            third_frame = second_frame.create_child()
 
-        self.assertEqual(
-            list(third_frame.trace),
-            [
-                third_frame,
-                second_frame,
-                first_frame,
-            ]
-        )
-        self.assertEqual(
-            list(second_frame.trace),
-            [
-                second_frame,
-                first_frame,
-            ]
-        )
-        self.assertEqual(
-            list(first_frame.trace),
-            [
-                first_frame,
-            ]
-        )
+            self.assertEqual(
+                list(third_frame.trace),
+                [
+                    third_frame,
+                    second_frame,
+                    first_frame,
+                ]
+            )
+            self.assertEqual(
+                list(second_frame.trace),
+                [
+                    second_frame,
+                    first_frame,
+                ]
+            )
+            self.assertEqual(
+                list(first_frame.trace),
+                [
+                    first_frame,
+                ]
+            )

@@ -31,23 +31,25 @@ def interpreter_context(func=None):
 
     root_registry = Registry()
     root_symbols = SymbolTable()
-    root_frame = CallFrame()
 
     class TestState(object):
-        registry = root_registry
-        symbols = root_symbols
-        frame = root_frame
+        def __init__(self, registry, symbols, frame):
+            self.registry = registry
+            self.symbols = symbols
+            self.frame = frame
 
     class TestStateContext(object):
 
         def __enter__(self):
             root_registry.__enter__()
             root_symbols.__enter__()
+            root_frame = CallFrame()
             root_frame.__enter__()
-            return TestState()
+            self.root_frame = root_frame
+            return TestState(root_registry, root_symbols, root_frame)
 
         def __exit__(self, exc_type, exc_value, traceback):
-            root_frame.__exit__(exc_type, exc_value, traceback)
+            self.root_frame.__exit__(exc_type, exc_value, traceback)
             root_symbols.__exit__(exc_type, exc_value, traceback)
             root_registry.__exit__(exc_type, exc_value, traceback)
 
