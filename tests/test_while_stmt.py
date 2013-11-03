@@ -81,12 +81,14 @@ class TestExec(LanguageTestCase):
                 ),
             ],
             [
-                ('InlineStatementBlock', (), [
+                ('WhileStmt', (), [
+                    ('DummyLessThanTestExpr', ('a', 3), []),
                     ('StatementBlock', (), [
+                        ('DummyIncrementStmt', ('a', 1), []),
                         ('DummyStmtRuntime', ('block',), []),
                     ]),
                 ]),
-            ] * 3,
+            ],
         )
         self.assertDataResult(
             {
@@ -174,11 +176,6 @@ class TestExec(LanguageTestCase):
                 ),
             ],
             [
-                ('InlineStatementBlock', (), [
-                    ('StatementBlock', (), [
-                        ('DummyStmtRuntime', ('block',), []),
-                    ]),
-                ]),
                 ('WhileStmt', (), [
                     ('DummyLessThanTestExpr', ('a', 3), []),
                     ('StatementBlock', (), [
@@ -206,18 +203,11 @@ class TestExec(LanguageTestCase):
         )
 
     def test_unknown_test_known_body(self):
-        # This one is a tricky case where we don't know how many times the
-        # loop will iterate, but everything inside the loop would be known
-        # at compile time within a single iteration. In this case we need to
-        # catch all of the things that might change from one iteration to
-        # the next and treat them as unknown when evaluating the block.
 
         test_stmt = WhileStmt(
             None,
             DummyExprRuntime("cond", Bool),
             StatementBlock([
-                # DummyIncrementStmt counts as an assignment, thus marking
-                # the "a" symbol unknown when we execute this block.
                 DummyIncrementStmt("a"),
                 IfStmt(
                     None,
@@ -231,7 +221,7 @@ class TestExec(LanguageTestCase):
                             None,
                             StatementBlock([
                                 DummyAssignStmt("b", DummyType(True)),
-                                DummyStmtRuntime("else"),
+                                DummyStmtRuntime('else'),
                             ]),
                         ),
                     ],
@@ -250,6 +240,7 @@ class TestExec(LanguageTestCase):
                 "b": None,
             }
         )
+
         self.assertCodegenTree(
             [
                 DummyDataDeclStmt("a", DummyType(0)),

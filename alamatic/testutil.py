@@ -322,11 +322,12 @@ class DummyType(alamatic.types.Value):
     instances = WeakValueDictionary()
 
     def __new__(cls, value):
-        if value not in cls.instances:
+        instance_key = (type(value), value)
+        if instance_key not in cls.instances:
             self = object.__new__(cls)
             self.value = value
-            cls.instances[value] = self
-        return cls.instances[value]
+            cls.instances[instance_key] = self
+        return cls.instances[instance_key]
 
     def __repr__(self):
         return "<alamatic.testutil.%s: %r>" % (
