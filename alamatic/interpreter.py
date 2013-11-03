@@ -47,6 +47,7 @@ class Interpreter(object):
     registry = None
     frame = None
     state = None
+    forcing_runtime = False
 
     def child_symbol_table(self):
         return self.symbols.create_child()
@@ -56,6 +57,19 @@ class Interpreter(object):
 
     def child_call_frame(self):
         return self.frame.create_child()
+
+    def force_runtime(self):
+        old_forcing = self.forcing_runtime
+
+        class Context(object):
+
+            def __enter__(self):
+                interpreter.forcing_runtime = True
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                interpreter.forcing_runtime = old_forcing
+
+        return Context()
 
     def declare(self, name, type=None, const=False, position=None):
         self._declare(
@@ -283,6 +297,15 @@ class Symbol(object):
         # first try to retrieve the type, even though we're not going to
         # do anything with it, just to make sure it's known.
         dummy = self.get_type(position=position)
+
+        # if we're forcing runtime code generation and this symbol
+        # is a variable then always pretend we don't know its value.
+        if interpreter.forcing_runtime and not self.const:
+            raise SymbolValueNotKnownError(
+                "Value of '%s' is not known at " % (self.decl_name),
+                pos_link(position),
+            )
+
         try:
             return self.value_slot.value
         except datafork.ValueAmbiguousError, ex:
@@ -300,6 +323,17 @@ class Symbol(object):
             )
 
     def assign(self, value, position=None):
+        # if we're forcing runtime code generation and this symbol
+        # is a constant then refuse to allow this assignment, since we
+        # can't modify constants at runtime.
+        if interpreter.forcing_runtime and self.const:
+            # TODO: Include in this error message information about
+            # *why* we're forcing runtime to help the user debug.
+            raise CannotChangeConstantError(
+                "Can't assign to constant '%s' at runtime" % self.decl_name,
+                ", at ", pos_link(position)
+            )
+
         if not self.is_possibly_initialized:
             # we're initializing the symbol for the first time
             self.initialize(type(value), position=position)
@@ -324,7 +358,16 @@ class Symbol(object):
                     ),
                     " at ", pos_link(position),
                 )
-        self.value_slot.set_value(value, position=position)
+
+        # If we're forcing runtime code generation then any assignments
+        # are resolved as unknown because their true value will be decided
+        # at runtime. (this is important for e.g. loop bodies where we
+        # only evaluate the body once at compile time but it may execute
+        # many times at runtime, causing a different outcome.)
+        if interpreter.forcing_runtime:
+            self.value_slot.set_value_not_known(position=position)
+        else:
+            self.value_slot.set_value(value, position=position)
 
     def mark_value_unknown(self, known_type=None, position=None):
         if known_type:

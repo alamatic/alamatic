@@ -284,6 +284,7 @@ class DummyIncrementStmt(alamatic.ast.Statement):
                 interpreter.get_symbol(self.name),
                 self.position,
             )
+            interpreter.mark_unknown(self.name)
             runtime_stmts.append(
                 DummyIncrementStmt(
                     self.name,
