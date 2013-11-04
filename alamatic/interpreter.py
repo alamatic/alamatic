@@ -270,6 +270,12 @@ class SymbolTable(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        # Before we exit, finalize the initialization of any
+        # symbols we created in this scope and catch any that
+        # fell through without being initialized.
+        for name, symbol in self.symbols.iteritems():
+            symbol.finalize_initialization()
+
         interpreter.symbols = self.previous_table
 
 
@@ -480,6 +486,31 @@ class Symbol(object):
     @property
     def codegen_name(self):
         return "_ala_%x" % id(self)
+
+    def finalize_initialization(self):
+        # Called at the end of the scope that created this symbol, so we
+        # get a chance to make sure we've been initialized properly
+        # and finalize our initialization if so.
+        if self.is_definitely_initialized and self.type_slot.value_is_known:
+            self.is_initialized_slot.finalize()
+            self.type_slot.finalize()
+        else:
+            try:
+                type_ = self.get_type()
+            except SymbolValueAmbiguousError, ex:
+                # FIXME: Include in this error message the list
+                # of initializations from ex.conflict
+                raise SymbolTypeNotKnownError(
+                    "Symbol '%s', declared at " % self.decl_name,
+                    pos_link(self.decl_position),
+                    ", was inconsistently initialized"
+                )
+            else:
+                raise SymbolTypeNotKnownError(
+                    "Symbol '%s', declared at " % self.decl_name,
+                    pos_link(self.decl_position),
+                    ", was not initialized"
+                )
 
     def generate_c_decl(self, state, writer):
         if not self.is_used_at_runtime:

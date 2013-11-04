@@ -78,7 +78,7 @@ class TestInterpreterExec(unittest.TestCase):
         class Result(object):
             pass
 
-        def try_decl(decl_type, name, expr):
+        def make_decl(decl_type, name, expr):
             decl = decl_type(
                 None,
                 name,
@@ -88,6 +88,10 @@ class TestInterpreterExec(unittest.TestCase):
                 decl,
                 expr,
             )
+            return decl_stmt
+
+        def try_decl(decl_type, name, expr):
+            decl_stmt = make_decl(decl_type, name, expr)
             runtime_stmts = []
             ret = Result()
             with interpreter_context() as context:
@@ -99,27 +103,42 @@ class TestInterpreterExec(unittest.TestCase):
 
         # Var declaration with no value: populates the symbol table but leaves
         # the symbol uninitialized.
-        result = try_decl(VarDeclClause, "baz", None)
-        self.assertEqual(
-            len(result.runtime_stmts),
-            0,
-        )
-        symbol = result.symbols.get_symbol("baz")
-        self.assertFalse(
-            symbol.const,
-            "Symbol is const but expected var",
-        )
-        self.assertFalse(
-            symbol.is_definitely_initialized,
-            "Symbol is initialized but it shouldn't be"
-        )
-        self.assertEqual(
-            symbol.decl_name,
-            'baz',
-        )
-        self.assertEqual(
-            symbol.decl_position,
-            ('test', 1, 0),
+        def try_var_decl_with_no_value():
+            with interpreter_context() as context:
+                decl_stmt = make_decl(VarDeclClause, "baz", None)
+                runtime_stmts = []
+                result = Result()
+                result.registry = context.registry
+                result.symbols = context.symbols
+                decl_stmt.execute(runtime_stmts)
+                result.runtime_stmts = runtime_stmts
+
+                self.assertEqual(
+                    len(result.runtime_stmts),
+                    0,
+                )
+                symbol = result.symbols.get_symbol("baz")
+                self.assertFalse(
+                    symbol.const,
+                    "Symbol is const but expected var",
+                )
+                self.assertFalse(
+                    symbol.is_definitely_initialized,
+                    "Symbol is initialized but it shouldn't be"
+                )
+                self.assertEqual(
+                    symbol.decl_name,
+                    'baz',
+                )
+                self.assertEqual(
+                    symbol.decl_position,
+                    ('test', 1, 0),
+                )
+        # The function should raise because it's illegal to exit a
+        # symbol table without initializing all of its symbols.
+        self.assertRaises(
+            SymbolNotInitializedError,
+            try_var_decl_with_no_value,
         )
 
         # Var declaration with a constant value: populates the symbol table,

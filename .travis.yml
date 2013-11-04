@@ -6,7 +6,7 @@ install:
   - "pip install -e . --use-mirrors"
   # FIXME: It'd be better not to duplicate the dependencies in here,
   # since they're already in setup.py. :(
-  - "pip install --pre --use-mirrors plex==2.0.0dev datafork>=0.0.3"
+  - "pip install --pre --use-mirrors plex==2.0.0dev datafork>=0.0.5"
   # Testing dependencies
   - "pip install --use-mirrors -U -r requirements-dev.txt"
 script: nosetests -v --with-coverage --cover-erase --cover-inclusive --cover-branches --cover-min-percentage=80 --cover-package=alamatic

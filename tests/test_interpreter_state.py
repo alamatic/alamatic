@@ -170,8 +170,8 @@ class TestInterpreterState(unittest.TestCase):
                 # gets its own symbol table too.
                 if_registry = interpreter.child_registry()
                 else_registry = interpreter.child_registry()
-                with interpreter.child_symbol_table() as if_table:
-                    with if_registry:
+                with if_registry:
+                    with interpreter.child_symbol_table() as if_table:
                         interpreter.assign("a", 3, position=("if", 1, 0))
                         interpreter.assign("b", 19)
                         interpreter.declare_and_init("c", 109)
@@ -191,28 +191,29 @@ class TestInterpreterState(unittest.TestCase):
                             interpreter.retrieve("c"),
                             109,
                         )
-                    # After popping the child state we should be back
-                    # to the original values.
+                    # After popping the child table we should be back
+                    # to the original symbol for "c".
                     self.assertEqual(
-                        interpreter.retrieve("a"),
-                        1,
+                        interpreter.retrieve("c"),
+                        54,
                     )
-                    self.assertEqual(
-                        interpreter.retrieve("b"),
-                        32,
-                    )
-                    self.assertEqual(
-                        interpreter.get_runtime_usage_position(
-                            interpreter.get_symbol("a"),
-                        ),
-                        None,
-                    )
-                # And after popping the child table we should be back
-                # to the original symbol for "c".
+                # And after popping the child state we should be back
+                # to the original values.
                 self.assertEqual(
-                    interpreter.retrieve("c"),
-                    54,
+                    interpreter.retrieve("a"),
+                    1,
                 )
+                self.assertEqual(
+                    interpreter.retrieve("b"),
+                    32,
+                )
+                self.assertEqual(
+                    interpreter.get_runtime_usage_position(
+                        interpreter.get_symbol("a"),
+                    ),
+                    None,
+                )
+
                 with interpreter.child_symbol_table() as else_table:
                     with else_registry:
                         interpreter.assign("a", 4, position=("else", 2, 0))
