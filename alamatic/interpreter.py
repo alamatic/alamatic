@@ -505,12 +505,14 @@ class Symbol(object):
                     pos_link(self.decl_position),
                     ", was inconsistently initialized"
                 )
-            else:
-                raise SymbolTypeNotKnownError(
-                    "Symbol '%s', declared at " % self.decl_name,
-                    pos_link(self.decl_position),
-                    ", was not initialized"
-                )
+            except SymbolNotInitializedError:
+                pass
+
+            raise SymbolTypeNotKnownError(
+                "Symbol '%s', declared at " % self.decl_name,
+                pos_link(self.decl_position),
+                ", was never initialized"
+            )
 
     def generate_c_decl(self, state, writer):
         if not self.is_used_at_runtime:
