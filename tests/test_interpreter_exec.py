@@ -53,6 +53,8 @@ class TestInterpreterExec(unittest.TestCase):
             Symbol,
             NotConstantError,
             SymbolValueNotKnownError,
+            SymbolTypeAmbiguousError,
+            SymbolTypeNotKnownError,
         )
 
         class ConstantExpr(Expression):
@@ -137,7 +139,7 @@ class TestInterpreterExec(unittest.TestCase):
         # The function should raise because it's illegal to exit a
         # symbol table without initializing all of its symbols.
         self.assertRaises(
-            SymbolNotInitializedError,
+            SymbolTypeNotKnownError,
             try_var_decl_with_no_value,
         )
 

@@ -291,6 +291,7 @@ class Symbol(object):
         self.const = const
         self.decl_position = decl_position
         self.decl_name = decl_name
+        self.type_slot.set_value_not_known(position=decl_position)
 
     def __repr__(self):
         return "<alamatic.interpreter.Symbol %r (%s) from %r>" % (
@@ -409,7 +410,7 @@ class Symbol(object):
         except datafork.ValueAmbiguousError, ex:
             # FIXME: include the set of competing initializations in the
             # error message to help the user debug.
-            raise SymbolValueAmbiguousError(
+            raise SymbolTypeAmbiguousError(
                 "Type of '%s' is ambiguous at " % self.decl_name,
                 pos_link(position),
                 conflict=ex.conflict,
@@ -421,14 +422,13 @@ class Symbol(object):
             )
 
     def initialize(self, new_type, position=None):
-        if len(self.type_slot.positions) > 0:
+        if len(self.is_initialized_slot.positions) > 0:
             # should never happen
             raise Exception("Can't initialize '%s': already has a type" % (
                 self.decl_name
             ))
         else:
             self.type_slot.set_value(new_type, position=position)
-            self.type_slot.value = new_type
             self.is_initialized_slot.set_value(True, position=position)
 
     def mark_used_at_runtime(self, position=None):
@@ -497,13 +497,12 @@ class Symbol(object):
         else:
             try:
                 type_ = self.get_type()
-            except SymbolValueAmbiguousError, ex:
-                # FIXME: Include in this error message the list
-                # of initializations from ex.conflict
-                raise SymbolTypeNotKnownError(
+            except SymbolTypeAmbiguousError, ex:
+                raise SymbolTypeAmbiguousError(
                     "Symbol '%s', declared at " % self.decl_name,
                     pos_link(self.decl_position),
-                    ", was inconsistently initialized"
+                    ", was inconsistently initialized",
+                    conflict=ex.conflict
                 )
             except SymbolNotInitializedError:
                 pass
@@ -731,19 +730,27 @@ class SymbolTypeAmbiguousError(SymbolTypeNotKnownError):
 
     @property
     def additional_info_items(self):
-        for possibility in self.conflict.possibilities:
-            type_ = possibility[0]
-            position = possibility[1]
-            if type_ is not None:
-                yield (
-                    "Possibly initialized as %s at " % type_.__name__,
-                    pos_link(position),
-                )
-            else:
-                yield (
-                    "Declared without initialization at ",
-                    pos_link(position),
-                )
+        if self.conflict is not None:
+            possibilities = []
+            for possibility in self.conflict.possibilities:
+                for position in possibility.positions:
+                    possibilities.append(
+                        (possibility.value, position)
+                    )
+            possibilities.sort(
+                key=lambda x: x[1]
+            )
+            for type_, position in possibilities:
+                if type_ is not datafork.Slot.NOT_KNOWN:
+                    yield (
+                        "Possibly initialized as %s at " % type_.__name__,
+                        pos_link(position),
+                    )
+                else:
+                    yield (
+                        "Declared without initialization at ",
+                        pos_link(position),
+                    )
 
 
 class SymbolValueNotKnownError(CompilerError):
