@@ -10,6 +10,9 @@ from alamatic.interpreter import (
     IncompatibleTypesError,
     SymbolNotInitializedError,
     SymbolValueAmbiguousError,
+    ReturnTypeAmbiguousError,
+    ReturnValueNotKnownError,
+    ReturnValueAmbiguousError
 )
 from alamatic.testutil import DummyType
 
@@ -286,7 +289,10 @@ class TestInterpreterState(unittest.TestCase):
                     ('else', 0, 0),
                 )
 
-    def test_call_frame(self):
+
+class TestCallFrame(unittest.TestCase):
+
+    def test_heirarchy(self):
         with Registry() as registry:
             first_frame = CallFrame()
             second_frame = first_frame.create_child()
@@ -313,3 +319,91 @@ class TestInterpreterState(unittest.TestCase):
                     first_frame,
                 ]
             )
+
+    def test_return(self):
+        from alamatic.types import Void
+
+        with Registry() as registry:
+            frame = CallFrame()
+
+            self.assertFalse(
+                frame.returning_early
+            )
+            self.assertEqual(
+                frame.result_type,
+                Void,
+            )
+            self.assertEqual(
+                frame.error_type,
+                Void,
+            )
+
+            frame.return_value(5)
+
+            self.assertTrue(
+                frame.returning_early
+            )
+            self.assertEqual(
+                frame.result_type,
+                int,
+            )
+            self.assertEqual(
+                frame.result,
+                5,
+            )
+            self.assertEqual(
+                frame.error_type,
+                Void,
+            )
+
+            with frame:
+                self.assertTrue(
+                    interpreter.returning_early
+                )
+                self.assertFalse(
+                    interpreter.executing_forwards
+                )
+
+    def test_fail(self):
+        from alamatic.types import Void
+
+        with Registry() as registry:
+            frame = CallFrame()
+
+            self.assertFalse(
+                frame.returning_early
+            )
+            self.assertEqual(
+                frame.result_type,
+                Void,
+            )
+            self.assertEqual(
+                frame.error_type,
+                Void,
+            )
+
+            frame.fail_with_value(5)
+
+            self.assertTrue(
+                frame.returning_early
+            )
+            self.assertEqual(
+                frame.result_type,
+                Void,
+            )
+            self.assertEqual(
+                frame.error_value,
+                5,
+            )
+            self.assertEqual(
+                frame.error_type,
+                int,
+            )
+
+            with frame:
+                self.assertTrue(
+                    interpreter.returning_early
+                )
+                self.assertFalse(
+                    interpreter.executing_forwards
+                )

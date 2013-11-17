@@ -17,6 +17,52 @@ import datafork
 import weakref
 
 
+# Create a special value to be used in tristate cases where
+# "True", "False" and "Possibly" are allowed.
+class PossiblyType(object):
+    def tristate_merge(self, cases):
+        all_true = all(
+            case.value is True
+            for case in cases
+        )
+        if all_true:
+            return True
+        all_false = all(
+            case.value is False
+            for case in cases
+        )
+        if all_false:
+            return False
+
+        return self
+
+
+Possibly = PossiblyType()
+del PossiblyType  # we don't need the type around anymore
+
+
+class LoopJumpType(object):
+    def __init__(self, caption):
+        self.caption = caption
+
+    def __repr__(self):
+        return "<LoopJumpType %s>" % self.caption
+
+    @staticmethod
+    def merge(cases):
+        from datafork import equality_merge, MergeConflict
+        result = equality_merge(cases)
+        if isinstance(result, MergeConflict):
+            return LoopJumpType.ambiguous
+        else:
+            return result
+
+
+LoopJumpType.break_ = LoopJumpType("break")
+LoopJumpType.continue_ = LoopJumpType("continue")
+LoopJumpType.ambiguous = LoopJumpType("(ambiguous)")
+
+
 def make_runtime_program(state, entry_point_module):
     from alamatic.codegen import RuntimeProgram
     old_state = interpreter.state
@@ -187,6 +233,42 @@ class Interpreter(object):
 
     def get_runtime_usage_position(self, symbol):
         return symbol.runtime_usage_position
+
+    def return_value(self, value, position=None):
+        self.frame.set_return_value(value, position=position)
+
+    def return_unknown_value(self, known_type, position=None):
+        self.frame.set_unknown_return_value(known_type, position=position)
+
+    def fail_with_value(self, value, position=None):
+        self.frame.set_error_value(value, position=position)
+
+    def fail_with_unknown_value(self, known_type, position=None):
+        self.frame.set_unknown_error_value(known_type, position=position)
+
+    @property
+    def executing_forwards(self):
+        if self.returning_early is True or self.loop_jump_active is True:
+            return False
+        elif (
+            self.returning_early is Possibly or
+            self.loop_jump_active is Possibly
+        ):
+            return Possibly
+        else:
+            return True
+
+    @property
+    def returning_early(self):
+        return self.frame.returning_early
+
+    @property
+    def loop_jump_active(self):
+        return self.frame.loop_jump_active
+
+    @property
+    def loop_jump_type(self):
+        return self.frame.loop_jump_type
 
     def register_runtime_function(self, function):
         self.registry.register_runtime_function(function)
@@ -672,22 +754,121 @@ class RuntimeFunctionArgs(object):
 
 class CallFrame(object):
     def __init__(self, parent=None):
+        from alamatic.types import Void
         self.parent = parent
 
         if interpreter.registry is None:
             raise Exception("Can't create a call frame: no active registry")
 
-        def merge_error_values(cases):
-            ret = set()
-            for case in cases:
-                ret.update(case.value)
-            return ret
-
-        self.error_values_slot = interpreter.registry.create_slot(
-            initial_value=set(),
-            fork=lambda s: set(s),
-            merge=merge_error_values
+        self.result_type_slot = interpreter.registry.create_slot(
+            initial_value=Void,
         )
+        self.result_value_slot = interpreter.registry.create_slot()
+        self.error_type_slot = interpreter.registry.create_slot(
+            initial_value=Void,
+        )
+        self.error_value_slot = interpreter.registry.create_slot()
+
+        self.returning_early_slot = interpreter.registry.create_slot(
+            initial_value=False,
+            merge=Possibly.tristate_merge,
+        )
+        self.loop_jump_type_slot = interpreter.registry.create_slot(
+            initial_value=None,
+            merge=LoopJumpType.merge,
+        )
+
+    @property
+    def returning_early(self):
+        return self.returning_early_slot.value
+
+    @property
+    def loop_jump_active(self):
+        return self.loop_jump_type is not None
+
+    @property
+    def loop_jump_type(self):
+        return self.loop_jump_type_slot.value
+
+    def return_value(self, value, position=None):
+        self.result_type_slot.set_value(type(value), position=position)
+        self.result_value_slot.set_value(value, position=position)
+        self.returning_early_slot.set_value(True, position=position)
+
+    def fail_with_value(self, value, position=None):
+        self.error_type_slot.set_value(type(value), position=position)
+        self.error_value_slot.set_value(value, position=position)
+        self.returning_early_slot.set_value(True, position=position)
+
+    def return_unknown_value(self, result_type, position=None):
+        self.result_type.set_value(result_type, position=position)
+        self.result_value.set_value_not_known(position=position)
+        self.returning_early_slot.set_value(True, position=position)
+
+    def fail_with_unknown_value(self, error_type, position=None):
+        self.error_type.set_value(error_type, position=position)
+        self.error_value.set_value_not_known(position=position)
+        self.returning_early_slot.set_value(True, position=position)
+
+    @property
+    def result_type(self):
+        try:
+            return self.result_type_slot.value
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnTypeAmbiguousError(
+                "Return type is ambiguous",
+                conflict=ex.conflict,
+            )
+
+    @property
+    def result(self):
+        try:
+            return self.result_value_slot.value
+        except datafork.ValueNotKnownError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnValueNotKnownError(
+                "Return value is not known",
+            )
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnValueAmbiguousError(
+                "Return value is ambiguous",
+                conflict=ex.conflict,
+            )
+
+    @property
+    def error_type(self):
+        try:
+            return self.error_type_slot.value
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnTypeAmbiguousError(
+                "Error type is ambiguous",
+                conflict=ex.conflict,
+            )
+
+    @property
+    def error_value(self):
+        try:
+            return self.error_value_slot.value
+        except datafork.ValueNotKnownError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnValueNotKnownError(
+                "Error value is not known",
+            )
+        except datafork.ValueAmbiguousError, ex:
+            # FIXME: Make the call frame know its function and then
+            # we can return the function name and position here.
+            raise ReturnValueAmbiguousError(
+                "Error value is ambiguous",
+                conflict=ex.conflict,
+            )
 
     def create_child(self):
         return CallFrame(parent=self)
@@ -761,6 +942,45 @@ class SymbolValueAmbiguousError(SymbolValueNotKnownError):
     def __init__(self, *args, **kwargs):
         self.conflict = kwargs.get("conflict")
         super(SymbolValueAmbiguousError, self).__init__(*args)
+
+
+class ReturnValueNotKnownError(CompilerError):
+    pass
+
+
+class ReturnValueAmbiguousError(ReturnValueNotKnownError):
+    def __init__(self, *args, **kwargs):
+        self.conflict = kwargs.get("conflict")
+        super(ReturnValueAmbiguousError, self).__init__(*args)
+
+
+class ReturnTypeAmbiguousError(CompilerError):
+    def __init__(self, *args, **kwargs):
+        self.conflict = kwargs.get("conflict")
+        super(ReturnValueAmbiguousError, self).__init__(*args)
+
+    @property
+    def additional_info_items(self):
+        if self.conflict is not None:
+            possibilities = []
+            for possibility in self.conflict.possibilities:
+                for position in possibility.positions:
+                    possibilities.append(
+                        (possibility.value, position)
+                    )
+            possibilities.sort(
+                key=lambda x: x[1]
+            )
+            for type_, position in possibilities:
+                if type_ is not datafork.Slot.NOT_KNOWN:
+                    yield (
+                        "%s at " % type_.__name__,
+                        pos_link(position),
+                    )
+                else:
+                    yield (
+                        "Implicitly Void at end of function",
+                    )
 
 
 class NotConstantError(CompilerError):
