@@ -235,16 +235,16 @@ class Interpreter(object):
         return symbol.runtime_usage_position
 
     def return_value(self, value, position=None):
-        self.frame.set_return_value(value, position=position)
+        self.frame.return_value(value, position=position)
 
     def return_unknown_value(self, known_type, position=None):
-        self.frame.set_unknown_return_value(known_type, position=position)
+        self.frame.return_unknown_value(known_type, position=position)
 
     def fail_with_value(self, value, position=None):
-        self.frame.set_error_value(value, position=position)
+        self.frame.fail_with_value(value, position=position)
 
     def fail_with_unknown_value(self, known_type, position=None):
-        self.frame.set_unknown_error_value(known_type, position=position)
+        self.frame.fail_with_unknown_value(known_type, position=position)
 
     @property
     def executing_forwards(self):
@@ -801,13 +801,13 @@ class CallFrame(object):
         self.returning_early_slot.set_value(True, position=position)
 
     def return_unknown_value(self, result_type, position=None):
-        self.result_type.set_value(result_type, position=position)
-        self.result_value.set_value_not_known(position=position)
+        self.result_type_slot.set_value(result_type, position=position)
+        self.result_value_slot.set_value_not_known(position=position)
         self.returning_early_slot.set_value(True, position=position)
 
     def fail_with_unknown_value(self, error_type, position=None):
-        self.error_type.set_value(error_type, position=position)
-        self.error_value.set_value_not_known(position=position)
+        self.error_type_slot.set_value(error_type, position=position)
+        self.error_value_slot.set_value_not_known(position=position)
         self.returning_early_slot.set_value(True, position=position)
 
     @property
@@ -957,17 +957,21 @@ class ReturnValueAmbiguousError(ReturnValueNotKnownError):
 class ReturnTypeAmbiguousError(CompilerError):
     def __init__(self, *args, **kwargs):
         self.conflict = kwargs.get("conflict")
-        super(ReturnValueAmbiguousError, self).__init__(*args)
+        super(ReturnTypeAmbiguousError, self).__init__(*args)
 
     @property
     def additional_info_items(self):
         if self.conflict is not None:
             possibilities = []
+            fell_through = False
             for possibility in self.conflict.possibilities:
-                for position in possibility.positions:
-                    possibilities.append(
-                        (possibility.value, position)
-                    )
+                if len(possibility.positions) > 0:
+                    for position in possibility.positions:
+                        possibilities.append(
+                            (possibility.value, position)
+                        )
+                else:
+                    fell_through = True
             possibilities.sort(
                 key=lambda x: x[1]
             )
@@ -977,10 +981,8 @@ class ReturnTypeAmbiguousError(CompilerError):
                         "%s at " % type_.__name__,
                         pos_link(position),
                     )
-                else:
-                    yield (
-                        "Implicitly Void at end of function",
-                    )
+            if fell_through:
+                yield "Implicitly Void at end of function"
 
 
 class NotConstantError(CompilerError):

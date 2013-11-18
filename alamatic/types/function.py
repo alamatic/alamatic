@@ -44,6 +44,7 @@ class FunctionTemplate(Value):
         from alamatic.interpreter import (
             interpreter,
             NotConstantError,
+            ReturnValueNotKnownError,
         )
         self._assert_correct_args(args, position=position)
         param_decls = self.decl_node.decl.param_decls
@@ -72,14 +73,14 @@ class FunctionTemplate(Value):
                             "at compile time for ", pos_link(position),
                         )
 
-        # If we fell out here then we managed to execute the whole
-        # function at compile time, so we commit its state changes
-        # unconditionally to the parent.
-        interpreter.data.merge_child(data)
-
-        # TODO: Once we have a concept of a return value for a call frame,
-        # return that here.
-        return None
+        try:
+            return frame.result
+        except ReturnValueNotKnownError:
+            raise NotConstantError(
+                "The return value of function '%s'" % self.decl_node.decl.name,
+                " could not be determined at compile time for "
+                "at compile time for ", pos_link(position),
+            )
 
     def instantiate(self, template_key, call_position=None):
         from alamatic.interpreter import (
@@ -142,11 +143,13 @@ class FunctionTemplate(Value):
 
         args_type = RuntimeFunctionArgs.make_args_type(symbols_list)
 
+        result_type = frame.result_type
+
         instance = RuntimeFunction(
             self.decl_node.position,
             runtime_block,
             args_type,
-            Void,
+            result_type,
         )
 
         self.instances.append(

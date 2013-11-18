@@ -59,6 +59,39 @@ class ReturnStmt(Statement):
         if self.expr is not None:
             yield self.expr
 
+    def execute(self, runtime_stmts):
+        from alamatic.interpreter import (
+            interpreter,
+            NotConstantError,
+        )
+
+        expr = self.expr.evaluate()
+
+        runtime_stmts.append(
+            ReturnStmt(
+                self.position,
+                expr,
+            )
+        )
+
+        try:
+            value = expr.constant_value
+            interpreter.return_value(
+                value,
+                position=self.position,
+            )
+        except NotConstantError:
+            result_type = expr.result_type
+            interpreter.return_unknown_value(
+                result_type,
+                position=self.position,
+            )
+
+    def generate_c_code(self, state, writer):
+        writer.write("return ");
+        self.expr.generate_c_code(state, writer)
+        writer.writeln(";")
+
 
 class IfStmt(Statement):
 

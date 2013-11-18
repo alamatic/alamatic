@@ -54,11 +54,36 @@ class StatementBlock(AstNode):
         # Note that StatementBlock isn't a Statement, so this is not the
         # statement execute() interface even though the method has the
         # same name.
-        from alamatic.interpreter import interpreter
+        from alamatic.interpreter import interpreter, Possibly
         with interpreter.child_symbol_table() as symbols:
             runtime_stmts = []
             for stmt in self.stmts:
-                stmt.execute(runtime_stmts)
+                going_forwards = interpreter.executing_forwards
+                if going_forwards is True:
+                    stmt.execute(runtime_stmts)
+                elif going_forwards is Possibly:
+                    # FIXME: This is not actually correct behavior,
+                    # since it causes an incorrect result with a
+                    # block like this:
+                    # if unknown:
+                    #    return 2
+                    # return 1
+                    # In this case, we cause there to be three possible
+                    # cases: return 2, return 1 or fall out.
+                    # But actually, there are really only two cases here.
+                    # For correct results we need to do proper control
+                    # flow analysis.
+                    child_registry = interpreter.child_registry()
+                    with child_registry:
+                        stmt.execute(runtime_stmts)
+                    interpreter.registry.merge_children(
+                        [child_registry],
+                        or_none=True,
+                    )
+                else:
+                    # unconditional jump out is happening, so cease
+                    # executing statements.
+                    break
             return StatementBlock(
                 runtime_stmts,
                 symbols,
