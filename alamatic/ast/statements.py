@@ -4,8 +4,10 @@ from alamatic.ast import *
 
 class Statement(AstNode):
 
-    def execute(self, runtime_stmts):
-        raise Exception("execute is not implemented for %r" % self)
+    def make_intermediate_form(self, elems, parent_symbols):
+        raise Exception(
+            "make_intermediate_form is not implemented for %r" % self,
+        )
 
 
 class ExpressionStmt(Statement):
@@ -18,16 +20,21 @@ class ExpressionStmt(Statement):
     def child_nodes(self):
         yield self.expr
 
-    def execute(self, runtime_stmts):
-        from alamatic.ast import ValueExpr
-        eval_expr = self.expr.evaluate()
-        if not isinstance(eval_expr, ValueExpr):
-            runtime_stmts.append(
-                ExpressionStmt(
-                    self.position,
-                    eval_expr,
-                )
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            SymbolOperand,
+        )
+        from alamatic.compilelogging import CompilerError, pos_link
+        if not self.expr.can_be_statement:
+            raise CompilerError(
+                "Expression cannot be statement at ",
+                pos_link(self.expr.position),
             )
+
+        self.expr.make_intermediate_form(
+            elems,
+            symbols,
+        )
 
     def generate_c_code(self, state, writer):
         self.expr.generate_c_code(state, writer)
@@ -363,15 +370,13 @@ class DataDeclStmt(Statement):
         if self.expr is not None:
             yield self.expr
 
-    def execute(self, runtime_stmts):
-        from alamatic.interpreter import (
-            interpreter,
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            SymbolOperand,
             NotConstantError,
+            CopyOperation,
         )
         from alamatic.ast import (
-            ValueExpr,
-            AssignExpr,
-            SymbolExpr,
             ConstDeclClause,
         )
         from alamatic.compilelogging import pos_link
@@ -387,54 +392,35 @@ class DataDeclStmt(Statement):
                 )
             else:
                 # Create symbol but leave it uninitialized
-                interpreter.declare(
+                symbols.declare(
                     self.decl.name,
+                    const=False,
                     position=self.position,
                 )
         else:
-            val_expr = self.expr.evaluate()
-            initial_value = None
-
-            try:
-                initial_value = val_expr.constant_value
-            except NotConstantError:
-                if const:
-                    raise NotConstantError(
-                        "Initial value for constant '%s'," % self.decl.name,
-                        " declared at ", pos_link(self.position),
-                        ", can't be determined at compile time",
-                    )
-
-            if initial_value is not None:
-                interpreter.declare_and_init(
-                    self.decl.name,
-                    initial_value,
-                    const=const,
+            # We do a two-stage declaration here because we can't
+            # put the new symbol in the symbol table until we've
+            # analysed the declaration expression.
+            symbol = symbols.begin_declare(
+                self.decl.name,
+                const=const,
+                position=self.position,
+            )
+            assign_target = SymbolOperand(
+                symbol,
+                position=self.decl.position,
+            )
+            initializer = self.expr.make_intermediate_form(
+                elems, symbols,
+            )
+            elems.append(
+                CopyOperation(
+                    assign_target,
+                    initializer,
                     position=self.position,
                 )
-            else:
-                interpreter.declare(
-                    self.decl.name,
-                    val_expr.result_type,
-                    const=const,
-                    position=self.position,
-                )
-
-            symbol = interpreter.get_symbol(self.decl.name)
-
-            # The code generator will generate the declaration from the scope,
-            # so we just need to assign a value to it in the runtime stmts.
-            if not const:
-                symbol_expr = SymbolExpr(
-                    self.position,
-                    symbol,
-                )
-                assign_expr = symbol_expr.assign(val_expr)
-                assign_stmt = ExpressionStmt(
-                    self.position,
-                    assign_expr,
-                )
-                runtime_stmts.append(assign_stmt)
+            )
+            symbols.complete_declare(symbol)
 
 
 class FuncDeclStmt(Statement):

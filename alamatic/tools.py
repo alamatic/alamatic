@@ -25,6 +25,13 @@ def alac():
     if state.error_count > 0:
         return 1
 
+    intermediate = module.get_intermediate_form()
+    from alamatic.codegen import CodeWriter
+    writer = CodeWriter(sys.stdout)
+    for elem in intermediate:
+        elem.generate_c_code(state, writer)
+    sys.exit(0)
+
     runtime_program = make_runtime_program(state, module)
     if state.error_count > 0:
         return 1

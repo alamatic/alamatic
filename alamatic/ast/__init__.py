@@ -50,6 +50,11 @@ class StatementBlock(AstNode):
     def is_empty(self):
         return len(self.stmts) == 0
 
+    def make_intermediate_form(self, elems, parent_symbols):
+        symbols = parent_symbols.create_child()
+        for stmt in self.stmts:
+            stmt.make_intermediate_form(elems, symbols)
+
     def execute(self):
         # Note that StatementBlock isn't a Statement, so this is not the
         # statement execute() interface even though the method has the
@@ -169,6 +174,15 @@ class Module(AstNode):
     @property
     def child_nodes(self):
         yield self.block
+
+    def get_intermediate_form(self):
+        from alamatic.intermediate import SymbolTable
+        symbols = SymbolTable()
+        elems = []
+        self.block.make_intermediate_form(elems, symbols)
+        # TODO: do control flow analysis on elems and produce a
+        # control flow graph to return.
+        return elems
 
     def execute(self):
         """

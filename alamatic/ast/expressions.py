@@ -13,42 +13,18 @@ from alamatic.interpreter import (
 
 
 class Expression(AstNode):
+    can_be_statement = False
 
-    def evaluate(self):
-        raise Exception("evaluate is not implemented for %r" % self)
-
-    @property
-    def result_type(self):
-        """
-        Returns the type that will result from evaluating this expression.
-
-        This method is only supported on the code generation tree generated
-        by calls to :py:meth:`evaluate`, not on the parse tree generated
-        by the parser, because the parse tree is generated before semantic
-        analysis has been performed and thus has no type information present.
-        """
-        raise Exception("result_type is not implemented for %r" % self)
-
-    def assign(self, expr):
-        raise InvalidAssignmentError(
-            "Invalid assignment target at ", pos_link(self.position)
+    def make_intermediate_form(self, elems, symbols):
+        raise Exception(
+            "make_intermediate_form is not implemented for %r" % self,
         )
 
-    @property
-    def constant_value(self):
-        raise NotConstantError(
-            "Value of expression at ", pos_link(self.position),
-            "cannot be determined at compile time."
+    def get_lvalue_operand(self, elems, symbols):
+        from alamatic.intermediate import InvalidLValueError
+        raise InvalidLValueError(
+            "Expression at ", pos_link(self.position), " is not assignable"
         )
-
-    @property
-    def has_constant_value(self):
-        try:
-            value = self.constant_value
-        except NotConstantError:
-            return False
-        else:
-            return True
 
 
 class SymbolNameExpr(Expression):
@@ -61,35 +37,34 @@ class SymbolNameExpr(Expression):
     def params(self):
         yield self.name
 
-    def evaluate(self):
-        # If we know the value of the symbol then we can just return it.
-        name = self.name
-
-        try:
-            value = interpreter.retrieve(name, position=self.position)
-        except SymbolValueNotKnownError:
-            symbol = interpreter.get_symbol(name, position=self.position)
-            interpreter.mark_symbol_used_at_runtime(symbol, self.position)
-            return SymbolExpr(
-                self.position,
-                symbol,
-            )
-        else:
-            return ValueExpr(
-                self.position,
-                interpreter.retrieve(name),
-            )
-
-    def assign(self, expr):
-        name = self.name
-
-        symbol = interpreter.get_symbol(name, position=self.position)
-
-        symbol_expr = SymbolExpr(
-            self.position,
-            symbol,
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            CopyOperation,
+            SymbolOperand,
         )
-        return symbol_expr.assign(expr)
+        target = symbols.create_temporary().make_operand(
+            position=self.position,
+        )
+        symbol = symbols.lookup(self.name, position=self.position)
+        elems.append(
+            CopyOperation(
+                target,
+                SymbolOperand(
+                    symbol,
+                    position=self.position,
+                ),
+                position=self.position,
+            )
+        )
+        return target
+
+    def get_lvalue_operand(self, elems, symbols):
+        from alamatic.intermediate import (
+            SymbolOperand,
+        )
+        return symbols.lookup(self.name, self.position).make_operand(
+            position=self.position,
+        )
 
 
 class LiteralExpr(Expression):
@@ -105,7 +80,7 @@ class LiteralExpr(Expression):
 
 class IntegerLiteralExpr(LiteralExpr):
 
-    def evaluate(self):
+    def make_intermediate_form(self, elems, symbols):
         from alamatic.types import (
             Int8,
             Int16,
@@ -113,14 +88,31 @@ class IntegerLiteralExpr(LiteralExpr):
             Int64,
             UInt64,
         )
+        from alamatic.intermediate import (
+            CopyOperation,
+            ConstantOperand,
+            SymbolOperand,
+        )
         src_value = long(self.value)
+
+        target = symbols.create_temporary().make_operand(
+            position=self.position,
+        )
+
         for possible_type in (Int8, Int16, Int32, Int64, UInt64):
             limits = possible_type.get_limits()
             if src_value >= limits[0] and src_value <= limits[1]:
-                return ValueExpr(
-                    self.position,
-                    possible_type(src_value),
+                elems.append(
+                    CopyOperation(
+                        target,
+                        ConstantOperand(
+                            possible_type(src_value),
+                            position=self.position,
+                        ),
+                        position=self.position,
+                    )
                 )
+                return target
 
         # Should never happen
         raise Exception(
@@ -151,19 +143,27 @@ class BinaryOpExpr(Expression):
         yield self.lhs
         yield self.rhs
 
-    def evaluate(self):
-        method_name = self.type_impl_method_name
-        lhs = self.lhs.evaluate()
-        rhs = self.rhs.evaluate()
-        method = getattr(lhs.result_type, method_name)
-        return method(lhs, rhs, position=self.position)
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            BinaryOperation,
+        )
+        target = symbols.create_temporary().make_operand(
+            position=self.position,
+        )
 
-    def generate_c_code(self, state, writer):
-        writer.write("(")
-        self.lhs.generate_c_code(state, writer)
-        writer.write(" ", self.c_operator, " ")
-        self.rhs.generate_c_code(state, writer)
-        writer.write(")")
+        lhs_operand = self.lhs.make_intermediate_form(elems, symbols)
+        rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
+
+        elems.append(
+            BinaryOperation(
+                target,
+                lhs_operand,
+                self.op,
+                rhs_operand,
+                position=self.position,
+            )
+        )
+        return target
 
 
 class UnaryOpExpr(Expression):
@@ -183,17 +183,28 @@ class UnaryOpExpr(Expression):
 
 
 class AssignExpr(BinaryOpExpr):
+    can_be_statement = True
 
-    def evaluate(self):
+    def make_intermediate_form(self, elems, symbols):
         # FIXME: This only supports the simple assign operation, but
         # this node type also needs to support all of the shorthands
         # like +=, -=, etc.
-        rhs = self.rhs.evaluate()
-        return self.lhs.assign(rhs)
+        from alamatic.intermediate import (
+            CopyOperation,
+        )
 
-    @property
-    def c_operator(self):
-        return "="
+        lhs_operand = self.lhs.get_lvalue_operand(elems, symbols)
+        rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
+
+        elems.append(
+            CopyOperation(
+                lhs_operand,
+                rhs_operand,
+                position=self.position,
+            )
+        )
+
+        return rhs_operand
 
 
 class LogicalOrExpr(BinaryOpExpr):
