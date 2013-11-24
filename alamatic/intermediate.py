@@ -94,7 +94,7 @@ class SymbolTable(object):
             try:
                 return current.symbols[name]
             except KeyError:
-                pass
+                current = current.parent
         raise UnknownSymbolError(
             "Unknown symbol '%s' at " % name,
             pos_link(position),
