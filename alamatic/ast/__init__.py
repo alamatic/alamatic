@@ -190,10 +190,14 @@ class Module(AstNode):
         yield self.block
 
     def get_intermediate_form(self):
-        from alamatic.intermediate import SymbolTable
+        from alamatic.intermediate import (
+            SymbolTable,
+            simplify_temporaries_in_element_list,
+        )
         symbols = SymbolTable()
         elems = []
         self.block.make_intermediate_form(elems, symbols)
+        elems = simplify_temporaries_in_element_list(elems)
         # TODO: do control flow analysis on elems and produce a
         # control flow graph to return.
         return elems

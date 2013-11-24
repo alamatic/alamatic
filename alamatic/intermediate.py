@@ -159,6 +159,9 @@ class Label(Element):
     def codegen_name(self):
         return "_ALA_%x" % id(self)
 
+    def replace_operands(self, replace):
+        pass
+
 
 class Operation(Element):
     def generate_c_code(self, state, writer):
@@ -185,6 +188,10 @@ class CopyOperation(Operation):
         yield self.target
         yield self.operand
 
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.operand = replace(self.operand)
+
     def _generate_c_code(self, state, writer):
         self.target.generate_c_code(state, writer)
         writer.write(" = ")
@@ -198,6 +205,10 @@ class UnaryOperation(Operation):
         self.operator = operator
         self.operand = operand
         self.position = position
+
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.operand = replace(self.operand)
 
 
 class BinaryOperation(Operation):
@@ -214,6 +225,11 @@ class BinaryOperation(Operation):
         yield self.lhs
         yield self.operator
         yield self.rhs
+
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.lhs = replace(self.lhs)
+        self.rhs = replace(self.rhs)
 
     def _generate_c_code(self, state, writer):
         self.target.generate_c_code(state, writer)
@@ -233,6 +249,14 @@ class CallOperation(Operation):
         self.args = args
         self.kwargs = kwargs
         self.position = position
+
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.callee = replace(self.callee)
+        for i, arg in enumerate(self.args):
+            self.args[i] = replace(self.args[i])
+        for k, arg in self.kwargs.iteritems():
+            self.kwargs[k] = replace(self.kwargs[k])
 
     def _generate_c_code(self, state, writer):
         if len(self.kwargs):
@@ -262,6 +286,10 @@ class AttributeLookupOperation(Operation):
         self.name = name
         self.position = position
 
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.operand = replace(self.operand)
+
 
 class IndexOperation(Operation):
     def __init__(self, target, operand, index, position=None):
@@ -269,6 +297,10 @@ class IndexOperation(Operation):
         self.operand = operand
         self.index = index
         self.position = position
+
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.operand = replace(self.operand)
 
 
 class SliceOperation(Operation):
@@ -278,6 +310,10 @@ class SliceOperation(Operation):
         self.start_index = start_index
         self.length = length
 
+    def replace_operands(self, replace):
+        self.target = replace(self.target)
+        self.operand = replace(self.operand)
+
 
 class JumpOperation(Operation):
     def __init__(self, label, position=None):
@@ -286,6 +322,9 @@ class JumpOperation(Operation):
 
     def _generate_c_code(self, state, writer):
         writer.write("goto %s" % self.label.codegen_name)
+
+    def replace_operands(self, replace):
+        pass
 
 
 class JumpIfFalseOperation(JumpOperation):
@@ -298,6 +337,9 @@ class JumpIfFalseOperation(JumpOperation):
         writer.write("if (! ");
         self.cond.generate_c_code(state, writer)
         writer.write(") goto %s" % self.label.codegen_name)
+
+    def replace_operands(self, replace):
+        self.cond = replace(self.cond)
 
 
 class Operand(object):
@@ -371,6 +413,62 @@ class DereferenceOperand(Operand):
     def __init__(self, source, position=None):
         self.source = source
         self.position = position
+
+
+def simplify_temporaries_in_element_list(input_elems):
+    """
+    Removes unnecessary temporaries from a list of intermediate code elements.
+
+    The mechanism by which we translate expressions to intermediate code
+    causes a proliferation of temporaries that are not strictly necessary.
+    This function takes the raw element list from intermediate code generation
+    and returns a new element list that is functionally equivalent but with
+    the unnecessary temporaries removed.
+    """
+    ret_elems = []
+
+    # First we locate all of the redundant temporaries. A temporary is
+    # redundant if it appears as the target of a copy operation, since
+    # in that case the operand of the copy can be used in place of the
+    # temporary in the following operations.
+    # This assumes that each temporary is only assigned once, which is
+    # a requirement imposed on the intermediate code generation phase.
+    replacements = {}
+    for elem in input_elems:
+        if isinstance(elem, CopyOperation):
+            if isinstance(elem.target, SymbolOperand):
+                if isinstance(elem.target.symbol, TemporarySymbol):
+                    replacements[elem.target.symbol] = elem.operand
+
+    # Now we make another pass over the list and rewrite the operations
+    # to include the replacements.
+
+    def replacement(operand):
+        if isinstance(operand, SymbolOperand):
+            if operand.symbol in replacements:
+                return replacements[operand.symbol]
+        return operand
+
+    for elem in input_elems:
+        # skip if this is a copy to a temporary we're replacing, since
+        # we don't need that temporary anymore.
+        if (
+            isinstance(elem, CopyOperation) and isinstance(elem.target, SymbolOperand)
+        ):
+            if elem.target.symbol in replacements:
+                continue
+
+        elem.replace_operands(replacement)
+        ret_elems.append(elem)
+
+    # This doesn't currently remove *all* redundancy... in particular, it
+    # won't catch this sort of structure:
+    #   temp = op1 + op2
+    #   named = temp
+    # But we'll live with that for now and let it get taken care of by
+    # later optimizations.
+
+    return ret_elems
 
 
 class IncompatibleTypesError(CompilerError):
