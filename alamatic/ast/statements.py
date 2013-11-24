@@ -440,23 +440,33 @@ class FuncDeclStmt(Statement):
         yield self.decl
         yield self.block
 
-    def execute(self, runtime_stmts):
+    def make_intermediate_form(self, elems, symbols):
         # A function declaration is really just a funny sort of
         # declaration that forces a function type.
         from alamatic.types import FunctionTemplate
-        from alamatic.interpreter import interpreter
+        from alamatic.intermediate import (
+            CopyOperation,
+            ConstantOperand,
+        )
 
         # Need to retain the scope the function was declared in so that
         # we can execute its body in a child of it later.
-        decl_scope = interpreter.symbols
-
+        decl_scope = symbols
         template_value = FunctionTemplate(self, decl_scope)
 
-        interpreter.declare_and_init(
+        symbol = symbols.declare(
             self.decl.name,
-            template_value,
             const=True,  # function templates are always constant
             position=self.position,
+        )
+        elems.append(
+            CopyOperation(
+                symbol.make_operand(),
+                ConstantOperand(
+                    template_value,
+                    position=self.position,
+                )
+            )
         )
 
 
