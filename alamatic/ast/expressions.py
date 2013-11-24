@@ -312,6 +312,8 @@ class BitwiseNotExpr(UnaryOpExpr):
 
 
 class CallExpr(Expression):
+    can_be_statement = True
+
     def __init__(self, position, callee_expr, args):
         self.position = position
         self.callee_expr = callee_expr
@@ -321,6 +323,36 @@ class CallExpr(Expression):
     def child_nodes(self):
         yield self.callee_expr
         yield self.args
+
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            CallOperation,
+        )
+
+        callee_operand = self.callee_expr.make_intermediate_form(
+            elems, symbols,
+        )
+        arg_operands = [
+            x.make_intermediate_form(elems, symbols)
+            for x in self.args.positional
+        ]
+        kwarg_operands = {
+            k: v.make_intermediate_form(elems, symbols)
+            for k, v in self.args.keyword.iteritems()
+        }
+        target = symbols.create_temporary().make_operand(
+            position=self.position,
+        )
+        elems.append(
+            CallOperation(
+                target,
+                callee_operand,
+                arg_operands,
+                kwarg_operands,
+                position=self.position,
+            )
+        )
+        return target
 
     def evaluate(self):
         callee_expr = self.callee_expr.evaluate()

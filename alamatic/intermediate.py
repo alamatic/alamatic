@@ -214,10 +214,11 @@ class BinaryOperation(Operation):
 
 
 class CallOperation(Operation):
-    def __init__(self, target, callee, args, position=None):
+    def __init__(self, target, callee, args, kwargs, position=None):
         self.target = target
         self.callee = callee
         self.args = args
+        self.kwargs = kwargs
         self.position = position
 
 

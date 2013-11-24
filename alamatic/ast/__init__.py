@@ -129,6 +129,20 @@ class StatementBlock(AstNode):
             self.generate_body_c_code(state, writer)
 
 
+class Arguments(AstNode):
+    def __init__(self, pos_exprs, kw_exprs):
+        self.pos_exprs = pos_exprs
+        self.kw_exprs = kw_exprs
+
+    @property
+    def positional(self):
+        return self.pos_exprs
+
+    @property
+    def keyword(self):
+        return self.kw_exprs
+
+
 class ExpressionList(AstNode):
     def __init__(self, exprs):
         self.exprs = exprs

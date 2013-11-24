@@ -80,13 +80,15 @@ def p_indented_block(state, scanner):
     return StatementBlock(stmts)
 
 
-def p_expr_list(state, scanner, terminator_punct):
+def p_expr_list(state, scanner, terminator_punct, allow_assign=False):
     exprs = []
     if scanner.next_is_punct(terminator_punct):
         scanner.read()
     else:
         while True:
-            exprs.append(p_expression(state, scanner))
+            exprs.append(
+                p_expression(state, scanner, allow_assign=allow_assign)
+            )
             if scanner.next_is_punct(terminator_punct):
                 scanner.read()
                 break
@@ -96,6 +98,30 @@ def p_expr_list(state, scanner, terminator_punct):
                 break
 
     return ExpressionList(exprs)
+
+
+def p_arguments(state, scanner, terminator_punct):
+    expr_list = p_expr_list(
+        state, scanner, terminator_punct, allow_assign=True,
+    )
+
+    args = []
+    kwargs = {}
+
+    for expr in expr_list.exprs:
+        if isinstance(expr, AssignExpr):
+            if isinstance(expr.lhs, SymbolNameExpr):
+                name = expr.lhs.name
+                kwargs[name] = expr.rhs
+            else:
+                raise CompilerError(
+                    "Invalid keyword argument at ",
+                    pos_link(self.lhs.position),
+                )
+        else:
+            args.append(expr)
+
+    return Arguments(args, kwargs)
 
 
 def p_statement(state, scanner):
@@ -304,7 +330,7 @@ def p_expr_factor(state, scanner):
     while True:
         if scanner.next_is_punct("("):
             scanner.read()
-            args = p_expr_list(state, scanner, ")")
+            args = p_arguments(state, scanner, ")")
             ret_expr = CallExpr(
                 pos,
                 ret_expr,
