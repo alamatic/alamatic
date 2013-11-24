@@ -252,7 +252,8 @@ class JumpOperation(Operation):
         self.position = position
 
 
-class ConditionalJumpOperation(JumpOperation):
+
+class JumpIfFalseOperation(JumpOperation):
     def __init__(self, cond, label, position=None):
         self.cond = cond
         self.label = label

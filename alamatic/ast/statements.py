@@ -111,6 +111,55 @@ class IfStmt(Statement):
         for clause in self.clauses:
             yield clause
 
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            Label,
+            JumpOperation,
+            JumpIfFalseOperation,
+        )
+
+        # FIXME: It would be better to use the position of the
+        # end of the statement, but the parser doesn't currently
+        # preserve that information.
+        end_label = Label(position=self.position)
+
+        for clause in self.clauses:
+            if isinstance(clause, IfClause):
+                # FIXME: It would be better to use the position of the
+                # end of the clause, but the parser doesn't currently
+                # preserve that information.
+                skip_label = Label(position=clause.position)
+                test_operand = clause.test_expr.make_intermediate_form(
+                    elems, symbols,
+                )
+                elems.append(
+                    JumpIfFalseOperation(
+                        test_operand,
+                        skip_label,
+                        position=clause.position,
+                    )
+                )
+                clause.block.make_intermediate_form(
+                    elems, symbols,
+                )
+                elems.append(
+                    JumpOperation(
+                        end_label,
+                        position=skip_label.position,
+                    ),
+                )
+                elems.append(
+                    skip_label
+                )
+            elif isinstance(clause, ElseClause):
+                clause.block.make_intermediate_form(
+                    elems, symbols,
+                )
+
+        elems.append(
+            end_label
+        )
+
     def execute(self, runtime_stmts):
         from alamatic.ast import ValueExpr
         from alamatic.types import Bool
