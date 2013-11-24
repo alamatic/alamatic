@@ -151,11 +151,26 @@ class Element(object):
 
 
 class Label(Element):
-    pass
+
+    def generate_c_code(self, state, writer):
+        writer.writeln("%s:" % self.codegen_name)
+
+    @property
+    def codegen_name(self):
+        return "_ALA_%x" % id(self)
 
 
 class Operation(Element):
-    pass
+    def generate_c_code(self, state, writer):
+        writer.indent()
+        self._generate_c_code(state, writer)
+        writer.writeln(";")
+        writer.outdent()
+
+    def _generate_c_code(self, state, writer):
+        raise Exception(
+            "_generate_c_code not implemented for %r" % self
+        )
 
 
 class CopyOperation(Operation):
@@ -170,11 +185,10 @@ class CopyOperation(Operation):
         yield self.target
         yield self.operand
 
-    def generate_c_code(self, state, writer):
+    def _generate_c_code(self, state, writer):
         self.target.generate_c_code(state, writer)
         writer.write(" = ")
         self.operand.generate_c_code(state, writer)
-        writer.writeln(";")
 
 
 class UnaryOperation(Operation):
@@ -201,7 +215,7 @@ class BinaryOperation(Operation):
         yield self.operator
         yield self.rhs
 
-    def generate_c_code(self, state, writer):
+    def _generate_c_code(self, state, writer):
         self.target.generate_c_code(state, writer)
         writer.write(" = ")
         self.lhs.generate_c_code(state, writer)
@@ -210,7 +224,6 @@ class BinaryOperation(Operation):
         # in practice
         writer.write(" " + self.operator + " ")
         self.rhs.generate_c_code(state, writer)
-        writer.writeln(";")
 
 
 class CallOperation(Operation):
@@ -220,6 +233,26 @@ class CallOperation(Operation):
         self.args = args
         self.kwargs = kwargs
         self.position = position
+
+    def _generate_c_code(self, state, writer):
+        if len(self.kwargs):
+            # Should never happen - kwargs should get transformed into
+            # flat args by the time we get to code generation.
+            raise Exception(
+                "Can't generate C code for call with kwargs",
+            )
+        self.target.generate_c_code(state, writer)
+        writer.write(" = ")
+        self.callee.generate_c_code(state, writer)
+        writer.write("(")
+        first = True
+        for arg in self.args:
+            if first:
+                first = False
+            else:
+                writer.write(", ")
+            arg.generate_c_code(state, writer)
+        writer.write(")")
 
 
 class AttributeLookupOperation(Operation):
@@ -251,6 +284,8 @@ class JumpOperation(Operation):
         self.label = label
         self.position = position
 
+    def _generate_c_code(self, state, writer):
+        writer.write("goto %s" % self.label.codegen_name)
 
 
 class JumpIfFalseOperation(JumpOperation):
@@ -258,6 +293,11 @@ class JumpIfFalseOperation(JumpOperation):
         self.cond = cond
         self.label = label
         self.position = position
+
+    def _generate_c_code(self, state, writer):
+        writer.write("if (! ");
+        self.cond.generate_c_code(state, writer)
+        writer.write(") goto %s" % self.label.codegen_name)
 
 
 class Operand(object):
