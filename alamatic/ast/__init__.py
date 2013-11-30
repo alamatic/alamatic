@@ -142,6 +142,20 @@ class Arguments(AstNode):
     def keyword(self):
         return self.kw_exprs
 
+    @property
+    def child_nodes(self):
+        for expr in self.pos_exprs:
+            yield expr
+        for key in sorted(self.kw_exprs):
+            yield self.kw_exprs[key]
+
+    @property
+    def params(self):
+        for i, expr in enumerate(self.pos_exprs):
+            yield i
+        for key in sorted(self.kw_exprs):
+            yield key
+
 
 class ExpressionList(AstNode):
     def __init__(self, exprs):

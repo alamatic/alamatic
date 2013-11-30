@@ -12,7 +12,7 @@ class TestParse(LanguageTestCase):
             "a(1)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
             ])
@@ -21,7 +21,7 @@ class TestParse(LanguageTestCase):
             "a(1,2)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0, 1), [
                     ('IntegerLiteralExpr', (1,), []),
                     ('IntegerLiteralExpr', (2,), []),
                 ]),
@@ -31,7 +31,7 @@ class TestParse(LanguageTestCase):
             "a(1,)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
             ])
@@ -40,7 +40,7 @@ class TestParse(LanguageTestCase):
             "a(1,2,3,)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0,1,2), [
                     ('IntegerLiteralExpr', (1,), []),
                     ('IntegerLiteralExpr', (2,), []),
                     ('IntegerLiteralExpr', (3,), []),
@@ -54,11 +54,11 @@ class TestParse(LanguageTestCase):
             ('CallExpr', (), [
                 ('CallExpr', (), [
                     ('SymbolNameExpr', ('a',), []),
-                    ('ExpressionList', (), [
+                    ('Arguments', (0,), [
                         ('IntegerLiteralExpr', (1,), []),
                     ]),
                 ]),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (2,), []),
                 ]),
             ])
@@ -69,10 +69,10 @@ class TestParse(LanguageTestCase):
             "a(b(1))",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('CallExpr', (), [
                         ('SymbolNameExpr', ('b',), []),
-                        ('ExpressionList', (), [
+                        ('Arguments', (0,), [
                             ('IntegerLiteralExpr', (1,), []),
                         ]),
                     ]),
@@ -85,7 +85,7 @@ class TestParse(LanguageTestCase):
             "(a)(1)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
             ])
@@ -97,7 +97,7 @@ class TestParse(LanguageTestCase):
                     ('SymbolNameExpr', ('a',), []),
                     ('SymbolNameExpr', ('b',), []),
                 ]),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
             ])
@@ -108,7 +108,7 @@ class TestParse(LanguageTestCase):
                 ('SymbolNameExpr', ('a',), []),
                 ('CallExpr', (), [
                     ('SymbolNameExpr', ('b',), []),
-                    ('ExpressionList', (), [
+                    ('Arguments', (0,), [
                         ('IntegerLiteralExpr', (1,), []),
                     ]),
                 ]),
@@ -121,13 +121,13 @@ class TestParse(LanguageTestCase):
             ('SumExpr', ('+',), [
                 ('CallExpr', (), [
                     ('SymbolNameExpr', ('a',), []),
-                    ('ExpressionList', (), [
+                    ('Arguments', (0,), [
                         ('IntegerLiteralExpr', (1,), []),
                     ]),
                 ]),
                 ('CallExpr', (), [
                     ('SymbolNameExpr', ('b',), []),
-                    ('ExpressionList', (), [
+                    ('Arguments', (0,), [
                         ('IntegerLiteralExpr', (1,), []),
                     ]),
                 ]),
@@ -141,7 +141,7 @@ class TestParse(LanguageTestCase):
                 ('AttributeExpr', ('b',), [
                     ('SymbolNameExpr', ('a',), []),
                 ]),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (1,), []),
                 ]),
             ])
@@ -157,7 +157,7 @@ class TestParse(LanguageTestCase):
                         ('IntegerLiteralExpr', (1,), []),
                     ]),
                 ]),
-                ('ExpressionList', (), [
+                ('Arguments', (0,), [
                     ('IntegerLiteralExpr', (2,), []),
                 ]),
             ])
