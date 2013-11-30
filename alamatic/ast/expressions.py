@@ -1,15 +1,6 @@
 
 from alamatic.ast import *
 from alamatic.compilelogging import pos_link
-from alamatic.interpreter import (
-    interpreter,
-    UnknownSymbolError,
-    IncompatibleTypesError,
-    SymbolNotInitializedError,
-    InvalidAssignmentError,
-    SymbolValueNotKnownError,
-    NotConstantError,
-)
 
 
 class Expression(AstNode):
@@ -418,56 +409,6 @@ class SymbolExpr(Expression):
     @property
     def params(self):
         yield self.symbol
-
-    def evaluate(self):
-        return self
-
-    def assign(self, expr):
-        from alamatic.interpreter import interpreter
-        try:
-            value = expr.constant_value
-            interpreter.set_symbol_value(
-                self.symbol,
-                value,
-                position=self.position,
-            )
-        except NotConstantError:
-            interpreter.mark_symbol_unknown(
-                self.symbol,
-                expr.result_type,
-                position=self.position,
-            )
-
-        if self.symbol.const:
-            # Just return the expression alone if the symbol is a constant,
-            # since we can't assign to it at runtime anyway. The resulting
-            # expression will end up being a no-op value that should get
-            # optimized away by the code generator.
-            return expr
-        else:
-            interpreter.mark_symbol_used_at_runtime(
-                self.symbol,
-                self.position,
-            )
-            return AssignExpr(
-                self.position,
-                SymbolExpr(
-                    self.position,
-                    self.symbol,
-                ),
-                "=",
-                expr,
-            )
-
-    @property
-    def result_type(self):
-        from alamatic.interpreter import interpreter
-        return interpreter.get_symbol_type(self.symbol)
-
-    def generate_c_code(self, state, writer):
-        writer.write(
-            self.symbol.codegen_name,
-        )
 
 
 class RuntimeFunctionCallExpr(Expression):

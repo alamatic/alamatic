@@ -70,6 +70,7 @@ class TestFunctionType(LanguageTestCase):
 
 class TestFunctionTemplateType(LanguageTestCase):
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_correct_arg_count(self):
         from alamatic.interpreter import InvalidParameterListError
 
@@ -149,6 +150,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             )
         )
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_call_not_pure_function(self):
         from alamatic.interpreter import (
             interpreter,
@@ -214,6 +216,7 @@ class TestFunctionTemplateType(LanguageTestCase):
         )
         mock_function.args_type.assert_called_with(args)
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_call_constant_void(self):
         from alamatic.interpreter import (
             interpreter,
@@ -260,6 +263,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             position=position,
         )
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_call_constant_not_void(self):
         from alamatic.interpreter import (
             interpreter,

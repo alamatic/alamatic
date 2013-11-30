@@ -2,7 +2,6 @@
 import unittest
 from alamatic.types import *
 from alamatic.ast import *
-from alamatic.interpreter import Symbol
 from alamatic.testutil import *
 
 
