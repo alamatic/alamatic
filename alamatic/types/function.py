@@ -158,6 +158,13 @@ class FunctionTemplate(Value):
 
         return instance
 
+    def generate_c_code(self, state, writer):
+        # TODO: Make this fail with a
+        # "cannot use function templates at runtime" exception,
+        # since all function templates ought to have been replaced with
+        # actual functions by the time we get to code generation
+        pass
+
     @classmethod
     def call(cls, callee_expr, arg_exprs, position=None):
         from alamatic.interpreter import (

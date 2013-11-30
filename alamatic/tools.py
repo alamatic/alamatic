@@ -25,7 +25,55 @@ def alac():
     if state.error_count > 0:
         return 1
 
-    intermediate = module.get_intermediate_form()
+    graph = module.get_intermediate_form()
+    from StringIO import StringIO
+    from alamatic.codegen import CodeWriter
+    import json
+    print "digraph G {"
+    for block in graph.blocks:
+        f = StringIO()
+        writer = CodeWriter(f)
+        for operation in block.operations:
+            operation.generate_c_code(state, writer)
+
+        if block.successor_is_conditional:
+            writer.write("\n")
+            writer.write("if ")
+            block.exit_cond.generate_c_code(state, writer)
+            writer.write("...\n")
+
+        label_str = json.dumps(f.getvalue())
+        label_str = label_str.replace(r'\n', r'\l')
+        styles = []
+        if block.is_loop_header:
+            styles.append("bold")
+        if block is graph.entry_block or block is graph.exit_block:
+            styles.append("rounded")
+        print '    "block_%x" [label=%s,shape="rect",fontname=Courier,fontsize=10.0,style="%s"];' % (
+            id(block),
+            label_str,
+            ",".join(styles),
+        )
+    for block in graph.blocks:
+        source_name = "block_%x" % id(block)
+        if block.false_successor is None:
+            # it's the exit block, so skip
+            continue
+        if block.successor_is_conditional:
+            true_name = "block_%x" % id(block.true_successor)
+            print '    "%s" -> "%s" [label=T, style=dashed];' % (source_name, true_name)
+            false_name = "block_%x" % id(block.false_successor)
+            print '    "%s" -> "%s" [label=F, style=dashed];' % (source_name, false_name)
+        else:
+            false_name = "block_%x" % id(block.false_successor)
+            if block.false_successor.index < block.index:
+                # it's a backward jump, creating a loop
+                print '    "%s" -> "%s" [style=bold];' % (source_name, false_name)
+            else:
+                print '    "%s" -> "%s" [style=solid];' % (source_name, false_name)
+    print "}"
+    sys.exit(0)
+
     from alamatic.codegen import CodeWriter
     writer = CodeWriter(sys.stdout)
     for elem in intermediate:
