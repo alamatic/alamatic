@@ -71,6 +71,11 @@ def alac():
                 print '    "%s" -> "%s" [style=bold];' % (source_name, false_name)
             else:
                 print '    "%s" -> "%s" [style=solid];' % (source_name, false_name)
+    for block in graph.blocks:
+        for dom in block.dominators:
+            source_name = "block_%x" % id(block)
+            target_name = "block_%x" % id(dom)
+            #print '    "%s" -> "%s" [style=dotted]; // %r -> %r' % (source_name, target_name, type(block), type(dom))
     print "}"
     sys.exit(0)
 

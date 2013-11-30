@@ -120,10 +120,33 @@ def build_control_flow_graph(elems):
     blocks = [
         x for x in blocks if x is entry_block or len(x.predecessors) > 0
     ]
+    for block in blocks:
+        block.predecessors.intersection_update(blocks)
 
     # Pass 5: Assign indices
     for i, block in enumerate(blocks):
         block.index = i
+
+    # Pass 6: Find dominators
+    for block in blocks:
+        if block is entry_block:
+            block.dominators.add(block)
+        else:
+            block.dominators.update(blocks)
+    changes = True
+    while changes:
+        changes = False
+        for block in blocks[1:]:
+            doms = set()
+            for pred in block.predecessors:
+                if len(doms) > 0:
+                    doms.intersection_update(pred.dominators)
+                else:
+                    doms.update(pred.dominators)
+            doms.add(block)
+            if doms != block.dominators:
+                block.dominators = doms
+                changes = True
 
     graph = ControlFlowGraph()
     graph.blocks = blocks
