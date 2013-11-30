@@ -30,6 +30,7 @@ def alac():
     from alamatic.codegen import CodeWriter
     import json
     print "digraph G {"
+    font_bits = "fontname=Courier,fontsize=10.0"
     for block in graph.blocks:
         f = StringIO()
         writer = CodeWriter(f)
@@ -49,9 +50,10 @@ def alac():
             styles.append("bold")
         if block is graph.entry_block or block is graph.exit_block:
             styles.append("rounded")
-        print '    "block_%x" [label=%s,shape="rect",fontname=Courier,fontsize=10.0,style="%s"];' % (
+        print '    "block_%x" [label=%s,shape="rect",%s,style="%s"];' % (
             id(block),
             label_str,
+            font_bits,
             ",".join(styles),
         )
     for block in graph.blocks:
@@ -61,21 +63,35 @@ def alac():
             continue
         if block.successor_is_conditional:
             true_name = "block_%x" % id(block.true_successor)
-            print '    "%s" -> "%s" [label=T, style=dashed];' % (source_name, true_name)
+            print '    "%s" -> "%s" [label=T, style=dashed];' % (
+                source_name,
+                true_name,
+            )
             false_name = "block_%x" % id(block.false_successor)
-            print '    "%s" -> "%s" [label=F, style=dashed];' % (source_name, false_name)
+            print '    "%s" -> "%s" [label=F, style=dashed];' % (
+                source_name,
+                false_name,
+            )
         else:
             false_name = "block_%x" % id(block.false_successor)
             if block.false_successor.index < block.index:
                 # it's a backward jump, creating a loop
-                print '    "%s" -> "%s" [style=bold];' % (source_name, false_name)
+                print '    "%s" -> "%s" [style=bold];' % (
+                    source_name,
+                    false_name,
+                )
             else:
-                print '    "%s" -> "%s" [style=solid];' % (source_name, false_name)
+                print '    "%s" -> "%s" [style=solid];' % (
+                    source_name,
+                    false_name,
+                )
     for block in graph.blocks:
         for dom in block.dominators:
             source_name = "block_%x" % id(block)
             target_name = "block_%x" % id(dom)
-            #print '    "%s" -> "%s" [style=dotted]; // %r -> %r' % (source_name, target_name, type(block), type(dom))
+            #print '    "%s" -> "%s" [style=dotted]; // %r -> %r' % (
+            #    source_name, target_name, type(block), type(dom)
+            #)
     print "}"
     sys.exit(0)
 
