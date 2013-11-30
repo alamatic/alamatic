@@ -334,7 +334,7 @@ class JumpIfFalseOperation(JumpOperation):
         self.position = position
 
     def _generate_c_code(self, state, writer):
-        writer.write("if (! ");
+        writer.write("if (! ")
         self.cond.generate_c_code(state, writer)
         writer.write(") goto %s" % self.label.codegen_name)
 
@@ -453,7 +453,8 @@ def simplify_temporaries_in_element_list(input_elems):
         # skip if this is a copy to a temporary we're replacing, since
         # we don't need that temporary anymore.
         if (
-            isinstance(elem, CopyOperation) and isinstance(elem.target, SymbolOperand)
+            isinstance(elem, CopyOperation) and
+            isinstance(elem.target, SymbolOperand)
         ):
             if elem.target.symbol in replacements:
                 continue

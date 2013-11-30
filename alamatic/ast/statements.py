@@ -95,7 +95,7 @@ class ReturnStmt(Statement):
             )
 
     def generate_c_code(self, state, writer):
-        writer.write("return ");
+        writer.write("return ")
         self.expr.generate_c_code(state, writer)
         writer.writeln(";")
 
