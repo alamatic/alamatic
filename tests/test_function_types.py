@@ -130,6 +130,7 @@ class TestFunctionTemplateType(LanguageTestCase):
         else:
             self.fail("Expected InvalidParameterListError")
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_call_unknown_template(self):
         from alamatic.interpreter import (
             interpreter,
@@ -313,6 +314,7 @@ class TestFunctionTemplateType(LanguageTestCase):
             position=position,
         )
 
+    @unittest.skip("needs to be updated to intermediate style")
     def test_instantiate(self):
         from alamatic.interpreter import (
             SymbolTable,
