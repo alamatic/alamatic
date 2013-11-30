@@ -45,20 +45,9 @@ def parse_stmts(inp):
     return module.stmts
 
 
-class DummyStmtCompileTime(alamatic.ast.Statement):
+class DummyStmt(alamatic.ast.Statement):
     def __init__(self, sigil):
         self.sigil = sigil
-        self.executed = False
-
-    @property
-    def params(self):
-        yield self.sigil
-
-
-class DummyStmtRuntime(alamatic.ast.Statement):
-    def __init__(self, sigil):
-        self.sigil = sigil
-        self.executed = False
 
     @property
     def params(self):
@@ -133,27 +122,13 @@ class DummyType(alamatic.types.Value):
         return "DummyType"
 
 
-class DummyExprCompileTime(alamatic.ast.Expression):
-    def __init__(self, sigil, value=DummyType(None)):
+class DummyExpr(alamatic.ast.Expression):
+    def __init__(self, sigil):
         self.sigil = sigil
-        self.value = value
-        self.evaluated = False
 
     @property
     def params(self):
         yield self.sigil
-
-
-class DummyExprRuntime(alamatic.ast.Expression):
-    def __init__(self, sigil, result_type=DummyType):
-        self.sigil = sigil
-        self.evaluated = False
-        self._result_type = result_type
-
-    @property
-    def params(self):
-        yield self.sigil
-        yield self._result_type
 
 
 class DummyExprLvalue(alamatic.ast.Expression):
@@ -182,18 +157,6 @@ class DummyBooleanConstantExpr(alamatic.ast.Expression):
     @property
     def params(self):
         yield self.ret.value.value
-
-
-class DummyLessThanTestExpr(alamatic.ast.Expression):
-    def __init__(self, name, limit):
-        self.name = name
-        self.limit = limit
-        self.evaluated = False
-
-    @property
-    def params(self):
-        yield self.name
-        yield self.limit
 
 
 # These testcase_-prefixed functions are intended to be added to
