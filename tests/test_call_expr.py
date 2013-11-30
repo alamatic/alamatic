@@ -40,7 +40,7 @@ class TestParse(LanguageTestCase):
             "a(1,2,3,)",
             ('CallExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
-                ('Arguments', (0,1,2), [
+                ('Arguments', (0, 1, 2), [
                     ('IntegerLiteralExpr', (1,), []),
                     ('IntegerLiteralExpr', (2,), []),
                     ('IntegerLiteralExpr', (3,), []),
@@ -161,37 +161,4 @@ class TestParse(LanguageTestCase):
                     ('IntegerLiteralExpr', (2,), []),
                 ]),
             ])
-        )
-
-
-class TestExec(LanguageTestCase):
-
-    def test_exec(self):
-        mock_callee_parse = MagicMock(name="parse_node")
-        mock_callee_evaled = MagicMock(name="evaled_node")
-        mock_expr_list = MagicMock(name="expr_list")
-        mock_type = MagicMock(name="type")
-
-        mock_callee_parse.evaluate.return_value = mock_callee_evaled
-        mock_callee_evaled.result_type = mock_type
-        mock_type.call.return_value = VoidExpr(None)
-        mock_expr_list.evaluate.return_value = mock_expr_list
-
-        test_expr = CallExpr(
-            ('foo', 2, 3),
-            mock_callee_parse,
-            mock_expr_list,
-        )
-
-        result = test_expr.evaluate()
-
-        mock_callee_parse.evaluate.assert_called_with()
-        mock_type.call.assert_called_with(
-            mock_callee_evaled,
-            mock_expr_list,
-            position=('foo', 2, 3),
-        )
-        self.assertEqual(
-            result,
-            mock_type.call.return_value,
         )

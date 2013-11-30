@@ -24,33 +24,3 @@ class TestParse(LanguageTestCase):
             ],
             allow_assign=True,
         )
-
-
-class TestExec(LanguageTestCase):
-
-    def test_plain_assign(self):
-        test_expr = AssignExpr(
-            ('test', 1, 0),
-            DummyExprLvalue(
-                'target',
-            ),
-            '=',
-            DummyExprRuntime(
-                'value',
-            ),
-        )
-        test_stmt = ExpressionStmt(
-            None,
-            test_expr,
-        )
-
-        self.assertCodegenTree(
-            test_stmt,
-            [
-                ('ExpressionStmt', (), [
-                    ('DummyExprLvalue', ('target',), [
-                        ('DummyExprRuntime', ('value', DummyType), []),
-                    ]),
-                ]),
-            ],
-        )

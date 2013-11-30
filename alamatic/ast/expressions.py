@@ -354,13 +354,6 @@ class CallExpr(Expression):
         )
         return target
 
-    def evaluate(self):
-        callee_expr = self.callee_expr.evaluate()
-        args = self.args.evaluate()
-
-        callee_type = callee_expr.result_type
-        return callee_type.call(callee_expr, args, position=self.position)
-
 
 class SubscriptExpr(Expression):
     def __init__(self, position, target_expr, args):
