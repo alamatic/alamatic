@@ -129,6 +129,8 @@ class SymbolTable(object):
 
 
 class Element(object):
+    position = None
+
     def __init__(self, position=None):
         self.position = position
 
@@ -343,6 +345,8 @@ class JumpIfFalseOperation(JumpOperation):
 
 
 class Operand(object):
+    position = None
+
     def __init__(self, position=None):
         self.position = position
 

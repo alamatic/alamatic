@@ -1,5 +1,6 @@
 
 from alamatic.ast import *
+from alamatic.intermediate import *
 from alamatic.types import *
 from alamatic.testutil import *
 
@@ -23,4 +24,47 @@ class TestParse(LanguageTestCase):
                 (1, 6),
             ],
             allow_assign=True,
+        )
+
+
+class TestIntermediate(LanguageTestCase):
+
+    def test_can_be_statement(self):
+        self.assertTrue(
+            AssignExpr.can_be_statement,
+            True,
+        )
+
+    def test_plain_assign(self):
+        expr = AssignExpr(
+            ("assign.ala", 1, 0),
+            DummyExprLvalue("lhs"),
+            "=",
+            DummyExpr("rhs"),
+        )
+        self.assertIntermediateForm(
+            expr,
+            [
+                ('DummyOperation', ['lhs']),
+                ('DummyOperation', ['rhs']),
+                ('CopyOperation', [
+                    ('DummyOperand', ('lhs',)),
+                    ('DummyOperand', ('rhs',)),
+                ]),
+            ],
+            ('DummyOperand', ('rhs',)),
+        )
+
+    def test_non_lvalue(self):
+        elems = []
+        symbols = SymbolTable()
+        expr = AssignExpr(
+            ("assign.ala", 1, 0),
+            DummyExpr("lhs"),
+            "=",
+            DummyExpr("rhs"),
+        )
+        self.assertRaises(
+            InvalidLValueError,
+            lambda: expr.make_intermediate_form(elems, symbols),
         )

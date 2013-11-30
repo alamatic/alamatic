@@ -7,6 +7,8 @@ It may only be used from the unit tests.
 
 import alamatic.ast
 import alamatic.types
+import alamatic.intermediate
+import alamatic.analyser
 import functools
 import unittest
 
@@ -30,6 +32,38 @@ def ast_comparison_node(node):
         tuple(node.params),
         ast_comparison_nodes(node.child_nodes),
     )
+
+
+def element_comparison_nodes(elements):
+    ret = []
+    for element in elements:
+        ret.append(element_comparison_node(element))
+    return ret
+
+
+def element_comparison_node(element):
+    if element is None:
+        return None
+    return (
+        type(element).__name__,
+        element_param_comparison_nodes(element.params),
+    )
+
+
+def element_param_comparison_nodes(params):
+    ret = []
+    for param in params:
+        ret.append(element_param_comparison_node(param))
+    return ret
+
+
+def element_param_comparison_node(param):
+    if isinstance(param, alamatic.intermediate.Operand):
+        return (type(param).__name__, tuple(param.params))
+    elif isinstance(param, alamatic.intermediate.Label):
+        return (type(param).__name__,)
+    else:
+        return param
 
 
 def parse_stmts(inp):
@@ -130,6 +164,10 @@ class DummyExpr(alamatic.ast.Expression):
     def params(self):
         yield self.sigil
 
+    def make_intermediate_form(self, elems, symbols):
+        elems.append(DummyOperation(self.sigil))
+        return DummyOperand(self.sigil)
+
 
 class DummyExprLvalue(alamatic.ast.Expression):
     def __init__(self, sigil, assigned_expr=None):
@@ -145,18 +183,52 @@ class DummyExprLvalue(alamatic.ast.Expression):
         if self.assigned_expr is not None:
             yield self.assigned_expr
 
+    def get_lvalue_operand(self, elems, symbols):
+        elems.append(DummyOperation(self.sigil))
+        return DummyOperand(self.sigil)
+
 
 class DummyBooleanConstantExpr(alamatic.ast.Expression):
     def __init__(self, value):
         from alamatic.types import Bool
-        self.ret = alamatic.ast.ValueExpr(
-            None,
+        self.operand = alamatic.intermediate.ConstantOperand(
             Bool(value)
         )
 
     @property
     def params(self):
         yield self.ret.value.value
+
+    def make_intermediate_form(self, elems, symbols):
+        return self.operand
+
+
+class DummyOperation(alamatic.intermediate.Operation):
+    def __init__(self, sigil):
+        self.sigil = sigil
+
+    @property
+    def params(self):
+        yield self.sigil
+
+
+class DummyOperandDeclOperation(alamatic.intermediate.Operation):
+    def __init__(self, sigil):
+        self.sigil = sigil
+        self.operand = DummyOperand(sigil)
+
+    @property
+    def params(self):
+        yield self.operand
+
+
+class DummyOperand(alamatic.intermediate.Operand):
+    def __init__(self, sigil):
+        self.sigil = sigil
+
+    @property
+    def params(self):
+        yield self.sigil
 
 
 # These testcase_-prefixed functions are intended to be added to
@@ -289,9 +361,36 @@ def testcase_assertErrorsInExpr(self, inp, positions, allow_assign=False):
 testcase_assertErrorsInExpr.__name__ = "assertErrorsInExpr"
 
 
+def testcase_assertIntermediateForm(
+    self, inp, expected_elems, expected_target=None, init_symbols=None,
+):
+    elems = []
+    symbols = alamatic.intermediate.SymbolTable()
+    if init_symbols is not None:
+        for symbol_name in init_symbols:
+            symbols.declare(symbol_name)
+    result = inp.make_intermediate_form(elems, symbols)
+    self.assertEqual(
+        element_comparison_nodes(elems),
+        expected_elems,
+    )
+    if expected_target is not None:
+        self.assertEqual(
+            element_param_comparison_node(result),
+            expected_target,
+        )
+    else:
+        self.assertEqual(
+            result,
+            None,
+        )
+testcase_assertIntermediateForm.__name__ = "assertIntermediateForm"
+
+
 class LanguageTestCase(unittest.TestCase):
     assertCodegenTree = testcase_assertCodegenTree
     assertStmtParseTree = testcase_assertStmtParseTree
     assertExprParseTree = testcase_assertExprParseTree
     assertErrorsInStmts = testcase_assertErrorsInStmts
     assertErrorsInExpr = testcase_assertErrorsInExpr
+    assertIntermediateForm = testcase_assertIntermediateForm
