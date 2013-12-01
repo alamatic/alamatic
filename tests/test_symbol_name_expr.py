@@ -13,6 +13,8 @@ class TestIntermediate(LanguageTestCase):
         )
 
     def test_rvalue(self):
+        symbols = SymbolTable()
+        symbols.declare("foo")
         self.assertIntermediateForm(
             SymbolNameExpr(
                 ('symbolname.ala', 1, 0),
@@ -31,7 +33,7 @@ class TestIntermediate(LanguageTestCase):
             ('SymbolOperand', [
                 ('TemporarySymbol', 1),
             ]),
-            init_symbols=['foo'],
+            symbols=symbols,
         )
 
     def test_nonexist(self):

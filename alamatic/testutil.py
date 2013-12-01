@@ -404,13 +404,11 @@ testcase_assertErrorsInExpr.__name__ = "assertErrorsInExpr"
 
 
 def testcase_assertIntermediateForm(
-    self, inp, expected_elems, expected_target=None, init_symbols=None,
+    self, inp, expected_elems, expected_target=None, symbols=None,
 ):
     elems = []
-    symbols = alamatic.intermediate.SymbolTable()
-    if init_symbols is not None:
-        for symbol_name in init_symbols:
-            symbols.declare(symbol_name)
+    if symbols is None:
+        symbols = alamatic.intermediate.SymbolTable()
     result = inp.make_intermediate_form(elems, symbols)
     self.assertEqual(
         element_comparison_nodes(elems),
