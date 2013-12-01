@@ -219,6 +219,14 @@ class ComparisonExpr(BinaryOpExpr):
             return "equals"
         elif self.op == "!=":
             return "not_equals"
+        elif self.op == "<":
+            return "less_than"
+        elif self.op == "<=":
+            return "less_than_equal"
+        elif self.op == ">":
+            return "greater_than"
+        elif self.op == ">=":
+            return "greater_than_equal"
         else:
             raise Exception("Unknown ComparisonExpr operator " + self.op)
 

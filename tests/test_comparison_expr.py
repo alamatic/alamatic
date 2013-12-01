@@ -12,5 +12,9 @@ TestOperatorMap = binary_expr_operator_map_case(
     {
         '==': 'equals',
         '!=': 'not_equals',
+        '<': 'less_than',
+        '>': 'greater_than',
+        '<=': 'less_than_equal',
+        '>=': 'greater_than_equal',
     }
 )
