@@ -257,6 +257,13 @@ class CallOperation(Operation):
         self.kwargs = kwargs
         self.position = position
 
+    @property
+    def params(self):
+        yield self.target
+        yield self.callee
+        yield self.args
+        yield self.kwargs
+
     def replace_operands(self, replace):
         self.target = replace(self.target)
         self.callee = replace(self.callee)

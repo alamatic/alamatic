@@ -299,8 +299,10 @@ class CallExpr(Expression):
             for x in self.args.positional
         ]
         kwarg_operands = {
-            k: v.make_intermediate_form(elems, symbols)
-            for k, v in self.args.keyword.iteritems()
+            # we evaluate the kwargs in a sorted order to ensure that
+            # we'll evaluate them in some predictable (if arbitrary) order.
+            k: self.args.keyword[k].make_intermediate_form(elems, symbols)
+            for k in sorted(self.args.keyword)
         }
         target = symbols.create_temporary().make_operand(
             position=self.position,

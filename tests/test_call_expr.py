@@ -162,3 +162,106 @@ class TestParse(LanguageTestCase):
                 ]),
             ])
         )
+
+
+class TestIntermediate(LanguageTestCase):
+
+    def test_no_args(self):
+        self.assertIntermediateForm(
+            CallExpr(
+                None,
+                DummyExpr("callee"),
+                Arguments(
+                    pos_exprs=[],
+                    kw_exprs={},
+                )
+            ),
+            [
+                ('DummyOperation', ['callee']),
+                ('CallOperation', [
+                    ('SymbolOperand', [
+                        ('TemporarySymbol', 1),
+                    ]),
+                    ('DummyOperand', ['callee']),
+                    [],
+                    {},
+                ]),
+            ],
+            ('SymbolOperand', [
+                ('TemporarySymbol', 1),
+            ]),
+        )
+
+    def test_pos_args(self):
+        self.assertIntermediateForm(
+            CallExpr(
+                None,
+                DummyExpr("callee"),
+                Arguments(
+                    pos_exprs=[
+                        DummyExpr("arg1"),
+                        DummyExpr("arg2"),
+                        DummyExpr("arg3"),
+                    ],
+                    kw_exprs={},
+                )
+            ),
+            [
+                ('DummyOperation', ['callee']),
+                ('DummyOperation', ['arg1']),
+                ('DummyOperation', ['arg2']),
+                ('DummyOperation', ['arg3']),
+                ('CallOperation', [
+                    ('SymbolOperand', [
+                        ('TemporarySymbol', 1),
+                    ]),
+                    ('DummyOperand', ['callee']),
+                    [
+                        ('DummyOperand', ['arg1']),
+                        ('DummyOperand', ['arg2']),
+                        ('DummyOperand', ['arg3']),
+                    ],
+                    {},
+                ]),
+            ],
+            ('SymbolOperand', [
+                ('TemporarySymbol', 1),
+            ]),
+        )
+
+    def test_keyword_args(self):
+        self.assertIntermediateForm(
+            CallExpr(
+                None,
+                DummyExpr("callee"),
+                Arguments(
+                    pos_exprs=[],
+                    kw_exprs={
+                        "kw1": DummyExpr("arg1"),
+                        "kw2": DummyExpr("arg2"),
+                        "kw3": DummyExpr("arg3"),
+                    },
+                )
+            ),
+            [
+                ('DummyOperation', ['callee']),
+                ('DummyOperation', ['arg1']),
+                ('DummyOperation', ['arg2']),
+                ('DummyOperation', ['arg3']),
+                ('CallOperation', [
+                    ('SymbolOperand', [
+                        ('TemporarySymbol', 1),
+                    ]),
+                    ('DummyOperand', ['callee']),
+                    [],
+                    {
+                        "kw1": ('DummyOperand', ['arg1']),
+                        "kw2": ('DummyOperand', ['arg2']),
+                        "kw3": ('DummyOperand', ['arg3']),
+                    },
+                ]),
+            ],
+            ('SymbolOperand', [
+                ('TemporarySymbol', 1),
+            ]),
+        )
