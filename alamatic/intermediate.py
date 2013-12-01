@@ -334,6 +334,10 @@ class JumpOperation(Operation):
         self.label = label
         self.position = position
 
+    @property
+    def params(self):
+        yield self.label
+
     def _generate_c_code(self, state, writer):
         writer.write("goto %s" % self.label.codegen_name)
 
@@ -346,6 +350,11 @@ class JumpIfFalseOperation(JumpOperation):
         self.cond = cond
         self.label = label
         self.position = position
+
+    @property
+    def params(self):
+        yield self.cond
+        yield self.label
 
     def _generate_c_code(self, state, writer):
         writer.write("if (! ")

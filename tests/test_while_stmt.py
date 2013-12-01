@@ -1,6 +1,7 @@
 
 from alamatic.ast import *
 from alamatic.types import *
+from alamatic.intermediate import *
 from alamatic.testutil import *
 
 
@@ -20,4 +21,28 @@ class TestParse(LanguageTestCase):
                     ]),
                 ]),
             ]
+        )
+
+
+class TestIntermediate(LanguageTestCase):
+
+    def test_make(self):
+        self.assertIntermediateForm(
+            WhileStmt(
+                None,
+                DummyExpr("test"),
+                StatementBlock([]),
+            ),
+            [
+                ('Label', 0),
+                ('DummyOperation', ['test']),
+                ('JumpIfFalseOperation', [
+                    ('DummyOperand', ['test']),
+                    ('Label', 1),
+                ]),
+                ('JumpOperation', [
+                    ('Label', 0),
+                ]),
+                ('Label', 1),
+            ],
         )

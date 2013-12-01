@@ -35,9 +35,21 @@ def ast_comparison_node(node):
 
 
 def element_comparison_nodes(elements):
+    # Assign indices to any labels we see so we've some way to
+    # identify them in tests.
+    label_index = 0
+    for element in elements:
+        if isinstance(element, alamatic.intermediate.Label):
+            element._test_index = label_index
+            label_index += 1
     ret = []
     for element in elements:
-        ret.append(element_comparison_node(element))
+        if isinstance(element, alamatic.intermediate.Label):
+            # this function happens to already have a sensible implementation
+            # for labels so we'll just reuse it.
+            ret.append(element_param_comparison_node(element))
+        else:
+            ret.append(element_comparison_node(element))
     return ret
 
 
@@ -63,7 +75,7 @@ def element_param_comparison_node(param):
             element_param_comparison_node(x) for x in param.params
         ))
     elif isinstance(param, alamatic.intermediate.Label):
-        return (type(param).__name__,)
+        return (type(param).__name__, getattr(param, "_test_index", None))
     elif isinstance(param, alamatic.intermediate.TemporarySymbol):
         return (type(param).__name__, param.index)
     elif isinstance(param, alamatic.intermediate.NamedSymbol):
