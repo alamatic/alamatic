@@ -237,6 +237,33 @@ class DummyOperand(alamatic.intermediate.Operand):
         yield self.sigil
 
 
+def binary_expr_operator_map_case_func(expr_type, ast_op, int_op):
+    def test_impl(self):
+        expr = expr_type(
+            None,
+            DummyExpr("lhs"),
+            ast_op,
+            DummyExpr("rhs"),
+        )
+        self.assertEqual(
+            expr.operator_name,
+            int_op,
+        )
+    test_impl.__name__ = "test_" + int_op
+    return test_impl
+
+
+def binary_expr_operator_map_case(expr_type, operations):
+    cls_dict = {}
+    for ast_op, int_op in operations.iteritems():
+        cls_dict["test_" + int_op] = binary_expr_operator_map_case_func(
+            expr_type,
+            ast_op,
+            int_op,
+        )
+    return type('TestOperatorMap', (LanguageTestCase,), cls_dict)
+
+
 # These testcase_-prefixed functions are intended to be added to
 # TestCase subclasses as needed,
 def testcase_assertCodegenTree(testcase, stmts, expected):

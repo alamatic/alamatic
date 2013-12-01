@@ -144,12 +144,13 @@ class BinaryOpExpr(Expression):
 
         lhs_operand = self.lhs.make_intermediate_form(elems, symbols)
         rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
+        operator_name = self.operator_name
 
         elems.append(
             BinaryOperation(
                 target,
                 lhs_operand,
-                self.op,
+                operator_name,
                 rhs_operand,
                 position=self.position,
             )
@@ -213,25 +214,11 @@ class LogicalAndExpr(BinaryOpExpr):
 class ComparisonExpr(BinaryOpExpr):
 
     @property
-    def type_impl_method_name(self):
+    def operator_name(self):
         if self.op == "==":
             return "equals"
         elif self.op == "!=":
             return "not_equals"
-        else:
-            raise Exception("Unknown ComparisonExpr operator " + self.op)
-
-    @property
-    def result_type(self):
-        from alamatic.types import Bool
-        return Bool
-
-    @property
-    def c_operator(self):
-        if self.op == "==":
-            return "=="
-        elif self.op == "!=":
-            return "!="
         else:
             raise Exception("Unknown ComparisonExpr operator " + self.op)
 
@@ -262,7 +249,7 @@ class BinaryOpArithmeticExpr(BinaryOpExpr):
 class SumExpr(BinaryOpArithmeticExpr):
 
     @property
-    def type_impl_method_name(self):
+    def operator_name(self):
         if self.op == "+":
             return "add"
         elif self.op == "-":
@@ -270,20 +257,11 @@ class SumExpr(BinaryOpArithmeticExpr):
         else:
             raise Exception("Unknown SumExpr operator " + self.op)
 
-    @property
-    def c_operator(self):
-        if self.op == "+":
-            return "+"
-        elif self.op == "-":
-            return "-"
-        else:
-            raise Exception("Unknown SumExpr operator " + self.op)
-
 
 class MultiplyExpr(BinaryOpArithmeticExpr):
 
     @property
-    def type_impl_method_name(self):
+    def operator_name(self):
         if self.op == "*":
             return "multiply"
         elif self.op == "%":
