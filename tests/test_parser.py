@@ -244,60 +244,6 @@ class TestParser(LanguageTestCase):
             ]
         )
 
-    def test_data_decl_statement(self):
-        self.assertStmtParseTree(
-            'var i',
-            [
-                ('DataDeclStmt', (), [
-                    ('VarDeclClause', ('i',), []),
-                ]),
-            ]
-        )
-        self.assertStmtParseTree(
-            'var i = 1',
-            [
-                ('DataDeclStmt', (), [
-                    ('VarDeclClause', ('i',), []),
-                    ('IntegerLiteralExpr', (1,), []),
-                ]),
-            ]
-        )
-        self.assertStmtParseTree(
-            'const i',
-            [
-                ('DataDeclStmt', (), [
-                    ('ConstDeclClause', ('i',), []),
-                ]),
-            ]
-        )
-        self.assertStmtParseTree(
-            'const i = 1',
-            [
-                ('DataDeclStmt', (), [
-                    ('ConstDeclClause', ('i',), []),
-                    ('IntegerLiteralExpr', (1,), []),
-                ]),
-            ]
-        )
-        self.assertErrorsInStmts(
-            "var i 1",
-            [
-                (1, 6),
-            ]
-        )
-        self.assertErrorsInStmts(
-            "var 1",
-            [
-                (1, 4),
-            ]
-        )
-        self.assertErrorsInStmts(
-            "var i = 1 2",
-            [
-                (1, 10),
-            ]
-        )
-
     def test_symbol_expression(self):
         self.assertExprParseTree(
             "baz",
