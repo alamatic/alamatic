@@ -48,11 +48,11 @@ class TestIntermediate(LanguageTestCase):
                 ('DummyOperation', ['lhs']),
                 ('DummyOperation', ['rhs']),
                 ('CopyOperation', [
-                    ('DummyOperand', ('lhs',)),
-                    ('DummyOperand', ('rhs',)),
+                    ('DummyOperand', ['lhs']),
+                    ('DummyOperand', ['rhs']),
                 ]),
             ],
-            ('DummyOperand', ('rhs',)),
+            ('DummyOperand', ['rhs']),
         )
 
     def test_non_lvalue(self):

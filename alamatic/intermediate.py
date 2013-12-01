@@ -65,10 +65,12 @@ class TemporarySymbol(Symbol):
     def __init__(
         self,
         decl_table,
+        index=None,
     ):
         super(TemporarySymbol, self).__init__(
             decl_table, decl_position=None,
         )
+        self.index = index
 
     @property
     def codegen_name(self):
@@ -87,6 +89,7 @@ class SymbolTable(object):
         self.children = []
         self.symbols = {}
         self.temporaries = []
+        self.next_temporary_index = 1
 
     def lookup(self, name, position=None):
         current = self
@@ -118,7 +121,9 @@ class SymbolTable(object):
             )
 
     def create_temporary(self):
-        symbol = TemporarySymbol(self)
+        index = self.next_temporary_index
+        self.next_temporary_index += 1
+        symbol = TemporarySymbol(self, index)
         self.temporaries.append(symbol)
         return symbol
 

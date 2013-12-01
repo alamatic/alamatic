@@ -59,9 +59,15 @@ def element_param_comparison_nodes(params):
 
 def element_param_comparison_node(param):
     if isinstance(param, alamatic.intermediate.Operand):
-        return (type(param).__name__, tuple(param.params))
+        return (type(param).__name__, list(
+            element_param_comparison_node(x) for x in param.params
+        ))
     elif isinstance(param, alamatic.intermediate.Label):
         return (type(param).__name__,)
+    elif isinstance(param, alamatic.intermediate.TemporarySymbol):
+        return (type(param).__name__, param.index)
+    elif isinstance(param, alamatic.intermediate.NamedSymbol):
+        return (type(param).__name__, param.decl_name)
     else:
         return param
 
