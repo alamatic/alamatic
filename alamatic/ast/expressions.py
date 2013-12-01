@@ -236,14 +236,7 @@ class ShiftExpr(BinaryOpExpr):
 
 
 class BinaryOpArithmeticExpr(BinaryOpExpr):
-
-    def __init__(self, position, lhs, op, rhs, result_type=None):
-        BinaryOpExpr.__init__(self, position, lhs, op, rhs)
-        self._result_type = result_type
-
-    @property
-    def result_type(self):
-        return self._result_type
+    pass
 
 
 class SumExpr(BinaryOpArithmeticExpr):
