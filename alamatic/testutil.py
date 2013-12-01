@@ -288,6 +288,18 @@ def binary_expr_operator_map_case(expr_type, operations):
     return type('TestOperatorMap', (LanguageTestCase,), cls_dict)
 
 
+def generate_c_for_elems(elems):
+    from StringIO import StringIO
+    from alamatic.compiler import CompileState
+    from alamatic.codegen import CodeWriter
+    state = CompileState()
+    f = StringIO()
+    writer = CodeWriter(f)
+    for elem in elems:
+        elem.generate_c_code(state, writer)
+    return f.getvalue()
+
+
 # These testcase_-prefixed functions are intended to be added to
 # TestCase subclasses as needed,
 def testcase_assertCodegenTree(testcase, stmts, expected):
