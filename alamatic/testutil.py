@@ -114,6 +114,9 @@ class DummyStmt(alamatic.ast.Statement):
     def params(self):
         yield self.sigil
 
+    def make_intermediate_form(self, elems, symbols):
+        elems.append(DummyOperation(self.sigil))
+
 
 def DummyStatementBlock(stmts):
     from alamatic.interpreter import SymbolTable

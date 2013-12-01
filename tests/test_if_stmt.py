@@ -1,6 +1,7 @@
 
 from alamatic.ast import *
 from alamatic.types import *
+from alamatic.intermediate import *
 from alamatic.testutil import *
 
 
@@ -114,4 +115,77 @@ class TestParse(LanguageTestCase):
                     ]),
                 ]),
             ]
+        )
+
+
+class TestIntermediate(LanguageTestCase):
+
+    def test_if(self):
+        self.assertIntermediateForm(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExpr("if_expr"),
+                        StatementBlock([
+                            DummyStmt("if_block"),
+                        ]),
+                    ),
+                ]
+            ),
+            [
+                ('DummyOperation', ['if_expr']),
+                ('JumpIfFalseOperation', [
+                    ('DummyOperand', ['if_expr']),
+                    ('Label', 0),
+                ]),
+                ('DummyOperation', ['if_block']),
+                ('JumpOperation', [
+                    ('Label', 1),
+                ]),
+                # This pair of labels together looks redundant, but at this
+                # stage it's important because our interpreter phase depends
+                # on all conditional branches having at least one basic
+                # block for both true and false, even if one is empty as
+                # shown here.
+                ('Label', 0),
+                ('Label', 1),
+            ],
+        )
+
+    def test_if_else(self):
+        self.assertIntermediateForm(
+            IfStmt(
+                None,
+                [
+                    IfClause(
+                        None,
+                        DummyExpr("if_expr"),
+                        StatementBlock([
+                            DummyStmt("if_block"),
+                        ]),
+                    ),
+                    ElseClause(
+                        None,
+                        StatementBlock([
+                            DummyStmt("else_block"),
+                        ]),
+                    ),
+                ]
+            ),
+            [
+                ('DummyOperation', ['if_expr']),
+                ('JumpIfFalseOperation', [
+                    ('DummyOperand', ['if_expr']),
+                    ('Label', 0),
+                ]),
+                ('DummyOperation', ['if_block']),
+                ('JumpOperation', [
+                    ('Label', 1),
+                ]),
+                ('Label', 0),
+                ('DummyOperation', ['else_block']),
+                ('Label', 1),
+            ],
         )
