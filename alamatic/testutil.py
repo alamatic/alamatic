@@ -260,6 +260,9 @@ class DummyOperand(alamatic.intermediate.Operand):
     def params(self):
         yield self.sigil
 
+    def generate_c_code(self, state, writer):
+        writer.write("DUMMY(%s)" % self.sigil)
+
 
 def binary_expr_operator_map_case_func(expr_type, ast_op, int_op):
     def test_impl(self):
@@ -298,6 +301,28 @@ def generate_c_for_elems(elems):
     for elem in elems:
         elem.generate_c_code(state, writer)
     return f.getvalue()
+
+
+def generate_c_for_operation(op):
+    from StringIO import StringIO
+    from alamatic.compiler import CompileState
+    from alamatic.codegen import CodeWriter
+    state = CompileState()
+    f = StringIO()
+    writer = CodeWriter(f)
+    op._generate_c_code(state, writer)
+    return f.getvalue()
+
+
+def get_operation_replaceable_operands(oper):
+    replaced = set()
+
+    def replace(operand):
+        replaced.add(operand)
+        return operand
+
+    oper.replace_operands(replace)
+    return replaced
 
 
 # These testcase_-prefixed functions are intended to be added to
