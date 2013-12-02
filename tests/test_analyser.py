@@ -31,3 +31,172 @@ class TestBasicBlock(LanguageTestCase):
         self.assertFalse(a.is_loop_header)
         self.assertTrue(b.is_loop_header)
         self.assertFalse(a.is_loop_header)
+
+
+class TestControlFlowGraph(LanguageTestCase):
+
+    def test_no_split(self):
+        elems = [
+            DummyOperation("begin"),
+            DummyOperation("end"),
+        ]
+        self.assertControlFlowGraph(
+            elems,
+            [
+                [
+                    [
+                        ('DummyOperation', ['begin']),
+                        ('DummyOperation', ['end']),
+                    ],
+                    [],
+                    [1],
+                ],
+                [
+                    [],
+                    [0],
+                    [],
+                ]
+            ],
+        )
+        self.assertDominatorTree(
+            elems,
+            [
+                [0],
+                [0, 1],
+            ]
+        )
+
+    def test_split_label(self):
+        label = Label()
+        elems = [
+            DummyOperation("begin"),
+            label,
+            DummyOperation("end"),
+        ]
+        self.assertControlFlowGraph(
+            elems,
+            [
+                [
+                    [
+                        ('DummyOperation', ['begin']),
+                    ],
+                    [],
+                    [1],
+                ],
+                [
+                    [
+                        ('DummyOperation', ['end']),
+                    ],
+                    [0],
+                    [2],
+                ],
+                [
+                    [],
+                    [1],
+                    [],
+                ]
+            ],
+        )
+        self.assertDominatorTree(
+            elems,
+            [
+                [0],
+                [0, 1],
+                [0, 1, 2],
+            ],
+        )
+
+    def test_split_jump(self):
+        label = Label()
+        elems = [
+            DummyOperation("begin"),
+            JumpOperation(label),
+            DummyOperation("middle"),
+            label,
+            DummyOperation("end"),
+        ]
+        self.assertControlFlowGraph(
+            elems,
+            [
+                [
+                    [
+                        ('DummyOperation', ['begin']),
+                    ],
+                    [],
+                    [1],
+                ],
+                [
+                    [
+                        ('DummyOperation', ['end']),
+                    ],
+                    [0],
+                    [2],
+                ],
+                [
+                    [],
+                    [1],
+                    [],
+                ],
+            ],
+        )
+        self.assertDominatorTree(
+            elems,
+            [
+                [0],
+                [0, 1],
+                [0, 1, 2],
+            ],
+        )
+
+    def test_split_jump_if_false(self):
+        label = Label()
+        elems = [
+            DummyOperation("begin"),
+            JumpIfFalseOperation(
+                ConstantOperand(Bool(True)),
+                label,
+            ),
+            DummyOperation("middle"),
+            label,
+            DummyOperation("end"),
+        ]
+        self.assertControlFlowGraph(
+            elems,
+            [
+                [
+                    [
+                        ('DummyOperation', ['begin']),
+                    ],
+                    [],
+                    [1, 2],
+                ],
+                [
+                    [
+                        ('DummyOperation', ['middle']),
+                    ],
+                    [0],
+                    [2],
+                ],
+                [
+                    [
+                        ('DummyOperation', ['end']),
+                    ],
+                    [0, 1],
+                    [3],
+                ],
+                [
+                    [],
+                    [2],
+                    [],
+                ],
+            ],
+        )
+        self.assertDominatorTree(
+            elems,
+            [
+                [0],
+                [0, 1],
+                [0, 2],
+                [0, 2, 3],
+            ],
+        )

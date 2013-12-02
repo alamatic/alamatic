@@ -93,6 +93,42 @@ def element_param_comparison_node(param):
         return param
 
 
+def control_flow_graph_comparison_node(graph):
+    ret = []
+    for block in graph.blocks:
+        item = []
+        item.append(element_comparison_nodes(block.operations))
+        predecessors = list(sorted(block.predecessors, key=lambda x: x.index))
+        predecessors = [
+            x.index
+            for x in predecessors
+        ]
+        item.append(predecessors)
+        successors = []
+        if block.true_successor:
+            successors.append(block.true_successor)
+        if block.false_successor and block.successor_is_conditional:
+            successors.append(block.false_successor)
+        successors = [
+            x.index
+            for x in successors
+        ]
+        item.append(successors)
+        ret.append(item)
+    return ret
+
+
+def dominator_tree_comparison_node(graph):
+    ret = []
+    for block in graph.blocks:
+        item = [
+            x.index
+            for x in sorted(block.dominators, key=lambda b: b.index)
+        ]
+        ret.append(item)
+    return ret
+
+
 def parse_stmts(inp):
     from alamatic.parser import parse_module
     caller = inspect.stack()[1]
@@ -479,6 +515,28 @@ def testcase_assertIntermediateForm(
 testcase_assertIntermediateForm.__name__ = "assertIntermediateForm"
 
 
+def testcase_assertControlFlowGraph(
+    self, elems, expected,
+):
+    graph = alamatic.analyser.build_control_flow_graph(elems)
+    self.assertEqual(
+        control_flow_graph_comparison_node(graph),
+        expected,
+    )
+testcase_assertControlFlowGraph.__name__ = "assertControlFlowGraph"
+
+
+def testcase_assertDominatorTree(
+    self, elems, expected,
+):
+    graph = alamatic.analyser.build_control_flow_graph(elems)
+    self.assertEqual(
+        dominator_tree_comparison_node(graph),
+        expected,
+    )
+testcase_assertDominatorTree.__name__ = "assertDominatorTree"
+
+
 class LanguageTestCase(unittest.TestCase):
     assertCodegenTree = testcase_assertCodegenTree
     assertStmtParseTree = testcase_assertStmtParseTree
@@ -486,3 +544,5 @@ class LanguageTestCase(unittest.TestCase):
     assertErrorsInStmts = testcase_assertErrorsInStmts
     assertErrorsInExpr = testcase_assertErrorsInExpr
     assertIntermediateForm = testcase_assertIntermediateForm
+    assertControlFlowGraph = testcase_assertControlFlowGraph
+    assertDominatorTree = testcase_assertDominatorTree
