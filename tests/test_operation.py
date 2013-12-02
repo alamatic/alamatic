@@ -14,6 +14,7 @@ class TestGenerateC(LanguageTestCase):
         # of generate_c_code that handes the invariant indent, semicolon and
         # newline that all operations require.
         from StringIO import StringIO
+
         class DummyOperation(Operation):
             def _generate_c_code(self, state, writer):
                 writer.write("DUMMY")

@@ -26,6 +26,7 @@ class TestCodegen(LanguageTestCase):
 
     def test_replace_operands(self):
         replaced = set()
+
         def replace(operand):
             replaced.add(operand)
             return operand
