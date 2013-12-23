@@ -170,15 +170,6 @@ class TestParser(LanguageTestCase):
             ]
         )
 
-    def test_loop_control_statements(self):
-        self.assertStmtParseTree(
-            "break\ncontinue",
-            [
-                ("BreakStmt", (), []),
-                ("ContinueStmt", (), []),
-            ]
-        )
-
     def test_return_statement(self):
         # with expression
         self.assertStmtParseTree(

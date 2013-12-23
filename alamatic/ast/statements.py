@@ -41,12 +41,56 @@ class PassStmt(Statement):
     pass
 
 
-class BreakStmt(Statement):
-    pass
+class LoopJumpStmt(Statement):
+
+    from alamatic.compilelogging import CompilerError, pos_link
+
+    class NotInLoopError(CompilerError):
+        pass
+
+    def make_intermediate_form(self, elems, symbols):
+        from alamatic.intermediate import (
+            JumpOperation,
+        )
+        label = self.get_target_label(symbols)
+        if label is not None:
+            elems.append(
+                JumpOperation(
+                    label,
+                    position=self.position,
+                ),
+            )
+        else:
+            raise self.NotInLoopError(
+                "Attempted to '%s' outside of a loop at " % (
+                    self.jump_type_name
+                ),
+                self.pos_link(self.position),
+            )
 
 
-class ContinueStmt(Statement):
-    pass
+class BreakStmt(LoopJumpStmt):
+
+    def get_target_label(self, symbols):
+        import sys
+        sys.stderr.write("break %r\n" % symbols.break_label)
+        return symbols.break_label
+
+    @property
+    def jump_type_name(self):
+        return 'break'
+
+
+class ContinueStmt(LoopJumpStmt):
+
+    def get_target_label(self, symbols):
+        import sys
+        sys.stderr.write("continue %r\n" % symbols.continue_label)
+        return symbols.continue_label
+
+    @property
+    def jump_type_name(self):
+        return 'continue'
 
 
 class ReturnStmt(Statement):
@@ -185,7 +229,11 @@ class WhileStmt(Statement):
             )
         )
 
-        self.block.make_intermediate_form(elems, symbols)
+        body_symbols = symbols.create_child()
+        body_symbols.break_label = end_label
+        body_symbols.continue_label = head_label
+
+        self.block.make_intermediate_form(elems, body_symbols)
 
         elems.append(
             JumpOperation(
