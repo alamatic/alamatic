@@ -72,8 +72,6 @@ class LoopJumpStmt(Statement):
 class BreakStmt(LoopJumpStmt):
 
     def get_target_label(self, symbols):
-        import sys
-        sys.stderr.write("break %r\n" % symbols.break_label)
         return symbols.break_label
 
     @property
@@ -84,8 +82,6 @@ class BreakStmt(LoopJumpStmt):
 class ContinueStmt(LoopJumpStmt):
 
     def get_target_label(self, symbols):
-        import sys
-        sys.stderr.write("continue %r\n" % symbols.continue_label)
         return symbols.continue_label
 
     @property
