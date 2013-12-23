@@ -13,6 +13,7 @@ class BasicBlock(object):
         self.exit_cond = None
         self.true_successor = None
         self.false_successor = None
+        self.closest_loop = None
 
     @property
     def successor_is_conditional(self):
@@ -26,6 +27,15 @@ class BasicBlock(object):
         return False
 
 
+class Loop(object):
+
+    def __init__(self):
+        self.header_block = None
+        self.body_blocks = set()
+        self.parent_loop = None
+        self.child_loops = set()
+
+
 class ControlFlowGraph(object):
 
     def __init__(self):
@@ -33,6 +43,7 @@ class ControlFlowGraph(object):
         self.exit_block = None
         self.blocks = None
         self.blocks_by_label = None
+        self.root_loops = None
 
 
 def build_control_flow_graph(elems):
@@ -153,5 +164,38 @@ def build_control_flow_graph(elems):
     graph.blocks_by_label = blocks_by_label
     graph.entry_block = entry_block
     graph.exit_block = exit_block
+
+    # Pass 7: Find loops
+    graph.root_loops = set()
+    for header_block in blocks:
+        if header_block.is_loop_header:
+            loop = Loop()
+
+            # If this block is already in a loop then we've found
+            # a nested loop, so turn the existing loop into the parent loop
+            if block.closest_loop is not None:
+                loop.parent_loop = block.closest_loop
+                block.closest_loop.child_loops.add(loop)
+
+            block.closest_loop = loop
+            loop.header_block = header_block
+
+            # For each incoming back edge, find the maximal set of blocks
+            # that participate in the loop.
+            for pred_block in header_block.predecessors:
+                if header_block not in pred_block.dominators:
+                    continue
+                body_blocks = set([pred_block, header_block])
+                stack = [pred_block]
+                while len(stack) > 0:
+                    current_block = stack.pop()
+                    for current_block_pred in current_block.predecessors:
+                        if current_block_pred not in body_blocks:
+                            body_blocks.add(current_block_pred)
+                            stack.append(current_block_pred)
+                loop.body_blocks.update(body_blocks)
+
+            if loop.parent_loop is None:
+                graph.root_loops.add(loop)
 
     return graph

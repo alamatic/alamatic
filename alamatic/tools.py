@@ -83,6 +83,25 @@ def alac():
                     source_name,
                     false_name,
                 )
+
+    def print_loop_graph(loop, indent=0, LR=False):
+        indent_spaces = " " * (indent * 4)
+        print ""
+        print indent_spaces + "    subgraph cluster_loop%x {" % id(loop)
+        if LR:
+            print indent_spaces + '        graph [rank="LR"];'
+        else:
+            print indent_spaces + '        graph [rank="TB"];'
+        loop_blocks = loop.body_blocks.union(set([loop.header_block]))
+        for block in loop_blocks:
+            print indent_spaces + '        "block_%x";' % id(block)
+        for child_loop in loop.child_loops:
+            print_loop_graph(child_loop, indent + 1, not LR)
+        print indent_spaces + "    }"
+
+    loops = list(graph.root_loops)
+    for loop in loops:
+        print_loop_graph(loop)
     for block in graph.blocks:
         for dom in block.dominators:
             source_name = "block_%x" % id(block)
