@@ -44,6 +44,8 @@ def alac():
             styles.append("bold")
         if block is graph.entry_block or block is graph.exit_block:
             styles.append("rounded")
+        if block in graph.exit_block.dominators and not block.is_loop_header:
+            styles.append("filled")
         print '    "block_%x" [label=%s,shape="rect",%s,style="%s"];' % (
             id(block),
             label_str,
