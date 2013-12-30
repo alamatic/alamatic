@@ -272,7 +272,7 @@ class TestControlFlowGraph(LanguageTestCase):
             [3],
             [],
         )
-        root_loops, child_loops, closest_loops =  _create_loop_tree_for_blocks(
+        root_loops, child_loops, closest_loops = _create_loop_tree_for_blocks(
             dummy_blocks,
         )
         self.assertEqual(
@@ -297,7 +297,7 @@ class TestControlFlowGraph(LanguageTestCase):
             [0],
             [],
         )
-        root_loops, child_loops, closest_loops =  _create_loop_tree_for_blocks(
+        root_loops, child_loops, closest_loops = _create_loop_tree_for_blocks(
             dummy_blocks,
         )
         self.assertEqual(
@@ -337,7 +337,7 @@ class TestControlFlowGraph(LanguageTestCase):
             [0],
             [],
         )
-        root_loops, child_loops, closest_loops =  _create_loop_tree_for_blocks(
+        root_loops, child_loops, closest_loops = _create_loop_tree_for_blocks(
             dummy_blocks,
         )
         self.assertEqual(
@@ -373,7 +373,7 @@ class TestControlFlowGraph(LanguageTestCase):
             [0],
             [],
         )
-        root_loops, child_loops, closest_loops =  _create_loop_tree_for_blocks(
+        root_loops, child_loops, closest_loops = _create_loop_tree_for_blocks(
             dummy_blocks,
         )
         self.assertEqual(
@@ -410,7 +410,7 @@ class TestControlFlowGraph(LanguageTestCase):
             [0],
             [],
         )
-        root_loops, child_loops, closest_loops =  _create_loop_tree_for_blocks(
+        root_loops, child_loops, closest_loops = _create_loop_tree_for_blocks(
             dummy_blocks,
         )
 

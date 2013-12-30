@@ -62,9 +62,9 @@ def alac():
             )
         for successor_block in block.jump_successors:
             if successor_block in block.dominators:
-                style="bold" # It's a back edge
+                style = "bold"  # It's a back edge
             else:
-                style="solid" # It's a forward edge
+                style = "solid"  # It's a forward edge
             target_name = "block_%x" % id(successor_block)
             print '    "%s" -> "%s" [style=%s];' % (
                 source_name,
