@@ -51,8 +51,9 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __repr__(self):
-        return "<alamatic.types.%s: %i>" % (type(self).__name__, self.value)
+    @property
+    def params(self):
+        yield self.value
 
     def generate_c_code(self, state, writer):
         writer.write(str(self.value))

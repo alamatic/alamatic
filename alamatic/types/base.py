@@ -50,6 +50,20 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
 class Value(object):
     __metaclass__ = Type
 
+    @property
+    def params(self):
+        return ()
+
+    def __repr__(self):
+        base = "alamatic.types.%s" % type(self).__name__
+        str_params = ", ".join(
+            repr(x) for x in self.params
+        )
+        if len(str_params) > 0:
+            return "<%s: %s>" % (base, str_params)
+        else:
+            return "<%s>" % (base)
+
     @classmethod
     def generate_c_forward_decl(self, state, writer):
         pass

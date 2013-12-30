@@ -70,6 +70,7 @@ def element_param_comparison_nodes(params):
 
 
 def element_param_comparison_node(param):
+    from alamatic.types import Value
     if isinstance(param, alamatic.intermediate.Operand):
         return (type(param).__name__, list(
             element_param_comparison_node(x) for x in param.params
@@ -80,6 +81,8 @@ def element_param_comparison_node(param):
         return (type(param).__name__, param.index)
     elif isinstance(param, alamatic.intermediate.NamedSymbol):
         return (type(param).__name__, param.decl_name)
+    elif isinstance(param, Value):
+        return (type(param).__name__, tuple(param.params))
     elif isinstance(param, list):
         return [
             element_param_comparison_node(x) for x in param
@@ -94,28 +97,51 @@ def element_param_comparison_node(param):
 
 
 def control_flow_graph_comparison_node(graph):
+    from alamatic.analyser import ControlFlowGraph
+
+    # Allow the caller to pass either a graph or just a bare list of blocks
+    if isinstance(graph, ControlFlowGraph):
+        blocks = graph.blocks
+    else:
+        blocks = graph
+
     ret = []
-    for block in graph.blocks:
+    block_indices = {}
+    for i, block in enumerate(blocks):
         item = []
+        item.append(element_comparison_node(block.label))
         item.append(element_comparison_nodes(block.operations))
-        predecessors = list(sorted(block.predecessors, key=lambda x: x.index))
-        predecessors = [
-            x.index
-            for x in predecessors
-        ]
-        item.append(predecessors)
-        successors = []
-        if block.true_successor:
-            successors.append(block.true_successor)
-        if block.false_successor and block.successor_is_conditional:
-            successors.append(block.false_successor)
-        successors = [
-            x.index
-            for x in successors
-        ]
-        item.append(successors)
+        item.append(element_comparison_node(block.terminator))
+        item.append(block.successors)
+        block_indices[block] = i
         ret.append(item)
+
+    # The tests using this function won't have the actual block instances
+    # handy to compare to, so we substutute indices instead.
+    for item in ret:
+        item[3] = tuple(sorted(
+            block_indices[b] for b in item[3]
+        ))
+
     return ret
+
+
+# Entry block always looks the same: no operations, falls through to index 1
+entry_block_comparison_node = [
+    None,
+    [],
+    ('JumpNeverOperation', []),
+    (1,),
+]
+
+
+# Exit block always looks the same: no operations, no successors
+exit_block_comparison_node = [
+    None,
+    [],
+    ('JumpNeverOperation', []),
+    (),
+]
 
 
 def dominator_tree_comparison_node(graph):
@@ -267,6 +293,54 @@ class DummyBooleanConstantExpr(alamatic.ast.Expression):
 
     def make_intermediate_form(self, elems, symbols):
         return self.operand
+
+
+class DummyBasicBlock(object):
+    from alamatic.analyser import BasicBlock
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.successors = set()
+        self.predecessors = set()
+        self.dominators = set()
+        self.index = None
+
+    def __repr__(self):
+        return "<DummyBasicBlock %r>" % self.index
+
+    # Borrow the is_loop_header implementation from BasicBlock,
+    # or else we'd just duplicate it here anyway.
+    is_loop_header = BasicBlock.is_loop_header
+
+    @classmethod
+    def create_list(cls, *jump_defs):
+        from mock import MagicMock
+
+        mock_cfg = MagicMock()
+
+        blocks = [
+            DummyBasicBlock(mock_cfg) for x in jump_defs
+        ]
+        for i, jump_def in enumerate(jump_defs):
+            blocks[i].index = i
+            blocks[i].successors.update(
+                blocks[bi] for bi in jump_def
+            )
+            for successor_block in blocks[i].successors:
+                successor_block.predecessors.add(blocks[i])
+
+        # Assume the first block passed was the entry block.
+        # An entry block is required to build the dominator map.
+        mock_cfg.entry_block = blocks[0]
+
+        # And we build the dominators map using our real analyzer function,
+        # since otherwise we'd just repeat the whole thing here.
+        from alamatic.analyser import _create_dominator_map_for_blocks
+        dominator_map = _create_dominator_map_for_blocks(blocks)
+        for block, dominators in dominator_map.iteritems():
+            block.dominators.update(dominators)
+
+        return blocks
 
 
 class DummyOperation(alamatic.intermediate.Operation):

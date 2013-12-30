@@ -25,7 +25,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        Int8(1),
+                        ('Int8', (1,)),
                     ]),
                 ]),
             ],
@@ -45,7 +45,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        Int8(-1),
+                        ('Int8', (-1,)),
                     ]),
                 ]),
             ],
@@ -67,7 +67,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        Int16(257),
+                        ('Int16', (257,)),
                     ]),
                 ]),
             ],
@@ -89,7 +89,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        Int32(65537),
+                        ('Int32', (65537,)),
                     ]),
                 ]),
             ],
@@ -111,7 +111,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        Int64(4294967297),
+                        ('Int64', (4294967297,)),
                     ]),
                 ]),
             ],
@@ -133,7 +133,7 @@ class TestIntermediate(LanguageTestCase):
                         ('TemporarySymbol', 1),
                     ]),
                     ('ConstantOperand', [
-                        UInt64((2 ** 64) - 5),
+                        ('UInt64', ((2 ** 64) - 5,)),
                     ]),
                 ]),
             ],

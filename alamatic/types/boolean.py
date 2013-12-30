@@ -12,8 +12,9 @@ class Bool(Value):
 
         self.value = value
 
-    def __repr__(self):
-        return "<alamatic.types.%s: %r>" % (type(self).__name__, self.value)
+    @property
+    def params(self):
+        yield self.value
 
     def generate_c_code(self, state, writer):
         writer.write("1" if self.value else "0")

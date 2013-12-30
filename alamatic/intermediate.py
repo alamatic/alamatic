@@ -372,6 +372,14 @@ class JumpOperation(Operation):
     def replace_operands(self, replace):
         pass
 
+    @property
+    def can_fall_through(self):
+        return False
+
+    @property
+    def jump_targets(self):
+        return set([self.label])
+
 
 class JumpIfFalseOperation(JumpOperation):
     def __init__(self, cond, label, position=None):
@@ -391,6 +399,39 @@ class JumpIfFalseOperation(JumpOperation):
 
     def replace_operands(self, replace):
         self.cond = replace(self.cond)
+
+    @property
+    def can_fall_through(self):
+        return True
+
+    @property
+    def jump_targets(self):
+        return set([self.label])
+
+
+# This is not a "real" operation that should show up during code generation,
+# but is used by the code analyzer to ensure that all basic blocks have
+# a terminator, even if a particular block does not end with an explicit jump
+# in the original IR.
+class JumpNeverOperation(JumpOperation):
+    def __init__(self):
+        pass
+
+    @property
+    def params(self):
+        return []
+
+    def generate_c_code(self, state, writer):
+        # nothing to generate, since this is just a no-op
+        pass
+
+    @property
+    def can_fall_through(self):
+        return True
+
+    @property
+    def jump_targets(self):
+        return set()
 
 
 class Operand(object):

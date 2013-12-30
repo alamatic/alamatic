@@ -63,17 +63,8 @@ class TestIntermediate(LanguageTestCase):
             'ConstantOperand',
         )
         self.assertEqual(
-            type(elems_comp[0][1][1][1][0]),
-            FunctionTemplate,
-        )
-        template = elems_comp[0][1][1][1][0]
-        self.assertEqual(
-            template.decl_node,
-            stmt,
-        )
-        self.assertEqual(
-            template.decl_scope,
-            symbols,
+            elems_comp[0][1][1][1][0],
+            ('FunctionTemplate', ()),
         )
 
         symbol = symbols.lookup("baz")

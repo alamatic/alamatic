@@ -35,11 +35,7 @@ def alac():
         for operation in block.operations:
             operation.generate_c_code(state, writer)
 
-        if block.successor_is_conditional:
-            writer.write("\n")
-            writer.write("if ")
-            block.exit_cond.generate_c_code(state, writer)
-            writer.write("...\n")
+        block.terminator.generate_c_code(state, writer)
 
         label_str = json.dumps(f.getvalue())
         label_str = label_str.replace(r'\n', r'\l')
@@ -56,33 +52,23 @@ def alac():
         )
     for block in graph.blocks:
         source_name = "block_%x" % id(block)
-        if block.false_successor is None:
-            # it's the exit block, so skip
-            continue
-        if block.successor_is_conditional:
-            true_name = "block_%x" % id(block.true_successor)
-            print '    "%s" -> "%s" [label=T, style=dashed];' % (
+        if block.fall_through_successor:
+            target_name = "block_%x" % id(block.fall_through_successor)
+            print '    "%s" -> "%s" [style=dashed];' % (
                 source_name,
-                true_name,
+                target_name,
             )
-            false_name = "block_%x" % id(block.false_successor)
-            print '    "%s" -> "%s" [label=F, style=dashed];' % (
-                source_name,
-                false_name,
-            )
-        else:
-            false_name = "block_%x" % id(block.false_successor)
-            if block.false_successor.index < block.index:
-                # it's a backward jump, creating a loop
-                print '    "%s" -> "%s" [style=bold];' % (
-                    source_name,
-                    false_name,
-                )
+        for successor_block in block.jump_successors:
+            if successor_block in block.dominators:
+                style="bold" # It's a back edge
             else:
-                print '    "%s" -> "%s" [style=solid];' % (
-                    source_name,
-                    false_name,
-                )
+                style="solid" # It's a forward edge
+            target_name = "block_%x" % id(successor_block)
+            print '    "%s" -> "%s" [style=%s];' % (
+                source_name,
+                target_name,
+                style,
+            )
 
     def print_loop_graph(loop, indent=0, LR=False):
         indent_spaces = " " * (indent * 4)

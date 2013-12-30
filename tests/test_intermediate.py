@@ -41,7 +41,9 @@ class TestSimplifyTemporaries(LanguageTestCase):
                     ('SymbolOperand', [
                         ('NamedSymbol', 'baz'),
                     ]),
-                    ('ConstantOperand', [UInt8(2)]),
+                    ('ConstantOperand', [
+                        ('UInt8', (2,)),
+                    ]),
                 ]),
                 # The copy to the temporary is removed.
                 ('BinaryOperation', [
@@ -49,9 +51,13 @@ class TestSimplifyTemporaries(LanguageTestCase):
                         ('NamedSymbol', 'baz')
                     ]),
                     # the operands are now the constant
-                    ('ConstantOperand', [UInt8(1)]),
+                    ('ConstantOperand', [
+                        ('UInt8', (1,)),
+                    ]),
                     'add',
-                    ('ConstantOperand', [UInt8(1)]),
+                    ('ConstantOperand', [
+                        ('UInt8', (1,)),
+                    ]),
                 ]),
                 # The other operation is unaffected
                 ('BinaryOperation', [
