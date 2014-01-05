@@ -50,12 +50,12 @@ class LoopJumpStmt(Statement):
 
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
-            JumpOperation,
+            JumpInstruction,
         )
         label = self.get_target_label(symbols)
         if label is not None:
             elems.append(
-                JumpOperation(
+                JumpInstruction(
                     label,
                     position=self.position,
                 ),
@@ -115,8 +115,8 @@ class IfStmt(Statement):
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
             Label,
-            JumpOperation,
-            JumpIfFalseOperation,
+            JumpInstruction,
+            JumpIfFalseInstruction,
         )
 
         # FIXME: It would be better to use the position of the
@@ -134,7 +134,7 @@ class IfStmt(Statement):
                     elems, symbols,
                 )
                 elems.append(
-                    JumpIfFalseOperation(
+                    JumpIfFalseInstruction(
                         test_operand,
                         skip_label,
                         position=clause.position,
@@ -144,7 +144,7 @@ class IfStmt(Statement):
                     elems, symbols,
                 )
                 elems.append(
-                    JumpOperation(
+                    JumpInstruction(
                         end_label,
                         position=skip_label.position,
                     ),
@@ -201,8 +201,8 @@ class WhileStmt(Statement):
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
             Label,
-            JumpOperation,
-            JumpIfFalseOperation,
+            JumpInstruction,
+            JumpIfFalseInstruction,
         )
 
         head_label = Label(position=self.position)
@@ -218,7 +218,7 @@ class WhileStmt(Statement):
         )
 
         elems.append(
-            JumpIfFalseOperation(
+            JumpIfFalseInstruction(
                 test_operand,
                 end_label,
                 self.test_expr.position,
@@ -232,7 +232,7 @@ class WhileStmt(Statement):
         self.block.make_intermediate_form(elems, body_symbols)
 
         elems.append(
-            JumpOperation(
+            JumpInstruction(
                 head_label,
                 position=end_label.position,
             )
@@ -273,6 +273,7 @@ class DataDeclStmt(Statement):
         from alamatic.intermediate import (
             SymbolOperand,
             NotConstantError,
+            OperationInstruction,
             CopyOperation,
         )
         from alamatic.ast import (
@@ -313,9 +314,11 @@ class DataDeclStmt(Statement):
                 elems, symbols,
             )
             elems.append(
-                CopyOperation(
+                OperationInstruction(
                     assign_target,
-                    initializer,
+                    CopyOperation(
+                        initializer,
+                    ),
                     position=self.position,
                 )
             )
@@ -339,6 +342,7 @@ class FuncDeclStmt(Statement):
         # declaration that forces a function type.
         from alamatic.types import FunctionTemplate
         from alamatic.intermediate import (
+            OperationInstruction,
             CopyOperation,
             ConstantOperand,
         )
@@ -354,11 +358,13 @@ class FuncDeclStmt(Statement):
             position=self.position,
         )
         elems.append(
-            CopyOperation(
+            OperationInstruction(
                 symbol.make_operand(),
-                ConstantOperand(
-                    template_value,
-                    position=self.position,
-                )
+                CopyOperation(
+                    ConstantOperand(
+                        template_value,
+                    )
+                ),
+                position=self.position,
             )
         )

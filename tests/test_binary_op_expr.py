@@ -26,15 +26,17 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('DummyOperation', ['lhs']),
-                ('DummyOperation', ['rhs']),
-                ('BinaryOperation', [
+                ('DummyInstruction', ['lhs']),
+                ('DummyInstruction', ['rhs']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('DummyOperand', ['lhs']),
-                    'frobnicate',
-                    ('DummyOperand', ['rhs']),
+                    ('BinaryOperation', [
+                        ('DummyOperand', ['lhs']),
+                        'frobnicate',
+                        ('DummyOperand', ['rhs']),
+                    ]),
                 ]),
             ],
             ('SymbolOperand', [

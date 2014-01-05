@@ -122,12 +122,14 @@ class TestIntermediate(LanguageTestCase):
                 DummyExpr("init"),
             ),
             [
-                ('DummyOperation', ['init']),
-                ('CopyOperation', [
+                ('DummyInstruction', ['init']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('NamedSymbol', 'foo'),
                     ]),
-                    ('DummyOperand', ['init']),
+                    ('CopyOperation', [
+                        ('DummyOperand', ['init']),
+                    ]),
                 ]),
             ],
             symbols=symbols,
@@ -151,12 +153,14 @@ class TestIntermediate(LanguageTestCase):
                 DummyExpr("init"),
             ),
             [
-                ('DummyOperation', ['init']),
-                ('CopyOperation', [
+                ('DummyInstruction', ['init']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('NamedSymbol', 'foo'),
                     ]),
-                    ('DummyOperand', ['init']),
+                    ('CopyOperation', [
+                        ('DummyOperand', ['init']),
+                    ]),
                 ]),
             ],
             symbols=symbols,

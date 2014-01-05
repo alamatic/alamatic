@@ -177,14 +177,16 @@ class TestIntermediate(LanguageTestCase):
                 )
             ),
             [
-                ('DummyOperation', ['callee']),
-                ('CallOperation', [
+                ('DummyInstruction', ['callee']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('DummyOperand', ['callee']),
-                    [],
-                    {},
+                    ('CallOperation', [
+                        ('DummyOperand', ['callee']),
+                        [],
+                        {},
+                    ]),
                 ]),
             ],
             ('SymbolOperand', [
@@ -207,21 +209,23 @@ class TestIntermediate(LanguageTestCase):
                 )
             ),
             [
-                ('DummyOperation', ['callee']),
-                ('DummyOperation', ['arg1']),
-                ('DummyOperation', ['arg2']),
-                ('DummyOperation', ['arg3']),
-                ('CallOperation', [
+                ('DummyInstruction', ['callee']),
+                ('DummyInstruction', ['arg1']),
+                ('DummyInstruction', ['arg2']),
+                ('DummyInstruction', ['arg3']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('DummyOperand', ['callee']),
-                    [
-                        ('DummyOperand', ['arg1']),
-                        ('DummyOperand', ['arg2']),
-                        ('DummyOperand', ['arg3']),
-                    ],
-                    {},
+                    ('CallOperation', [
+                        ('DummyOperand', ['callee']),
+                        [
+                            ('DummyOperand', ['arg1']),
+                            ('DummyOperand', ['arg2']),
+                            ('DummyOperand', ['arg3']),
+                        ],
+                        {},
+                    ]),
                 ]),
             ],
             ('SymbolOperand', [
@@ -244,21 +248,23 @@ class TestIntermediate(LanguageTestCase):
                 )
             ),
             [
-                ('DummyOperation', ['callee']),
-                ('DummyOperation', ['arg1']),
-                ('DummyOperation', ['arg2']),
-                ('DummyOperation', ['arg3']),
-                ('CallOperation', [
+                ('DummyInstruction', ['callee']),
+                ('DummyInstruction', ['arg1']),
+                ('DummyInstruction', ['arg2']),
+                ('DummyInstruction', ['arg3']),
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('DummyOperand', ['callee']),
-                    [],
-                    {
-                        "kw1": ('DummyOperand', ['arg1']),
-                        "kw2": ('DummyOperand', ['arg2']),
-                        "kw3": ('DummyOperand', ['arg3']),
-                    },
+                    ('CallOperation', [
+                        ('DummyOperand', ['callee']),
+                        [],
+                        {
+                            "kw1": ('DummyOperand', ['arg1']),
+                            "kw2": ('DummyOperand', ['arg2']),
+                            "kw3": ('DummyOperand', ['arg3']),
+                        },
+                    ]),
                 ]),
             ],
             ('SymbolOperand', [

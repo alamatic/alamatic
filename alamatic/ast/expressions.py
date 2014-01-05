@@ -30,6 +30,7 @@ class SymbolNameExpr(Expression):
 
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
+            OperationInstruction,
             CopyOperation,
             SymbolOperand,
         )
@@ -38,11 +39,13 @@ class SymbolNameExpr(Expression):
         )
         symbol = symbols.lookup(self.name, position=self.position)
         elems.append(
-            CopyOperation(
+            OperationInstruction(
                 target,
-                SymbolOperand(
-                    symbol,
-                    position=self.position,
+                CopyOperation(
+                    SymbolOperand(
+                        symbol,
+                        position=self.position,
+                    ),
                 ),
                 position=self.position,
             )
@@ -80,6 +83,7 @@ class IntegerLiteralExpr(LiteralExpr):
             UInt64,
         )
         from alamatic.intermediate import (
+            OperationInstruction,
             CopyOperation,
             ConstantOperand,
             SymbolOperand,
@@ -94,11 +98,12 @@ class IntegerLiteralExpr(LiteralExpr):
             limits = possible_type.get_limits()
             if src_value >= limits[0] and src_value <= limits[1]:
                 elems.append(
-                    CopyOperation(
+                    OperationInstruction(
                         target,
-                        ConstantOperand(
-                            possible_type(src_value),
-                            position=self.position,
+                        CopyOperation(
+                            ConstantOperand(
+                                possible_type(src_value),
+                            ),
                         ),
                         position=self.position,
                     )
@@ -136,6 +141,7 @@ class BinaryOpExpr(Expression):
 
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
+            OperationInstruction,
             BinaryOperation,
         )
         target = symbols.create_temporary().make_operand(
@@ -147,11 +153,13 @@ class BinaryOpExpr(Expression):
         operator_name = self.operator_name
 
         elems.append(
-            BinaryOperation(
+            OperationInstruction(
                 target,
-                lhs_operand,
-                operator_name,
-                rhs_operand,
+                BinaryOperation(
+                    lhs_operand,
+                    operator_name,
+                    rhs_operand,
+                ),
                 position=self.position,
             )
         )
@@ -182,6 +190,7 @@ class AssignExpr(BinaryOpExpr):
         # this node type also needs to support all of the shorthands
         # like +=, -=, etc.
         from alamatic.intermediate import (
+            OperationInstruction,
             CopyOperation,
         )
 
@@ -189,9 +198,11 @@ class AssignExpr(BinaryOpExpr):
         rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
 
         elems.append(
-            CopyOperation(
+            OperationInstruction(
                 lhs_operand,
-                rhs_operand,
+                CopyOperation(
+                    rhs_operand,
+                ),
                 position=self.position,
             )
         )
@@ -296,6 +307,7 @@ class CallExpr(Expression):
 
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
+            OperationInstruction,
             CallOperation,
         )
 
@@ -316,11 +328,13 @@ class CallExpr(Expression):
             position=self.position,
         )
         elems.append(
-            CallOperation(
+            OperationInstruction(
                 target,
-                callee_operand,
-                arg_operands,
-                kwarg_operands,
+                CallOperation(
+                    callee_operand,
+                    arg_operands,
+                    kwarg_operands,
+                    ),
                 position=self.position,
             )
         )

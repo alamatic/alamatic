@@ -21,12 +21,14 @@ class TestIntermediate(LanguageTestCase):
                 'foo',
             ),
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('SymbolOperand', [
-                        ('NamedSymbol', 'foo'),
+                    ('CopyOperation', [
+                        ('SymbolOperand', [
+                            ('NamedSymbol', 'foo'),
+                        ]),
                     ]),
                 ]),
             ],

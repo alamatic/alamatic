@@ -18,9 +18,9 @@ class BasicBlock(object):
     """
 
     def __init__(self, cfg, label, operations, terminator, next_block):
-        from alamatic.intermediate import JumpNeverOperation
+        from alamatic.intermediate import JumpNeverInstruction
         if terminator is None:
-            terminator = JumpNeverOperation()
+            terminator = JumpNeverInstruction()
 
         self._cfg = cfg
         self.seq_id = cfg._allocate_block_sequence_id()
@@ -251,7 +251,7 @@ class ControlFlowGraph(object):
 def _split_elems_into_blocks(elems, cfg):
     from alamatic.intermediate import (
         Label,
-        JumpOperation,
+        JumpInstruction,
     )
     exit_block = BasicBlock(
         cfg=cfg,
@@ -306,7 +306,7 @@ def _split_elems_into_blocks(elems, cfg):
         if isinstance(elem, Label):
             builder.commit()
             builder.label = elem
-        elif isinstance(elem, JumpOperation):
+        elif isinstance(elem, JumpInstruction):
             builder.terminator = elem
             builder.commit()
         else:

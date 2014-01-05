@@ -10,8 +10,8 @@ class TestControlFlowGraph(LanguageTestCase):
 
     def test_no_split(self):
         elems = [
-            DummyOperation("begin"),
-            DummyOperation("end"),
+            DummyInstruction("begin"),
+            DummyInstruction("end"),
         ]
         self.assertControlFlowGraph(
             elems,
@@ -20,10 +20,10 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     None,
                     [
-                        ('DummyOperation', ['begin']),
-                        ('DummyOperation', ['end']),
+                        ('DummyInstruction', ['begin']),
+                        ('DummyInstruction', ['end']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (2,)
                 ],
                 exit_block_comparison_node,
@@ -33,9 +33,9 @@ class TestControlFlowGraph(LanguageTestCase):
     def test_split_label(self):
         label = Label()
         elems = [
-            DummyOperation("begin"),
+            DummyInstruction("begin"),
             label,
-            DummyOperation("end"),
+            DummyInstruction("end"),
         ]
         self.assertControlFlowGraph(
             elems,
@@ -44,17 +44,17 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     None,
                     [
-                        ('DummyOperation', ['begin']),
+                        ('DummyInstruction', ['begin']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (2,),
                 ],
                 [
                     ('Label', []),
                     [
-                        ('DummyOperation', ['end']),
+                        ('DummyInstruction', ['end']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (3,),
                 ],
                 exit_block_comparison_node,
@@ -64,11 +64,11 @@ class TestControlFlowGraph(LanguageTestCase):
     def test_split_jump(self):
         label = Label()
         elems = [
-            DummyOperation("begin"),
-            JumpOperation(label),
-            DummyOperation("middle"),
+            DummyInstruction("begin"),
+            JumpInstruction(label),
+            DummyInstruction("middle"),
             label,
-            DummyOperation("end"),
+            DummyInstruction("end"),
         ]
         self.assertControlFlowGraph(
             elems,
@@ -77,9 +77,9 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     None,
                     [
-                        ('DummyOperation', ['begin']),
+                        ('DummyInstruction', ['begin']),
                     ],
-                    ('JumpOperation', [
+                    ('JumpInstruction', [
                         ('Label', None),
                     ]),
                     (2,),
@@ -91,9 +91,9 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     ('Label', []),
                     [
-                        ('DummyOperation', ['end']),
+                        ('DummyInstruction', ['end']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (3,),
                 ],
                 exit_block_comparison_node,
@@ -105,14 +105,14 @@ class TestControlFlowGraph(LanguageTestCase):
 
         label = Label()
         elems = [
-            DummyOperation("begin"),
-            JumpIfFalseOperation(
+            DummyInstruction("begin"),
+            JumpIfFalseInstruction(
                 ConstantOperand(Bool(True)),
                 label,
             ),
-            DummyOperation("middle"),
+            DummyInstruction("middle"),
             label,
-            DummyOperation("end"),
+            DummyInstruction("end"),
         ]
         self.assertControlFlowGraph(
             elems,
@@ -121,9 +121,9 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     None,
                     [
-                        ('DummyOperation', ['begin']),
+                        ('DummyInstruction', ['begin']),
                     ],
-                    ('JumpIfFalseOperation', [
+                    ('JumpIfFalseInstruction', [
                         ('ConstantOperand', [
                             ('Bool', (True,)),
                         ]),
@@ -134,17 +134,17 @@ class TestControlFlowGraph(LanguageTestCase):
                 [
                     None,
                     [
-                        ('DummyOperation', ['middle']),
+                        ('DummyInstruction', ['middle']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (3,),
                 ],
                 [
                     ('Label', []),
                     [
-                        ('DummyOperation', ['end']),
+                        ('DummyInstruction', ['end']),
                     ],
-                    ('JumpNeverOperation', []),
+                    ('JumpNeverInstruction', []),
                     (4,),
                 ],
                 exit_block_comparison_node,

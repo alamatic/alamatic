@@ -30,7 +30,7 @@ class TestIntermediate(LanguageTestCase):
                 DummyExprStatement("expr"),
             ),
             [
-                ('DummyOperation', ['expr']),
+                ('DummyInstruction', ['expr']),
             ],
         )
 

@@ -36,7 +36,7 @@ class TestIntermediate(LanguageTestCase):
         self.assertEqual(
             element_comparison_nodes(elems),
             [
-                ('JumpOperation', [
+                ('JumpInstruction', [
                     ('Label', 4),
                 ]),
             ],
@@ -56,7 +56,7 @@ class TestIntermediate(LanguageTestCase):
         self.assertEqual(
             element_comparison_nodes(elems),
             [
-                ('JumpOperation', [
+                ('JumpInstruction', [
                     ('Label', 5),
                 ]),
             ],

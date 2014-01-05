@@ -135,13 +135,13 @@ class TestIntermediate(LanguageTestCase):
                 ]
             ),
             [
-                ('DummyOperation', ['if_expr']),
-                ('JumpIfFalseOperation', [
+                ('DummyInstruction', ['if_expr']),
+                ('JumpIfFalseInstruction', [
                     ('DummyOperand', ['if_expr']),
                     ('Label', 0),
                 ]),
-                ('DummyOperation', ['if_block']),
-                ('JumpOperation', [
+                ('DummyInstruction', ['if_block']),
+                ('JumpInstruction', [
                     ('Label', 1),
                 ]),
                 # This pair of labels together looks redundant, but at this
@@ -175,17 +175,17 @@ class TestIntermediate(LanguageTestCase):
                 ]
             ),
             [
-                ('DummyOperation', ['if_expr']),
-                ('JumpIfFalseOperation', [
+                ('DummyInstruction', ['if_expr']),
+                ('JumpIfFalseInstruction', [
                     ('DummyOperand', ['if_expr']),
                     ('Label', 0),
                 ]),
-                ('DummyOperation', ['if_block']),
-                ('JumpOperation', [
+                ('DummyInstruction', ['if_block']),
+                ('JumpInstruction', [
                     ('Label', 1),
                 ]),
                 ('Label', 0),
-                ('DummyOperation', ['else_block']),
+                ('DummyInstruction', ['else_block']),
                 ('Label', 1),
             ],
         )

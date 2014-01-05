@@ -45,11 +45,13 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('DummyOperation', ['lhs']),
-                ('DummyOperation', ['rhs']),
-                ('CopyOperation', [
+                ('DummyInstruction', ['lhs']),
+                ('DummyInstruction', ['rhs']),
+                ('OperationInstruction', [
                     ('DummyOperand', ['lhs']),
-                    ('DummyOperand', ['rhs']),
+                    ('CopyOperation', [
+                        ('DummyOperand', ['rhs']),
+                    ]),
                 ]),
             ],
             ('DummyOperand', ['rhs']),

@@ -49,22 +49,19 @@ class TestIntermediate(LanguageTestCase):
         )
         elems_comp = element_comparison_nodes(elems)
         self.assertEqual(
-            elems_comp[0][0],
-            'CopyOperation',
-        )
-        self.assertEqual(
-            elems_comp[0][1][0],
-            ('SymbolOperand', [
-                ('NamedSymbol', 'baz'),
-            ])
-        )
-        self.assertEqual(
-            elems_comp[0][1][1][0],
-            'ConstantOperand',
-        )
-        self.assertEqual(
-            elems_comp[0][1][1][1][0],
-            ('FunctionTemplate', ()),
+            elems_comp,
+            [
+                ('OperationInstruction', [
+                    ('SymbolOperand', [
+                        ('NamedSymbol', 'baz'),
+                    ]),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('FunctionTemplate', ()),
+                        ]),
+                    ]),
+                ]),
+            ]
         )
 
         symbol = symbols.lookup("baz")

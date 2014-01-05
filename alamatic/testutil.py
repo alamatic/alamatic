@@ -75,6 +75,10 @@ def element_param_comparison_node(param):
         return (type(param).__name__, list(
             element_param_comparison_node(x) for x in param.params
         ))
+    elif isinstance(param, alamatic.intermediate.Operation):
+        return (type(param).__name__, list(
+            element_param_comparison_node(x) for x in param.params
+        ))
     elif isinstance(param, alamatic.intermediate.Label):
         return (type(param).__name__, getattr(param, "_test_index", None))
     elif isinstance(param, alamatic.intermediate.TemporarySymbol):
@@ -130,7 +134,7 @@ def control_flow_graph_comparison_node(graph):
 entry_block_comparison_node = [
     None,
     [],
-    ('JumpNeverOperation', []),
+    ('JumpNeverInstruction', []),
     (1,),
 ]
 
@@ -139,7 +143,7 @@ entry_block_comparison_node = [
 exit_block_comparison_node = [
     None,
     [],
-    ('JumpNeverOperation', []),
+    ('JumpNeverInstruction', []),
     (),
 ]
 
@@ -177,7 +181,7 @@ class DummyStmt(alamatic.ast.Statement):
         yield self.sigil
 
     def make_intermediate_form(self, elems, symbols):
-        elems.append(DummyOperation(self.sigil))
+        elems.append(DummyInstruction(self.sigil))
 
 
 def DummyStatementBlock(stmts):
@@ -257,7 +261,7 @@ class DummyExpr(alamatic.ast.Expression):
         yield self.sigil
 
     def make_intermediate_form(self, elems, symbols):
-        elems.append(DummyOperation(self.sigil))
+        elems.append(DummyInstruction(self.sigil))
         return DummyOperand(self.sigil)
 
 
@@ -276,7 +280,7 @@ class DummyExprLvalue(alamatic.ast.Expression):
             yield self.assigned_expr
 
     def get_lvalue_operand(self, elems, symbols):
-        elems.append(DummyOperation(self.sigil))
+        elems.append(DummyInstruction(self.sigil))
         return DummyOperand(self.sigil)
 
 
@@ -343,7 +347,7 @@ class DummyBasicBlock(object):
         return blocks
 
 
-class DummyOperation(alamatic.intermediate.Operation):
+class DummyInstruction(alamatic.intermediate.Instruction):
     def __init__(self, sigil):
         self.sigil = sigil
 
@@ -352,7 +356,7 @@ class DummyOperation(alamatic.intermediate.Operation):
         yield self.sigil
 
 
-class DummyOperandDeclOperation(alamatic.intermediate.Operation):
+class DummyOperandDeclInstruction(alamatic.intermediate.Instruction):
     def __init__(self, sigil):
         self.sigil = sigil
         self.operand = DummyOperand(sigil)
@@ -413,7 +417,7 @@ def generate_c_for_elems(elems):
     return f.getvalue()
 
 
-def generate_c_for_operation(op):
+def generate_c_for_instruction(op):
     from StringIO import StringIO
     from alamatic.compiler import CompileState
     from alamatic.codegen import CodeWriter
@@ -421,6 +425,17 @@ def generate_c_for_operation(op):
     f = StringIO()
     writer = CodeWriter(f)
     op._generate_c_code(state, writer)
+    return f.getvalue()
+
+
+def generate_c_for_operation(op):
+    from StringIO import StringIO
+    from alamatic.compiler import CompileState
+    from alamatic.codegen import CodeWriter
+    state = CompileState()
+    f = StringIO()
+    writer = CodeWriter(f)
+    op.generate_c_code(state, writer)
     return f.getvalue()
 
 

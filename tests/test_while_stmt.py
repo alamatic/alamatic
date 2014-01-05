@@ -35,12 +35,12 @@ class TestIntermediate(LanguageTestCase):
             ),
             [
                 ('Label', 0),
-                ('DummyOperation', ['test']),
-                ('JumpIfFalseOperation', [
+                ('DummyInstruction', ['test']),
+                ('JumpIfFalseInstruction', [
                     ('DummyOperand', ['test']),
                     ('Label', 1),
                 ]),
-                ('JumpOperation', [
+                ('JumpInstruction', [
                     ('Label', 0),
                 ]),
                 ('Label', 1),

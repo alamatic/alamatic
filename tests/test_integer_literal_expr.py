@@ -20,12 +20,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('Int8', (1,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('Int8', (1,)),
+                        ]),
                     ]),
                 ]),
             ],
@@ -40,12 +42,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('Int8', (-1,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('Int8', (-1,)),
+                        ]),
                     ]),
                 ]),
             ],
@@ -62,12 +66,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('Int16', (257,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('Int16', (257,)),
+                        ]),
                     ]),
                 ]),
             ],
@@ -84,12 +90,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('Int32', (65537,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('Int32', (65537,)),
+                        ]),
                     ]),
                 ]),
             ],
@@ -106,12 +114,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('Int64', (4294967297,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('Int64', (4294967297,)),
+                        ]),
                     ]),
                 ]),
             ],
@@ -128,12 +138,14 @@ class TestIntermediate(LanguageTestCase):
         self.assertIntermediateForm(
             expr,
             [
-                ('CopyOperation', [
+                ('OperationInstruction', [
                     ('SymbolOperand', [
                         ('TemporarySymbol', 1),
                     ]),
-                    ('ConstantOperand', [
-                        ('UInt64', ((2 ** 64) - 5,)),
+                    ('CopyOperation', [
+                        ('ConstantOperand', [
+                            ('UInt64', ((2 ** 64) - 5,)),
+                        ]),
                     ]),
                 ]),
             ],
