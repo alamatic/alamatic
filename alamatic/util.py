@@ -138,3 +138,70 @@ class LinkedList(object):
         while current is not None:
             yield current.item
             current = current.prev_slot
+
+
+def overloadable(f):
+    from functools import wraps
+    from collections import defaultdict
+    import inspect
+
+    # hacky way to detect if we're being called in the context of a
+    # class declaration, so we can skip over the 'self' argument in that
+    # case.
+    is_method = False
+    for frame in inspect.stack()[1:]:
+        if frame[3] == '<module>':
+            # If we reached a module without finding a class then we're done.
+            break
+        elif '__module__' in frame[0].f_code.co_names:
+            # The code object for this frame has __module__, which means
+            # it looks like a class body and thus we consider this a method.
+            is_method = True
+            break
+
+    impls = {
+        object: f
+    }
+
+    def find_impl(dispatch_type):
+        if dispatch_type not in impls:
+            # walk along the base types in method resolution order and
+            # cache the first one we find so we can avoid this walk
+            # next time. We assume everything ultimately inherits from object
+            # and so we'll always find *something* since object is mapped
+            # directly to the original provided function by default.
+            for try_type in dispatch_type.mro():
+                if try_type in impls:
+                    impls[dispatch_type] = impls[try_type]
+                    break
+
+        return impls[dispatch_type]
+
+    dispatch_arg_pos = 1 if is_method else 0
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if len(args) > dispatch_arg_pos:
+            dispatch_type = type(args[dispatch_arg_pos])
+        else:
+            dispatch_type = object
+        impl = find_impl(dispatch_type)
+        return impl(*args, **kwargs)
+
+    def overload(dispatch_type):
+        def register(f):
+            f.__name__ = "%s for %r" % (f.__name__, dispatch_type)
+            impls[dispatch_type] = f
+            return wrapper
+        return register
+
+    # Allow callers to access specific implementations directly
+    # where needed. (should be rare)
+    wrapper.get_impl = find_impl
+
+    # Allow callers to add overloads via subsequent declarations.
+    wrapper.overload = overload
+
+    f.__name__ = "%s for %r" % (f.__name__, object)
+
+    return wrapper

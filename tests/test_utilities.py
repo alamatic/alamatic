@@ -249,3 +249,92 @@ class TestLinkedList(unittest.TestCase):
             llist,
             [1.1, 2.1, 2.2, 2.3, 2.4, 1.3, 2, 3.1, 3.2, 3.3],
         )
+
+
+class TestOverloadable(unittest.TestCase):
+
+    class Base(object):
+        pass
+
+    # Multiple inheritence with diamond
+    class Child(Base, object):
+        pass
+
+    class Grandchild(Child):
+        pass
+
+    def test_func(self):
+
+        @overloadable
+        def try_it(what):
+            return ("default", what)
+
+        @try_it.overload(self.Base)
+        def try_it(what):
+            return ("base", what)
+
+        @try_it.overload(self.Grandchild)
+        def try_it(what):
+            return ("grandchild", what)
+
+        base = self.Base()
+        child = self.Child()
+        grandchild = self.Grandchild()
+
+        self.assertEqual(
+            try_it(None),
+            ("default", None),
+        )
+        self.assertEqual(
+            try_it(base),
+            ("base", base),
+        )
+        # no overloaded implementation for Child
+        self.assertEqual(
+            try_it(child),
+            ("base", child),
+        )
+        self.assertEqual(
+            try_it(grandchild),
+            ("grandchild", grandchild),
+        )
+
+    def test_method(self):
+
+        class Visitor(object):
+
+            @overloadable
+            def visit(self, what):
+                return ("default", self, what)
+
+            @visit.overload(self.Base)
+            def visit(self, what):
+                return ("base", self, what)
+
+            @visit.overload(self.Grandchild)
+            def visit(self, what):
+                return ("grandchild", self, what)
+
+        base = self.Base()
+        child = self.Child()
+        grandchild = self.Grandchild()
+
+        visitor = Visitor()
+
+        self.assertEqual(
+            visitor.visit(None),
+            ("default", visitor, None),
+        )
+        self.assertEqual(
+            visitor.visit(base),
+            ("base", visitor, base),
+        )
+        # no overloaded implementation for Child
+        self.assertEqual(
+            visitor.visit(child),
+            ("base", visitor, child),
+        )
+        self.assertEqual(
+            visitor.visit(grandchild),
+            ("grandchild", visitor, grandchild),
+        )
