@@ -101,7 +101,7 @@ def element_param_comparison_node(param):
 
 
 def control_flow_graph_comparison_node(graph):
-    from alamatic.analyser import ControlFlowGraph
+    from alamatic.intermediate import ControlFlowGraph
 
     # Allow the caller to pass either a graph or just a bare list of blocks
     if isinstance(graph, ControlFlowGraph):
@@ -300,7 +300,7 @@ class DummyBooleanConstantExpr(alamatic.ast.Expression):
 
 
 class DummyBasicBlock(object):
-    from alamatic.analyser import BasicBlock
+    from alamatic.intermediate import BasicBlock
 
     def __init__(self, cfg):
         self.cfg = cfg
@@ -339,7 +339,9 @@ class DummyBasicBlock(object):
 
         # And we build the dominators map using our real analyzer function,
         # since otherwise we'd just repeat the whole thing here.
-        from alamatic.analyser import _create_dominator_map_for_blocks
+        # This is a bit of a cheat since we're using a private function
+        # to do this, but we'll live with that for the sake of testing.
+        from alamatic.intermediate.base import _create_dominator_map_for_blocks
         dominator_map = _create_dominator_map_for_blocks(blocks)
         for block, dominators in dominator_map.iteritems():
             block.dominators.update(dominators)
@@ -607,7 +609,7 @@ testcase_assertIntermediateForm.__name__ = "assertIntermediateForm"
 def testcase_assertControlFlowGraph(
     self, elems, expected,
 ):
-    graph = alamatic.analyser.build_control_flow_graph(elems)
+    graph = alamatic.intermediate.build_control_flow_graph(elems)
     self.assertEqual(
         control_flow_graph_comparison_node(graph),
         expected,
@@ -618,7 +620,7 @@ testcase_assertControlFlowGraph.__name__ = "assertControlFlowGraph"
 def testcase_assertDominatorTree(
     self, elems, expected,
 ):
-    graph = alamatic.analyser.build_control_flow_graph(elems)
+    graph = alamatic.intermediate.build_control_flow_graph(elems)
     self.assertEqual(
         dominator_tree_comparison_node(graph),
         expected,
