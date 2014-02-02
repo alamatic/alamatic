@@ -8,6 +8,7 @@ def alac():
     from alamatic.parser import parse_module
     from alamatic.compiler import CompileState
     from alamatic.compilelogging import TerminalCompileLogHandler
+    from alamatic.analyzer import analyze_graph
     fn = sys.argv[1]
     state = CompileState(log_handler=TerminalCompileLogHandler(
         sys.stderr,
@@ -24,6 +25,9 @@ def alac():
         return 1
 
     graph = module.get_intermediate_form()
+    analysis = analyze_graph(graph)
+    print repr(analysis)
+
     from StringIO import StringIO
     from alamatic.codegen import CodeWriter
     import json
@@ -32,8 +36,8 @@ def alac():
     for block in graph.blocks:
         f = StringIO()
         writer = CodeWriter(f)
-        for operation in block.operations:
-            operation.generate_c_code(state, writer)
+        for instruction in block.operation_instructions:
+            instruction.generate_c_code(state, writer)
 
         block.terminator.generate_c_code(state, writer)
 

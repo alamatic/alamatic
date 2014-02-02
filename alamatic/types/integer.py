@@ -60,22 +60,20 @@ class Integer(Number):
 
     @classmethod
     def add(cls, lhs, rhs, position=None):
-        from alamatic.ast import SumExpr, ValueExpr
-        from alamatic.interpreter import (
-            IncompatibleTypesError,
-            NotConstantError,
+        from alamatic.analyzer import (
+            InappropriateTypeError,
         )
 
-        lhs_result_type = lhs.result_type
-        rhs_result_type = rhs.result_type
+        if lhs.apparent_type is Unknown or rhs.apparent_type is Unknown:
+            return Unknown()
 
-        if not issubclass(rhs_result_type, Integer):
-            raise IncompatibleTypesError(
+        if not issubclass(rhs.apparent_type, Integer):
+            raise InappropriateTypeError(
                 "Can't add %s to %s at " % (
-                    lhs_result_type.__name__,
-                    rhs_result_type.__name__,
+                    lhs.apparent_type,
+                    rhs.apparent_type,
                 ),
-                pos_link(source_node.position)
+                pos_link(position),
             )
 
         # Whichever operand has the biggest type decides which type
@@ -84,36 +82,30 @@ class Integer(Number):
         # FIXME: Is this the right promotion rule? Seems complex enough
         # that it's probably confusing.
         result_type = None
-        if rhs_result_type.value_size > lhs_result_type.value_size:
-            result_type = rhs_result_type
-        else:
-            result_type = lhs_result_type
+        lhs_type = lhs.apparent_type
+        rhs_type = rhs.apparent_type
 
-        should_be_signed = lhs_result_type.signed or rhs_result_type.signed
+        if rhs_type.value_size > lhs_type.value_size:
+            result_type = rhs_type
+        else:
+            result_type = lhs_type
+
+        should_be_signed = lhs_type.signed or rhs_type.signed
 
         if should_be_signed and not result_type.signed:
             result_type = result_type.as_signed()
 
-        try:
-            lhs_value = lhs.constant_value
-            rhs_value = rhs.constant_value
-            # FIXME: Need to make this do the correct overflow behavior
-            # if the result is too big for the target type, or else we'll
-            # fail here assigning a value that's too big.
-            return ValueExpr(
-                position,
-                result_type(lhs_value.value + rhs_value.value),
-            )
-        except NotConstantError:
-            # FIXME: If either of these operands don't match the result
-            # value, we need to generate an explicit cast for them so
-            # that our codegen can generate the right C cast to ensure that
-            # we respect our own type conversion rules rather than C's.
-            return SumExpr(
-                position,
-                lhs, "+", rhs,
-                result_type=result_type,
-            )
+        # If either operand has an unknown value then our result value
+        # is also unknown, but at least we now know the type.
+        if type(lhs) is Unknown or type(rhs) is Unknown:
+            return Unknown(result_type)
+
+        # FIXME: Need to make this do the correct overflow behavior
+        # if the result is too big for the target type, or else we'll
+        # fail here assigning a value that's too big.
+        return result_type(
+            lhs.value + rhs.value
+        )
 
     @classmethod
     def equals(cls, lhs, rhs, position=None):

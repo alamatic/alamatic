@@ -7,6 +7,7 @@ __all__ = [
     "is_our_type",
     "is_our_value",
     "Value",
+    "Unknown",
     "Number",
     "Void",
     "OperationNotSupportedError",
@@ -34,6 +35,12 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
         @classmethod
         @wraps(f)
         def op(cls, lhs, rhs, position=None):
+
+            # If an operation is called on an unknown type then the
+            # result is necessarily unknown too.
+            if cls is Unknown:
+                return Unknown()
+
             if lhs_first:
                 tmp = rhs
                 rhs = lhs
@@ -71,6 +78,15 @@ class Value(object):
     @classmethod
     def generate_c_decl(self, state, writer):
         pass
+
+    @property
+    def apparent_type(self):
+        return type(self)
+
+    def is_changed_from(self, other):
+        raise Exception(
+            "Value type %r does not implement is_changed_from" % type(self)
+        )
 
     @_binop_stub("add")
     def add():
@@ -141,10 +157,35 @@ class Value(object):
         pass
 
     @classmethod
-    def call(cls, callee_expr, args, position=None):
+    def call(cls, callee, args, position=None):
+        if cls is Unknown:
+            return Unknown()
+
         raise OperationNotSupportedError(
-            "Cannot call ", cls.__name__, " at ", pos_link(position),
+            "Cannot call ", callee.apparent_type.__name__,
+            " at ", pos_link(position),
         )
+
+
+class Unknown(Value):
+    """
+    Special value type used to represent unknown values (and possibly also
+    unknown types) during analysis. By the time analysis completes all
+    unknown values must have a known type for a program to be considered
+    valid.
+    """
+    def __init__(self, known_type=None):
+        self.known_type = known_type
+
+    @property
+    def apparent_type(self):
+        if self.known_type is not None:
+            return self.known_type
+        else:
+            return type(self)
+
+    def is_changed_from(self, other):
+        return self.known_type is not other.known_type
 
 
 class Number(Value):

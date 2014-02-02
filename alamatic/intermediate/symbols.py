@@ -52,6 +52,10 @@ class NamedSymbol(Symbol):
     def codegen_name(self):
         return "_ala_%x" % id(self)
 
+    @property
+    def user_friendly_name(self):
+        return self.decl_name
+
     def __str__(self):
         return '%s from %r' % (
             self.decl_name,
@@ -74,6 +78,13 @@ class TemporarySymbol(Symbol):
     @property
     def codegen_name(self):
         return "_tmp_%x" % id(self)
+
+    @property
+    def user_friendly_name(self):
+        # temporaries should never end up being presented to the user,
+        # but if there's a bug then returning something nice here may
+        # help debug it.
+        return "temporary %x" % (self.index, id(self))
 
     def __str__(self):
         return 'temp(%x)' % (

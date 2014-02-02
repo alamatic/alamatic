@@ -64,7 +64,7 @@ class BasicBlock(object):
     the graph object.
     """
 
-    def __init__(self, cfg, label, operations, terminator, next_block):
+    def __init__(self, cfg, label, operation_instrs, terminator, next_block):
         from alamatic.intermediate import JumpNeverInstruction
         if terminator is None:
             terminator = JumpNeverInstruction()
@@ -72,7 +72,7 @@ class BasicBlock(object):
         self._cfg = cfg
         self.seq_id = cfg._allocate_block_sequence_id()
         self._label = label
-        self._operations = operations
+        self._operation_instrs = operation_instrs
         self._terminator = terminator
         self._next_block = next_block
 
@@ -85,8 +85,8 @@ class BasicBlock(object):
         return self._label
 
     @property
-    def operations(self):
-        return self._operations
+    def operation_instructions(self):
+        return self._operation_instrs
 
     @property
     def terminator(self):
@@ -303,14 +303,14 @@ def _split_elems_into_blocks(elems, cfg):
     exit_block = BasicBlock(
         cfg=cfg,
         label=None,
-        operations=[],
+        operation_instrs=[],
         terminator=None,
         next_block=None,
     )
     entry_block = BasicBlock(
         cfg=cfg,
         label=None,
-        operations=[],
+        operation_instrs=[],
         terminator=None,
         next_block=exit_block,
     )
@@ -322,7 +322,7 @@ def _split_elems_into_blocks(elems, cfg):
             self.previous = entry_block
 
         def reset(self):
-            self.operations = []
+            self.operation_instrs = []
             self.label = None
             self.terminator = None
 
@@ -330,7 +330,7 @@ def _split_elems_into_blocks(elems, cfg):
             new = BasicBlock(
                 cfg=cfg,
                 label=self.label,
-                operations=self.operations,
+                operation_instrs=self.operation_instrs,
                 terminator=self.terminator,
                 # all blocks start off pointing at the exit block but a
                 # subsequent commit will update this, ensuring that only
@@ -357,7 +357,7 @@ def _split_elems_into_blocks(elems, cfg):
             builder.terminator = elem
             builder.commit()
         else:
-            builder.operations.append(elem)
+            builder.operation_instrs.append(elem)
 
     # Need to commit one more time to finish the final block
     builder.commit()
