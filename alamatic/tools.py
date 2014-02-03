@@ -26,7 +26,8 @@ def alac():
 
     graph = module.get_intermediate_form()
     analysis = analyze_graph(graph)
-    print repr(analysis)
+    import pprint
+    print pprint.pprint(analysis)
 
     from StringIO import StringIO
     from alamatic.codegen import CodeWriter

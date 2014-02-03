@@ -174,8 +174,19 @@ class Unknown(Value):
     unknown values must have a known type for a program to be considered
     valid.
     """
-    def __init__(self, known_type=None):
-        self.known_type = known_type
+    _instances = {}
+
+    def __new__(cls, known_type=None):
+        if known_type not in cls._instances:
+            new_instance = super(Unknown, cls).__new__(cls)
+            new_instance.known_type = known_type
+            cls._instances[known_type] = new_instance
+        return cls._instances[known_type]
+
+    @property
+    def params(self):
+        if self.known_type is not None:
+            yield self.known_type
 
     @property
     def apparent_type(self):

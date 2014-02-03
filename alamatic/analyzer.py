@@ -10,6 +10,19 @@ from collections import defaultdict, deque
 class DataState(object):
 
     def __init__(self):
+        # FIXME: Doing this based on symbols is not a correct design because
+        # the same symbol can refer to multiple locations in different
+        # contexts e.g. if a function is called recursively.
+        # Instead there should be an indirection where each call frame
+        # establishes which memory object each symbol refers to
+        # and the data state then works in terms of this "memory object"
+        # concept rather than the symbols directly.
+        # This would also be the appropriate layer to introduce the concept
+        # of "lifetimes" that allow us to distinguish between globals and
+        # locals, so we can e.g. forbid returning a reference to a local
+        # variable, and also give us a way to represent memory objects
+        # that are only indirectly related to symbols, such a referents,
+        # array members and object attributes.
         self._symbol_values = {}
         self.ready = False
 
@@ -18,10 +31,44 @@ class DataState(object):
         for predecessor_state in predecessor_states:
             pass
 
+    def assign(self, symbol, value, position=None):
+        # FIXME: Need to do checks in here to make sure the type isn't
+        # changing after the first known initialization.
+        old_value = self._symbol_values.get(symbol, Unknown())
+        self._symbol_values[symbol] = value
+        return (
+            type(old_value) is not type(value) or
+            value.is_changed_from(old_value)
+        )
+
+    def retrieve(self, symbol, value, position=None):
+        try:
+            result = self._symbol_values[symbol]
+        except KeyError:
+            if self.ready:
+                raise SymbolNotInitializedError(
+                    symbol.user_friendly_name,
+                    " may not be initialized at ",
+                    pos_link(position),
+                )
+            else:
+                return Unknown()
+
+        if isinstance(symbol, NamedSymbol) and not symbol.const:
+            # We pretend we don't know the value of a variable even if
+            # we do happen to know it, since this prevents us from optimizing
+            # away branches that depend on variables before we've had a
+            # chance to check them for validity. These might still get
+            # optimized away in later phases, but this phase is about type
+            # inference and constant resolution, not about optimization.
+            return Unknown(result.apparent_type)
+        else:
+            return result
+
 
 def analyze_graph(graph):
     entry_block = graph.entry_block
-    queue = deque([entry_block])
+    queue = deque(list(graph.blocks))
     data_states = {}
     blocks_in_queue = set(queue)
     while True:
@@ -86,15 +133,25 @@ def analyze_graph(graph):
                     blocks_in_queue.add(next_block)
 
     # Eventually we'll return some sort of analysis object here.
-    return dict(data_states)
+    return {
+        k: v._symbol_values for k, v in data_states.iteritems()
+    }
 
 
 def _analyze_block(block, data_state):
 
+    # Applies to both operations and rvalue operands
     @overloadable
-    def evaluate(operation):
+    def evaluate(what):
         raise Exception(
-            "evaluate not implemented for %r" % type(operation)
+            "evaluate not implemented for %r" % type(what)
+        )
+
+    # Applies only to lvalue operands
+    @overloadable
+    def assign(operand):
+        raise Exception(
+            "assign not implemented for %r" % type(operand)
         )
 
     # Evaluate for operations
@@ -121,7 +178,7 @@ def _analyze_block(block, data_state):
             lhs, rhs, position,
         )
 
-    # Evaluate for operands
+    # Evaluate for rvalue operands
     @evaluate.overload(ConstantOperand)
     def evaluate(operand):
         return operand.value
@@ -130,23 +187,23 @@ def _analyze_block(block, data_state):
     def evaluate(operand):
         return Unknown()
 
-    changed = False
+    # Assign for lvalue operands
+    @assign.overload(SymbolOperand)
+    def assign(operand, value):
+        symbol = operand.symbol
+        return data_state.assign(symbol, value)
+
+    any_changed = False
 
     for instruction in block.operation_instructions:
         operation = instruction.operation
-        # FIXME: This won't converge for variables since they'll always
-        # come back as unknown via evaluate. Need a different design.
-        prev_result = evaluate(instruction.target)
-        new_result = evaluate(operation, instruction.position)
-        if type(new_result) is not type(prev_result):
-            changed = True
-            print "Type of %r changed to %r!" % (instruction.target, type(new_result))
-        elif new_result.is_changed_from(prev_result):
-            print "Value of %r changed to %r!" % (instruction.target, new_result)
-            changed = True
+        result = evaluate(operation, instruction.position)
+        this_changed = assign(instruction.target, result)
+        if this_changed:
+            any_changed = True
 
     data_state.ready = True
-    return not changed
+    return any_changed
 
 
 class SymbolNotInitializedError(CompilerError):

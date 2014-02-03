@@ -19,7 +19,10 @@ class Symbol(object):
         )
 
     def __repr__(self):
-        return '<alamatic.intermediate.%s>' % str(self)
+        return '<alamatic.intermediate.%s %s>' % (
+            type(self).__name__,
+            str(self),
+        )
 
 
 class NamedSymbol(Symbol):

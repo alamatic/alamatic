@@ -51,6 +51,9 @@ class Integer(Number):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def is_changed_from(self, other):
+        return self.value != other.value
+
     @property
     def params(self):
         yield self.value
