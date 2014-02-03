@@ -33,6 +33,10 @@ class SymbolTable(object):
         )
 
     @property
+    def locals(self):
+        return self.symbols.itervalues()
+
+    @property
     def break_label(self):
         current = self
         while current is not None:
