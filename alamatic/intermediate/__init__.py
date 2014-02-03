@@ -14,7 +14,11 @@ class SymbolTable(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.children = []
-        self.symbols = {}
+        self.symbols_by_name = {}
+        # Keep a separate list because we need to keep track of
+        # every symbol we've issued, even if one is subsequently
+        # hidden by a later declaration with the same name.
+        self.named_symbols = []
         self.temporaries = []
         self.next_temporary_index = 1
         self._break_label = None
@@ -24,7 +28,7 @@ class SymbolTable(object):
         current = self
         while current is not None:
             try:
-                return current.symbols[name]
+                return current.symbols_by_name[name]
             except KeyError:
                 current = current.parent
         raise UnknownSymbolError(
@@ -33,8 +37,14 @@ class SymbolTable(object):
         )
 
     @property
-    def locals(self):
-        return self.symbols.itervalues()
+    def all_symbols(self):
+        for symbol in self.named_symbols:
+            yield symbol
+        for symbol in self.temporaries:
+            yield symbol
+        for child_symbols in self.children:
+            for symbol in child_symbols.all_symbols:
+                yield symbol
 
     @property
     def break_label(self):
@@ -72,7 +82,8 @@ class SymbolTable(object):
 
     def complete_declare(self, symbol):
         if isinstance(symbol, NamedSymbol):
-            self.symbols[symbol.decl_name] = symbol
+            self.symbols_by_name[symbol.decl_name] = symbol
+            self.named_symbols.append(symbol)
         else:
             # Should never happen
             raise Exception(
@@ -86,9 +97,15 @@ class SymbolTable(object):
         self.temporaries.append(symbol)
         return symbol
 
-    def create_child(self):
+    def create_child(self, disconnected=False):
         child = SymbolTable(self)
-        self.children.append(child)
+        if not disconnected:
+            # A "disconnected" child can access symbols from its parent
+            # but it's not included when we traverse down the tree to
+            # flatten out the symbol table. Thus this flag should be used
+            # in cases where the child represents a separated execution
+            # context, such as the body of a function declaration.
+            self.children.append(child)
         return child
 
 
