@@ -63,7 +63,7 @@ class Integer(Number):
 
     @classmethod
     def add(cls, lhs, rhs, position=None):
-        from alamatic.analyzer import (
+        from alamatic.preprocessor import (
             InappropriateTypeError,
         )
 

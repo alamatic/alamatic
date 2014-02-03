@@ -8,7 +8,7 @@ def alac():
     from alamatic.parser import parse_module
     from alamatic.compiler import CompileState
     from alamatic.compilelogging import TerminalCompileLogHandler
-    from alamatic.analyzer import analyze_graph
+    from alamatic.preprocessor import execute_unit
     fn = sys.argv[1]
     state = CompileState(log_handler=TerminalCompileLogHandler(
         sys.stderr,
@@ -26,7 +26,7 @@ def alac():
 
     unit = module.get_intermediate_form()
     graph = unit.graph
-    analysis = analyze_graph(graph)
+    analysis = execute_unit(unit)
     import pprint
     print pprint.pprint(analysis)
 

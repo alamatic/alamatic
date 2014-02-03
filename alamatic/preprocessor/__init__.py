@@ -24,4 +24,3 @@ from alamatic.preprocessor.errors import *
 from alamatic.preprocessor.execute import *
 from alamatic.preprocessor.datastate import *
 from alamatic.preprocessor.program import *
-

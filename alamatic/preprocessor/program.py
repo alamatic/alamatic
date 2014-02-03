@@ -9,5 +9,3 @@ class Program(object):
     def __init__(self, entry_unit):
         self.entry_unit = entry_unit
         self.analysis = execute_unit(entry_unit)
-
-
