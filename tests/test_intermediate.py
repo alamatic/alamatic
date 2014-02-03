@@ -8,7 +8,7 @@ from alamatic.testutil import *
 class TestSimplifyTemporaries(LanguageTestCase):
 
     def test_simplify(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _simplify_temporaries_in_element_list,
         )
         symbols = SymbolTable()

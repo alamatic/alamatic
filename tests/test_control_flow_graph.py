@@ -151,7 +151,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_predecessor_map(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_initial_predecessor_map_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -178,7 +178,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_dominator_map_branch(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_dominator_map_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -206,7 +206,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_dominator_map_loop(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_dominator_map_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -232,7 +232,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_dominator_map_nested_loops(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_dominator_map_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -262,7 +262,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_loop_tree_with_no_loops(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_loop_tree_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -288,7 +288,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_loop_tree_with_simple_loop(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_loop_tree_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -327,7 +327,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_loop_tree_with_loop_break(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_loop_tree_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -363,7 +363,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_loop_tree_with_loop_continue(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_loop_tree_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(
@@ -399,7 +399,7 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_loop_tree_with_nested_loops(self):
-        from alamatic.intermediate.base import (
+        from alamatic.intermediate.controlflowgraph import (
             _create_loop_tree_for_blocks,
         )
         dummy_blocks = DummyBasicBlock.create_list(

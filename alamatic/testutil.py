@@ -340,7 +340,9 @@ class DummyBasicBlock(object):
         # since otherwise we'd just repeat the whole thing here.
         # This is a bit of a cheat since we're using a private function
         # to do this, but we'll live with that for the sake of testing.
-        from alamatic.intermediate.base import _create_dominator_map_for_blocks
+        from alamatic.intermediate.controlflowgraph import (
+            _create_dominator_map_for_blocks,
+        )
         dominator_map = _create_dominator_map_for_blocks(blocks)
         for block, dominators in dominator_map.iteritems():
             block.dominators.update(dominators)
