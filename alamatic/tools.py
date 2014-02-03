@@ -24,7 +24,8 @@ def alac():
     if state.error_count > 0:
         return 1
 
-    graph = module.get_intermediate_form()
+    unit = module.get_intermediate_form()
+    graph = unit.graph
     analysis = analyze_graph(graph)
     import pprint
     print pprint.pprint(analysis)

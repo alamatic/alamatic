@@ -133,13 +133,20 @@ class Module(AstNode):
     def get_intermediate_form(self):
         from alamatic.intermediate import (
             SymbolTable,
+            Unit,
         )
         from alamatic.intermediate import build_control_flow_graph
         symbols = SymbolTable()
         elems = []
         self.block.make_intermediate_form(elems, symbols)
         graph = build_control_flow_graph(elems)
-        return graph
+        return Unit(
+            graph=graph,
+            symbols=symbols,
+            # FIXME: Need to figure out what sort of thing this parameter
+            # list will be. Modules don't need it but functions will later.
+            params=[],
+        )
 
     def execute(self):
         """
