@@ -8,7 +8,6 @@ It may only be used from the unit tests.
 import alamatic.ast
 import alamatic.types
 import alamatic.intermediate
-import alamatic.analyser
 import functools
 import unittest
 
@@ -114,7 +113,7 @@ def control_flow_graph_comparison_node(graph):
     for i, block in enumerate(blocks):
         item = []
         item.append(element_comparison_node(block.label))
-        item.append(element_comparison_nodes(block.operations))
+        item.append(element_comparison_nodes(block.operation_instructions))
         item.append(element_comparison_node(block.terminator))
         item.append(block.successors)
         block_indices[block] = i
@@ -356,6 +355,9 @@ class DummyInstruction(alamatic.intermediate.Instruction):
     @property
     def params(self):
         yield self.sigil
+
+    def replace_operands(self, replace):
+        pass
 
 
 class DummyOperandDeclInstruction(alamatic.intermediate.Instruction):
