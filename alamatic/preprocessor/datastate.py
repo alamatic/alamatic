@@ -58,7 +58,7 @@ class Cell(object):
         self.lifetime = lifetime
 
     def outlives(self, other_cell):
-        self.lifetime.outlives(other_cell.lifetime)
+        return self.lifetime.outlives(other_cell.lifetime)
 
 
 class DataState(object):

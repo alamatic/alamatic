@@ -58,6 +58,28 @@ class TestCallFrame(LanguageTestCase):
         )
 
 
+class TestCell(LanguageTestCase):
+
+    def test_outlives(self):
+        lifetime = MagicMock()
+        cell_1 = Cell(lifetime)
+        cell_2 = Cell(lifetime)
+
+        lifetime.outlives.return_value = True
+        self.assertTrue(
+            cell_1.outlives(cell_2)
+        )
+
+        lifetime.outlives.assert_called_with(
+            lifetime,
+        )
+
+        lifetime.outlives.return_value = False
+        self.assertFalse(
+            cell_1.outlives(cell_2)
+        )
+
+
 class TestLifetime(LanguageTestCase):
 
     def test_allocate_cell(self):
