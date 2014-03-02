@@ -273,3 +273,157 @@ class TestTypes(unittest.TestCase):
             Exception,
             lambda: Bool("true").value,
         )
+
+
+class TestValueMerge(unittest.TestCase):
+
+    def test_matching_values(self):
+        a = DummyType(5)
+        b = DummyType(5)
+        m = a.merge(b)
+
+        self.assertEqual(
+            type(m),
+            DummyType,
+        )
+        self.assertEqual(
+            m.value,
+            5,
+        )
+
+    def test_same_type_different_value(self):
+        a = DummyType(1)
+        b = DummyType(2)
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+    def test_same_type_unknown_values(self):
+        a = Unknown(DummyType)
+        b = Unknown(DummyType)
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+    def test_unknown_types(self):
+        a = Unknown()
+        b = Unknown()
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            Unknown,
+        )
+
+    def test_unknown_type_known_type_upgrade(self):
+        a = Unknown()
+        b = Unknown(DummyType)
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+        m = b.merge(a)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+    def test_unknown_type_known_value_upgrade(self):
+        a = Unknown()
+        b = DummyType(2)
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+        m = b.merge(a)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+    def test_known_type_known_value(self):
+        a = Unknown(DummyType)
+        b = DummyType(2)
+        m = a.merge(b)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+        m = b.merge(a)
+
+        self.assertFalse(
+            m.value_is_known,
+        )
+        self.assertEqual(
+            m.apparent_type,
+            DummyType,
+        )
+
+    def test_type_mismatch(self):
+        from alamatic.preprocessor import InappropriateTypeError
+
+        class DummyType2(DummyType):
+            pass
+
+        a = Unknown(DummyType)
+        b = Unknown(DummyType2)
+
+        self.assertRaises(
+            InappropriateTypeError,
+            lambda: a.merge(b)
+        )
+        self.assertRaises(
+            InappropriateTypeError,
+            lambda: b.merge(a)
+        )
+
+        a = DummyType(1)
+
+        self.assertRaises(
+            InappropriateTypeError,
+            lambda: a.merge(b)
+        )
+        self.assertRaises(
+            InappropriateTypeError,
+            lambda: b.merge(a)
+        )

@@ -4,6 +4,8 @@ from alamatic.intermediate.symbols import *
 from alamatic.intermediate.instructions import *
 from alamatic.intermediate.operations import *
 from alamatic.intermediate.operands import *
+from alamatic.intermediate.unit import *
+from alamatic.intermediate.controlflowgraph import *
 from alamatic.intermediate.base import *
 
 
@@ -12,7 +14,11 @@ class SymbolTable(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.children = []
-        self.symbols = {}
+        self.symbols_by_name = {}
+        # Keep a separate list because we need to keep track of
+        # every symbol we've issued, even if one is subsequently
+        # hidden by a later declaration with the same name.
+        self.named_symbols = []
         self.temporaries = []
         self.next_temporary_index = 1
         self._break_label = None
@@ -22,13 +28,23 @@ class SymbolTable(object):
         current = self
         while current is not None:
             try:
-                return current.symbols[name]
+                return current.symbols_by_name[name]
             except KeyError:
                 current = current.parent
         raise UnknownSymbolError(
             "Unknown symbol '%s' at " % name,
             pos_link(position),
         )
+
+    @property
+    def all_symbols(self):
+        for symbol in self.named_symbols:
+            yield symbol
+        for symbol in self.temporaries:
+            yield symbol
+        for child_symbols in self.children:
+            for symbol in child_symbols.all_symbols:
+                yield symbol
 
     @property
     def break_label(self):
@@ -66,7 +82,8 @@ class SymbolTable(object):
 
     def complete_declare(self, symbol):
         if isinstance(symbol, NamedSymbol):
-            self.symbols[symbol.decl_name] = symbol
+            self.symbols_by_name[symbol.decl_name] = symbol
+            self.named_symbols.append(symbol)
         else:
             # Should never happen
             raise Exception(
@@ -80,68 +97,16 @@ class SymbolTable(object):
         self.temporaries.append(symbol)
         return symbol
 
-    def create_child(self):
+    def create_child(self, disconnected=False):
         child = SymbolTable(self)
-        self.children.append(child)
+        if not disconnected:
+            # A "disconnected" child can access symbols from its parent
+            # but it's not included when we traverse down the tree to
+            # flatten out the symbol table. Thus this flag should be used
+            # in cases where the child represents a separated execution
+            # context, such as the body of a function declaration.
+            self.children.append(child)
         return child
-
-
-def simplify_temporaries_in_element_list(input_elems):
-    """
-    Removes unnecessary temporaries from a list of intermediate code elements.
-
-    The mechanism by which we translate expressions to intermediate code
-    causes a proliferation of temporaries that are not strictly necessary.
-    This function takes the raw element list from intermediate code generation
-    and returns a new element list that is functionally equivalent but with
-    the unnecessary temporaries removed.
-    """
-    ret_elems = []
-
-    # First we locate all of the redundant temporaries. A temporary is
-    # redundant if it appears as the target of a copy operation, since
-    # in that case the operand of the copy can be used in place of the
-    # temporary in the following operations.
-    # This assumes that each temporary is only assigned once, which is
-    # a requirement imposed on the intermediate code generation phase.
-    replacements = {}
-    replaceable = lambda elem: (
-        isinstance(elem, OperationInstruction) and
-        isinstance(elem.operation, CopyOperation) and
-        isinstance(elem.target, SymbolOperand) and
-        isinstance(elem.target.symbol, TemporarySymbol)
-    )
-    for elem in input_elems:
-        if replaceable(elem):
-            replacements[elem.target.symbol] = elem.operation.operand
-
-    # Now we make another pass over the list and rewrite the operations
-    # to include the replacements.
-
-    def replacement(operand):
-        if isinstance(operand, SymbolOperand):
-            if operand.symbol in replacements:
-                return replacements[operand.symbol]
-        return operand
-
-    for elem in input_elems:
-        # skip if this is a copy to a temporary we're replacing, since
-        # we don't need that temporary anymore.
-        if replaceable(elem):
-            if elem.target.symbol in replacements:
-                continue
-
-        elem.replace_operands(replacement)
-        ret_elems.append(elem)
-
-    # This doesn't currently remove *all* redundancy... in particular, it
-    # won't catch this sort of structure:
-    #   temp = op1 + op2
-    #   named = temp
-    # But we'll live with that for now and let it get taken care of by
-    # later optimizations.
-
-    return ret_elems
 
 
 class IncompatibleTypesError(CompilerError):

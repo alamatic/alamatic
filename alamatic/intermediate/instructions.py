@@ -112,3 +112,32 @@ class JumpNeverInstruction(JumpInstruction):
     @property
     def jump_targets(self):
         return set()
+
+
+# This is not a "real" operation that should show up during code generation,
+# but is used by the code analyzer when it detects an unreachable basic block,
+# to mark that block as having no successors and thus effectively disconnecting
+# it from the graph altogether.
+class IsolateInstruction(JumpInstruction):
+
+    def __init__(self):
+        pass
+
+    @property
+    def params(self):
+        return []
+
+    def generate_c_code(self, state, writer):
+        # This should never happen since this instruction is only used
+        # to terminate unreachable blocks.
+        raise Exception(
+            "Somehow ended up generating C code for IsolateInstruction"
+        )
+
+    @property
+    def can_fall_through(self):
+        return False
+
+    @property
+    def jump_targets(self):
+        return set()

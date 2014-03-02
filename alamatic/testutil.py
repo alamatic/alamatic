@@ -8,7 +8,6 @@ It may only be used from the unit tests.
 import alamatic.ast
 import alamatic.types
 import alamatic.intermediate
-import alamatic.analyser
 import functools
 import unittest
 
@@ -114,7 +113,7 @@ def control_flow_graph_comparison_node(graph):
     for i, block in enumerate(blocks):
         item = []
         item.append(element_comparison_node(block.label))
-        item.append(element_comparison_nodes(block.operations))
+        item.append(element_comparison_nodes(block.operation_instructions))
         item.append(element_comparison_node(block.terminator))
         item.append(block.successors)
         block_indices[block] = i
@@ -210,6 +209,9 @@ class DummyType(alamatic.types.Value):
             type(self).__name__,
             self.value,
         )
+
+    def is_changed_from(self, other):
+        return self.value != other.value
 
     def auto_op_method(f):
         @classmethod
@@ -341,7 +343,9 @@ class DummyBasicBlock(object):
         # since otherwise we'd just repeat the whole thing here.
         # This is a bit of a cheat since we're using a private function
         # to do this, but we'll live with that for the sake of testing.
-        from alamatic.intermediate.base import _create_dominator_map_for_blocks
+        from alamatic.intermediate.controlflowgraph import (
+            _create_dominator_map_for_blocks,
+        )
         dominator_map = _create_dominator_map_for_blocks(blocks)
         for block, dominators in dominator_map.iteritems():
             block.dominators.update(dominators)
@@ -356,6 +360,9 @@ class DummyInstruction(alamatic.intermediate.Instruction):
     @property
     def params(self):
         yield self.sigil
+
+    def replace_operands(self, replace):
+        pass
 
 
 class DummyOperandDeclInstruction(alamatic.intermediate.Instruction):

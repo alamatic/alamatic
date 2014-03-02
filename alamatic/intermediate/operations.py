@@ -1,6 +1,10 @@
 
 class Operation(object):
 
+    def __repr__(self):
+        params = tuple(self.params)
+        return "<alamatic.intermediate.%s%r>" % (type(self).__name__, params)
+
     def _generate_c_code(self, state, writer):
         raise Exception(
             "generate_c_code not implemented for %r" % self

@@ -8,6 +8,9 @@ from alamatic.testutil import *
 class TestSimplifyTemporaries(LanguageTestCase):
 
     def test_simplify(self):
+        from alamatic.intermediate.controlflowgraph import (
+            _simplify_temporaries_in_element_list,
+        )
         symbols = SymbolTable()
         temp_symbol = symbols.create_temporary()
         named_symbol = symbols.declare("baz")
@@ -41,7 +44,7 @@ class TestSimplifyTemporaries(LanguageTestCase):
                 ),
             ),
         ]
-        simpler_elems = simplify_temporaries_in_element_list(elems)
+        simpler_elems = _simplify_temporaries_in_element_list(elems)
         self.assertEqual(
             element_comparison_nodes(simpler_elems),
             [

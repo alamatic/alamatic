@@ -18,8 +18,15 @@ class Symbol(object):
             position=position,
         )
 
+    @property
+    def assignable(self):
+        return False
+
     def __repr__(self):
-        return '<alamatic.intermediate.%s>' % str(self)
+        return '<alamatic.intermediate.%s %s>' % (
+            type(self).__name__,
+            str(self),
+        )
 
 
 class NamedSymbol(Symbol):
@@ -49,8 +56,16 @@ class NamedSymbol(Symbol):
             )
 
     @property
+    def assignable(self):
+        return not self.const
+
+    @property
     def codegen_name(self):
         return "_ala_%x" % id(self)
+
+    @property
+    def user_friendly_name(self):
+        return self.decl_name
 
     def __str__(self):
         return '%s from %r' % (
@@ -74,6 +89,13 @@ class TemporarySymbol(Symbol):
     @property
     def codegen_name(self):
         return "_tmp_%x" % id(self)
+
+    @property
+    def user_friendly_name(self):
+        # temporaries should never end up being presented to the user,
+        # but if there's a bug then returning something nice here may
+        # help debug it.
+        return "temporary %x" % (self.index, id(self))
 
     def __str__(self):
         return 'temp(%x)' % (

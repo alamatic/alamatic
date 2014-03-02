@@ -54,7 +54,7 @@ class FunctionTemplate(Value):
         arg_values = args.constant_values
 
         frame = interpreter.child_call_frame()
-        symbols = self.decl_scope.create_child()
+        symbols = self.decl_scope.create_child(disconnected=True)
 
         with frame:
             with symbols:
@@ -107,7 +107,7 @@ class FunctionTemplate(Value):
             )
 
         frame = interpreter.child_call_frame()
-        symbols = self.decl_scope.create_child()
+        symbols = self.decl_scope.create_child(disconnected=True)
         symbols_list = []
 
         with frame:
@@ -166,7 +166,13 @@ class FunctionTemplate(Value):
         pass
 
     @classmethod
-    def call(cls, callee_expr, arg_exprs, position=None):
+    def call(cls, callee, args, position=None):
+        from alamatic.types import Unknown
+        return Unknown()
+
+        # TODO: Implement this to so something like the below, which
+        # is the implementation from the earlier design where we
+        # worked on expressions in these functions.
         from alamatic.interpreter import (
             interpreter,
             NotConstantError,
