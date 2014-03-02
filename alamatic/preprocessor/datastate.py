@@ -30,6 +30,7 @@ class CallFrame(object):
         lifetime = Lifetime(
             parent.lifetime if parent is not None else None
         )
+        self.lifetime = lifetime
         self.call_position = call_position
         self.unit = unit
         self.parent = parent
