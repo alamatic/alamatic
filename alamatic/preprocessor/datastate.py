@@ -162,9 +162,10 @@ class DataState(object):
         except KeyError:
             return Unknown()
 
-        if isinstance(symbol, NamedSymbol) and not symbol.const:
-            # We pretend we don't know the value of a variable even if
-            # we do happen to know it, since this prevents us from optimizing
+        if symbol.assignable:
+            # If a symbol is assignable (meaning it can change at runtime)
+            # then we pretend we don't know the value of it, even if
+            # we do happen to know it. This prevents us from optimizing
             # away branches that depend on variables before we've had a
             # chance to check them for validity. These might still get
             # optimized away in later phases, but this phase is about type

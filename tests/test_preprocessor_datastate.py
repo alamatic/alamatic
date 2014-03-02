@@ -80,6 +80,104 @@ class TestCell(LanguageTestCase):
         )
 
 
+class TestDataState(LanguageTestCase):
+
+    def test_assign_symbol_value(self):
+        frame = MagicMock()
+        frame.get_cell_for_symbol.return_value = "dummy_cell"
+        symbol = MagicMock()
+        state = DataState(frame)
+        value = DummyType(5)
+        state.assign_symbol_value(
+            symbol,
+            value,
+            position=('test', 1, 0),
+        )
+        self.assertEqual(
+            state._cell_init_positions["dummy_cell"],
+            ('test', 1, 0),
+        )
+        self.assertEqual(
+            state._cell_values["dummy_cell"],
+            value,
+        )
+        frame.get_cell_for_symbol.assert_called_with(
+            symbol,
+        )
+
+        value = DummyType(4)
+        state.assign_symbol_value(
+            symbol,
+            value,
+            position=('test', 2, 0),
+        )
+        self.assertEqual(
+            state._cell_init_positions["dummy_cell"],
+            ('test', 1, 0),
+        )
+        self.assertEqual(
+            state._cell_values["dummy_cell"],
+            value,
+        )
+
+        class DummyType2(DummyType):
+            pass
+
+        from alamatic.preprocessor import InappropriateTypeError
+        value = DummyType2(6)
+        self.assertRaises(
+            InappropriateTypeError,
+            lambda: state.assign_symbol_value(
+                symbol,
+                value,
+                position=('test', 3, 0),
+            )
+        )
+
+    def test_retrieve_symbol_value(self):
+        frame = MagicMock()
+        frame.get_cell_for_symbol.return_value = "dummy_cell"
+        symbol = MagicMock()
+        symbol.assignable = False
+        state = DataState(frame)
+
+        unk = state.retrieve_symbol_value(symbol)
+        self.assertEqual(
+            unk.apparent_type,
+            Unknown,
+        )
+
+        frame.get_cell_for_symbol.assert_called_with(
+            symbol,
+        )
+
+        state._cell_values["dummy_cell"] = DummyType(5)
+        known = state.retrieve_symbol_value(symbol)
+        self.assertEqual(
+            known.apparent_type,
+            DummyType,
+        )
+        self.assertEqual(
+            type(known),
+            DummyType,
+        )
+        self.assertEqual(
+            known.value,
+            5,
+        )
+
+        symbol.assignable = True
+        known = state.retrieve_symbol_value(symbol)
+        self.assertEqual(
+            known.apparent_type,
+            DummyType,
+        )
+        self.assertEqual(
+            type(known),
+            Unknown,
+        )
+
+
 class TestLifetime(LanguageTestCase):
 
     def test_allocate_cell(self):

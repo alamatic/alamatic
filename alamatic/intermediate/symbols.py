@@ -18,6 +18,10 @@ class Symbol(object):
             position=position,
         )
 
+    @property
+    def assignable(self):
+        return False
+
     def __repr__(self):
         return '<alamatic.intermediate.%s %s>' % (
             type(self).__name__,
@@ -50,6 +54,10 @@ class NamedSymbol(Symbol):
             raise Exception(
                 "Symbol already initialized"
             )
+
+    @property
+    def assignable(self):
+        return not self.const
 
     @property
     def codegen_name(self):
