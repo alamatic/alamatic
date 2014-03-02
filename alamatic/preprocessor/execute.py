@@ -101,7 +101,7 @@ class UnitExecutor(object):
             )
             changed = self._analyze_block(current_block, current_data_state)
 
-            if changed:
+            if changed or not current_data_state.ready:
                 # (Re-)visit all of this block's successors before we
                 # do any more work.
                 for next_block in current_block.successors:

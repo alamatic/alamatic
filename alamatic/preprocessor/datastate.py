@@ -75,22 +75,48 @@ class DataState(object):
         self.ready = False
 
     def update_from_predecessors(self, pred_states):
+        from alamatic.types import Unknown
+
+        # Ensure we have an actual list of states so we can iterate
+        # it multiple times.
+        pred_states = list(pred_states)
+
         all_preds_ready = True
         for pred_state in pred_states:
             if not pred_state.ready:
                 all_preds_ready = False
                 break
 
-        # TODO:
-        #  - If any predecessor states are not yet ready, initialize
-        #    all inherited cells as unknown.
-        #  - If all predecessor states are ready, replace our cell values
-        #    table with a merge of all of the predecessor values.
-        #  - If two predecessors give us differing types for a particular
-        #    cell, then that's an inconsistent initialization error.
+        self.ready = True
 
         if all_preds_ready:
-            self.ready = True
+            # Merge all of the predecessor values to produce our
+            # entry state.
+            all_cells = set()
+            for pred_state in pred_states:
+                all_cells.update(pred_state._cell_values.iterkeys())
+
+            for cell in all_cells:
+                merged_value = None
+                for pred_state in pred_states:
+                    try:
+                        this_value = pred_state._cell_values[cell]
+                    except KeyError:
+                        # This state has no knowledge of the given cell,
+                        # so skip.
+                        continue
+
+                    if merged_value is None:
+                        merged_value = this_value
+                    else:
+                        merged_value = merged_value.merge(this_value)
+
+                self._cell_values[cell] = merged_value
+
+        else:
+            for pred_state in pred_states:
+                for cell in pred_state._cell_values:
+                    self._cell_values[cell] = Unknown()
 
     def assign_symbol_value(self, symbol, value, position=None):
         from alamatic.types import Unknown
@@ -133,14 +159,7 @@ class DataState(object):
         try:
             result = self._cell_values[cell]
         except KeyError:
-            if self.ready:
-                raise SymbolNotInitializedError(
-                    symbol.user_friendly_name,
-                    " is not definitely initialized at ",
-                    pos_link(position),
-                )
-            else:
-                return Unknown()
+            return Unknown()
 
         if isinstance(symbol, NamedSymbol) and not symbol.const:
             # We pretend we don't know the value of a variable even if

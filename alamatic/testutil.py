@@ -210,6 +210,9 @@ class DummyType(alamatic.types.Value):
             self.value,
         )
 
+    def is_changed_from(self, other):
+        return self.value != other.value
+
     def auto_op_method(f):
         @classmethod
         @functools.wraps(f)

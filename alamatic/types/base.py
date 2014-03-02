@@ -46,8 +46,8 @@ def _binop_stub(verb, preposition="to", lhs_first=False):
                 rhs = lhs
                 lhs = tmp
             raise OperationNotSupportedError(
-                "Cannot ", verb, " ", rhs.result_type.__name__,
-                " ", preposition, " ", lhs.result_type.__name__,
+                "Cannot ", verb, " ", rhs.apparent_type.__name__,
+                " ", preposition, " ", lhs.apparent_type.__name__,
                 " at ", pos_link(position),
             )
         return op
@@ -82,6 +82,74 @@ class Value(object):
     @property
     def apparent_type(self):
         return type(self)
+
+    @property
+    def uncertainty(self):
+        """
+        Linear level of uncertainty about this value, with zero meaning
+        completely certain.
+
+        This will be 0 for all values except unknown ones, which will
+        return 1 if the type is known but the value is not, or 2 if neither
+        the type nor the value is known.
+
+        This is used in :py:meth:`merge` to choose the most conservative
+        value (i.e. the one with most uncertainty) when doing data flow
+        analysis and type inference.
+        """
+        return 0
+
+    @property
+    def value_is_known(self):
+        return self.uncertainty == 0
+
+    def merge(self, other):
+        # Order the two values by certainty to simplify the logic below.
+        if other.uncertainty > self.uncertainty:
+            most_certain = self
+            least_certain = other
+        else:
+            most_certain = other
+            least_certain = self
+
+        if least_certain.apparent_type is Unknown:
+            if most_certain.apparent_type is Unknown:
+                return least_certain
+            else:
+                # Since we know that a slot's type must match throughout the
+                # program, it is safe for us promote an unknown type to
+                # a known type. If this leads to a mismatch later this will
+                # cause an error, not a regression to a less-certain state.
+                # This special case is important to allow slots mutated in
+                # loops to still converge on a type, or else they'd never
+                # get a known type.
+                return Unknown(most_certain.apparent_type)
+
+        # If we get here then we know the types of both sides.
+
+        if most_certain.apparent_type is not least_certain.apparent_type:
+            from alamatic.preprocessor import InappropriateTypeError
+            # FIXME: We don't have enough information here for a useful
+            # error message. Either need to move this logic out
+            # somewhere else or have a caller catch and re-throw this
+            # with symbol names, positions and a stack trace.
+            raise InappropriateTypeError(
+                "Inconsistent initialization ",
+                " (", self.apparent_type,
+                " vs ", other.apparent_type, ")"
+            )
+
+        # If we get here then we know both sides have the *same* type.
+
+        if not least_certain.value_is_known:
+            return least_certain
+
+        # If we get here then both values are known and have the same type.
+
+        if self.is_changed_from(other):
+            return Unknown(self.apparent_type)
+        else:
+            return self
 
     def is_changed_from(self, other):
         raise Exception(
@@ -194,6 +262,10 @@ class Unknown(Value):
             return self.known_type
         else:
             return type(self)
+
+    @property
+    def uncertainty(self):
+        return 2 if self.known_type is None else 1
 
     def is_changed_from(self, other):
         return self.known_type is not other.known_type

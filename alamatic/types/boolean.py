@@ -16,6 +16,9 @@ class Bool(Value):
     def params(self):
         yield self.value
 
+    def is_changed_from(self, other):
+        return self.value != other.value
+
     def generate_c_code(self, state, writer):
         writer.write("1" if self.value else "0")
 

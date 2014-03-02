@@ -112,36 +112,30 @@ class Integer(Number):
 
     @classmethod
     def equals(cls, lhs, rhs, position=None):
-        from alamatic.ast import ComparisonExpr, ValueExpr
-        from alamatic.types.boolean import Bool
-        from alamatic.interpreter import (
-            IncompatibleTypesError,
-            NotConstantError,
+        from alamatic.preprocessor import (
+            InappropriateTypeError,
+        )
+        from alamatic.types import (
+            Bool,
         )
 
-        lhs_result_type = lhs.result_type
-        rhs_result_type = rhs.result_type
+        if lhs.apparent_type is Unknown or rhs.apparent_type is Unknown:
+            return Unknown()
 
-        if not issubclass(rhs_result_type, Integer):
-            raise IncompatibleTypesError(
+        if not issubclass(rhs.apparent_type, Integer):
+            raise InappropriateTypeError(
                 "Can't compare %s to %s at " % (
-                    lhs_result_type.__name__,
-                    rhs_result_type.__name__,
+                    lhs.apparent_type,
+                    rhs.apparent_type,
                 ),
-                pos_link(position)
+                pos_link(position),
             )
 
-        try:
-            lhs_value = lhs.constant_value
-            rhs_value = rhs.constant_value
-            return ValueExpr(
-                position,
-                Bool(lhs_value.value == rhs_value.value),
-            )
-        except NotConstantError:
-            return ComparisonExpr(
-                position,
-                lhs, "==", rhs,
+        if type(lhs) is Unknown or type(rhs) is Unknown:
+            return Unknown(Bool)
+        else:
+            return Bool(
+                lhs.value == rhs.value
             )
 
 
