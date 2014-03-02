@@ -177,6 +177,66 @@ class TestDataState(LanguageTestCase):
             Unknown,
         )
 
+    def test_update_from_predecessors_ready(self):
+        frame = MagicMock()
+        state = DataState(frame)
+
+        value_1 = MagicMock(name="value_1")
+        value_2 = MagicMock(name="value_2")
+        value_3 = MagicMock(name="value_3")
+        value_4 = MagicMock(name="value_4")
+
+        value_1.merge.return_value = value_4
+
+        dummy_state_1 = MagicMock()
+        dummy_state_2 = MagicMock()
+        dummy_state_1.ready = True
+        dummy_state_2.ready = True
+        dummy_state_1._cell_values = {}
+        dummy_state_2._cell_values = {}
+        dummy_state_1._cell_values["dummy1"] = value_1
+        dummy_state_2._cell_values["dummy1"] = value_2
+        dummy_state_1._cell_values["dummy2"] = value_3
+
+        state.update_from_predecessors([dummy_state_1, dummy_state_2])
+
+        value_1.merge.assert_called_with(
+            value_2,
+        )
+
+        self.assertEqual(
+            state._cell_values,
+            {
+                "dummy1": value_4,
+                "dummy2": value_3,
+            }
+        )
+
+    def test_update_from_predecessors_unready(self):
+        frame = MagicMock()
+        state = DataState(frame)
+
+        dummy_state_1 = MagicMock()
+        dummy_state_2 = MagicMock()
+        dummy_state_1.ready = True
+        dummy_state_2.ready = False
+        dummy_state_1._cell_values = {}
+        dummy_state_2._cell_values = {}
+        dummy_state_1._cell_values["dummy1"] = 1
+        dummy_state_2._cell_values["dummy1"] = 2
+        dummy_state_1._cell_values["dummy2"] = 3
+
+        state.update_from_predecessors([dummy_state_1, dummy_state_2])
+
+        # All of the cells come back as unknown because state 2 isn't ready.
+        self.assertEqual(
+            state._cell_values,
+            {
+                "dummy1": Unknown(),
+                "dummy2": Unknown(),
+            }
+        )
+
 
 class TestLifetime(LanguageTestCase):
 
