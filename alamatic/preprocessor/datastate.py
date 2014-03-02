@@ -3,13 +3,13 @@
 class Lifetime(object):
 
     def __init__(self, parent=None):
-        pass
+        self.parent = parent
 
     def allocate_cell(self):
         return Cell(self)
 
     def outlives(self, other_lifetime):
-        current = other_lifetime
+        current = other_lifetime.parent
         while current is not None:
             if current is self:
                 return True
