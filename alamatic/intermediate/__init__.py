@@ -7,6 +7,7 @@ from alamatic.intermediate.operands import *
 from alamatic.intermediate.unit import *
 from alamatic.intermediate.controlflowgraph import *
 from alamatic.intermediate.base import *
+from alamatic.intermediate.program import *
 
 
 class SymbolTable(object):

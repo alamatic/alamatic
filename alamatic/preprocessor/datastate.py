@@ -52,6 +52,12 @@ class CallFrame(object):
             "No cell is allocated for symbol %r" % symbol
         )
 
+    def get_symbol_values(self, state):
+        ret = {}
+        for symbol in self.symbol_cells:
+            ret[symbol] = state.retrieve_symbol_value
+        return ret
+
 
 class Cell(object):
     def __init__(self, lifetime):

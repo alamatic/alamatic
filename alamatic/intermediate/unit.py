@@ -12,3 +12,7 @@ class Unit(object):
         self.graph = graph
         self.symbols = symbols
         self.params = params
+
+    @property
+    def codegen_name(self):
+        return "ala_%x" % id(self)

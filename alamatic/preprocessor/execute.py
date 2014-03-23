@@ -6,11 +6,27 @@ from collections import deque
 
 
 __all__ = [
-    'execute_unit',
+    'preprocess_unit',
+    'preprocess_program',
 ]
 
 
-def execute_unit(unit, args=None, parent_frame=None, call_position=None):
+class PreprocessorUnitResult(object):
+
+    def __init__(
+        self,
+        unit,
+        symbol_values,
+        imported_modules,
+        called_functions,
+    ):
+        self.unit = unit
+        self.symbol_values = symbol_values
+        self.imported_modules = imported_modules
+        self.called_functions = called_functions
+
+
+def preprocess_unit(unit, args=None, parent_frame=None, call_position=None):
     from alamatic.preprocessor.datastate import CallFrame
     frame = CallFrame(
         unit,
@@ -20,6 +36,16 @@ def execute_unit(unit, args=None, parent_frame=None, call_position=None):
     return UnitExecutor.execute(unit, frame)
 
 
+def preprocess_program(entry_unit):
+    result = preprocess_unit(entry_unit)
+    return Program(
+        entry_unit=result.unit,
+        symbol_values=result.symbol_values,
+        imported_modules=result.imported_modules,
+        called_functions=result.called_functions,
+    )
+
+
 class UnitExecutor(object):
 
     @classmethod
@@ -27,7 +53,18 @@ class UnitExecutor(object):
         self = cls()
         self.unit = unit
         self.frame = frame
+        self.exit_state = None  # populated after execution
+        self.imported_modules = set()  # populated during execution
+        self.called_functions = set()  # populated during execution
         self._execute()
+        return PreprocessorUnitResult(
+            unit,
+            symbol_values=frame.get_symbol_values(
+                self.exit_state,
+            ),
+            imported_modules=self.imported_modules,
+            called_functions=self.called_functions,
+        )
 
     def _execute(self):
         from alamatic.preprocessor.datastate import DataState
