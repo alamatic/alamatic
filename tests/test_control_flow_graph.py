@@ -1,6 +1,5 @@
 
 from alamatic.ast import *
-from alamatic.types import *
 from alamatic.intermediate import *
 from alamatic.testutil import *
 
@@ -100,13 +99,11 @@ class TestControlFlowGraph(LanguageTestCase):
         )
 
     def test_split_jump_if_false(self):
-        from alamatic.types import Bool
-
         label = Label()
         elems = [
             DummyInstruction("begin"),
             JumpIfFalseInstruction(
-                ConstantOperand(Bool(True)),
+                ConstantOperand(True),
                 label,
             ),
             DummyInstruction("middle"),
@@ -124,7 +121,7 @@ class TestControlFlowGraph(LanguageTestCase):
                     ],
                     ('JumpIfFalseInstruction', [
                         ('ConstantOperand', [
-                            ('Bool', (True,)),
+                            True,
                         ]),
                         ('Label', None),
                     ]),

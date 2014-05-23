@@ -6,7 +6,6 @@ It may only be used from the unit tests.
 """
 
 import alamatic.ast
-import alamatic.types
 import alamatic.intermediate
 import functools
 import unittest
@@ -69,7 +68,6 @@ def element_param_comparison_nodes(params):
 
 
 def element_param_comparison_node(param):
-    from alamatic.types import Value
     if isinstance(param, alamatic.intermediate.Operand):
         return (type(param).__name__, list(
             element_param_comparison_node(x) for x in param.params
@@ -84,8 +82,8 @@ def element_param_comparison_node(param):
         return (type(param).__name__, param.index)
     elif isinstance(param, alamatic.intermediate.NamedSymbol):
         return (type(param).__name__, param.decl_name)
-    elif isinstance(param, Value):
-        return (type(param).__name__, tuple(param.params))
+    elif isinstance(param, alamatic.intermediate.FunctionTemplate):
+        return (type(param).__name__, param.decl_stmt.decl.name)
     elif isinstance(param, list):
         return [
             element_param_comparison_node(x) for x in param
@@ -192,68 +190,6 @@ def DummyStatementBlock(stmts):
     )
 
 
-class DummyType(alamatic.types.Value):
-    from weakref import WeakValueDictionary
-    instances = WeakValueDictionary()
-
-    def __new__(cls, value):
-        instance_key = (type(value), value)
-        if instance_key not in cls.instances:
-            self = object.__new__(cls)
-            self.value = value
-            cls.instances[instance_key] = self
-        return cls.instances[instance_key]
-
-    def __repr__(self):
-        return "<alamatic.testutil.%s: %r>" % (
-            type(self).__name__,
-            self.value,
-        )
-
-    def is_changed_from(self, other):
-        return self.value != other.value
-
-    def auto_op_method(f):
-        @classmethod
-        @functools.wraps(f)
-        def op_method(*args, **kwargs):
-            return alamatic.ast.ValueExpr(
-                alamatic.ast.DummyType(
-                    f(*args, **kwargs)
-                )
-            )
-        return op_method
-
-    def auto_binop_method(f):
-        @classmethod
-        @functools.wraps(f)
-        def op_method(source_node, lhs, rhs, *args, **kwargs):
-            return alamatic.ast.ValueExpr(
-                alamatic.ast.DummyType(
-                    f(lhs.value, rhs.value, *args, **kwargs)
-                )
-            )
-        return op_method
-
-    @auto_binop_method
-    def add(self, lhs, rhs, position=None):
-        return lhs + rhs
-
-    @auto_binop_method
-    def equals(self, lhs, rhs, position=None):
-        return lhs == rhs
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return self.value == other.value
-        else:
-            return False
-
-    @classmethod
-    def c_type_spec(self):
-        return "DummyType"
-
-
 class DummyExpr(alamatic.ast.Expression):
     def __init__(self, sigil):
         self.sigil = sigil
@@ -288,9 +224,8 @@ class DummyExprLvalue(alamatic.ast.Expression):
 
 class DummyBooleanConstantExpr(alamatic.ast.Expression):
     def __init__(self, value):
-        from alamatic.types import Bool
         self.operand = alamatic.intermediate.ConstantOperand(
-            Bool(value)
+            True
         )
 
     @property
@@ -414,40 +349,6 @@ def binary_expr_operator_map_case(expr_type, operations):
     return type('TestOperatorMap', (LanguageTestCase,), cls_dict)
 
 
-def generate_c_for_elems(elems):
-    from StringIO import StringIO
-    from alamatic.compiler import CompileState
-    from alamatic.codegen import CodeWriter
-    state = CompileState()
-    f = StringIO()
-    writer = CodeWriter(f)
-    for elem in elems:
-        elem.generate_c_code(state, writer)
-    return f.getvalue()
-
-
-def generate_c_for_instruction(op):
-    from StringIO import StringIO
-    from alamatic.compiler import CompileState
-    from alamatic.codegen import CodeWriter
-    state = CompileState()
-    f = StringIO()
-    writer = CodeWriter(f)
-    op._generate_c_code(state, writer)
-    return f.getvalue()
-
-
-def generate_c_for_operation(op):
-    from StringIO import StringIO
-    from alamatic.compiler import CompileState
-    from alamatic.codegen import CodeWriter
-    state = CompileState()
-    f = StringIO()
-    writer = CodeWriter(f)
-    op.generate_c_code(state, writer)
-    return f.getvalue()
-
-
 def get_operation_replaceable_operands(oper):
     replaced = set()
 
@@ -457,17 +358,6 @@ def get_operation_replaceable_operands(oper):
 
     oper.replace_operands(replace)
     return replaced
-
-
-# These testcase_-prefixed functions are intended to be added to
-# TestCase subclasses as needed,
-def testcase_assertCodegenTree(testcase, stmts, expected):
-    result = execute_stmts(stmts)
-    testcase.assertEqual(
-        ast_comparison_nodes(result.runtime_stmts),
-        expected,
-    )
-testcase_assertCodegenTree.__name__ = "assertCodegenTree"
 
 
 def testcase_assertStmtParseTree(testcase, inp, expected):
@@ -636,7 +526,6 @@ testcase_assertDominatorTree.__name__ = "assertDominatorTree"
 
 
 class LanguageTestCase(unittest.TestCase):
-    assertCodegenTree = testcase_assertCodegenTree
     assertStmtParseTree = testcase_assertStmtParseTree
     assertExprParseTree = testcase_assertExprParseTree
     assertErrorsInStmts = testcase_assertErrorsInStmts

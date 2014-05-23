@@ -340,11 +340,11 @@ class FuncDeclStmt(Statement):
     def make_intermediate_form(self, elems, symbols):
         # A function declaration is really just a funny sort of
         # declaration that forces a function type.
-        from alamatic.types import FunctionTemplate
         from alamatic.intermediate import (
             OperationInstruction,
             CopyOperation,
             ConstantOperand,
+            FunctionTemplate,
         )
 
         # Need to retain the scope the function was declared in so that

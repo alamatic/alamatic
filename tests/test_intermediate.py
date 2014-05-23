@@ -1,6 +1,5 @@
 
 from alamatic.ast import *
-from alamatic.types import *
 from alamatic.intermediate import *
 from alamatic.testutil import *
 
@@ -18,13 +17,13 @@ class TestSimplifyTemporaries(LanguageTestCase):
             OperationInstruction(
                 SymbolOperand(temp_symbol),
                 CopyOperation(
-                    ConstantOperand(UInt8(1)),
+                    DummyOperand("temp"),
                 ),
             ),
             OperationInstruction(
                 SymbolOperand(named_symbol),
                 CopyOperation(
-                    ConstantOperand(UInt8(2)),
+                    DummyOperand("named"),
                 ),
             ),
             OperationInstruction(
@@ -53,8 +52,8 @@ class TestSimplifyTemporaries(LanguageTestCase):
                         ('NamedSymbol', 'baz'),
                     ]),
                     ('CopyOperation', [
-                        ('ConstantOperand', [
-                            ('UInt8', (2,)),
+                        ('DummyOperand', [
+                            'named',
                         ]),
                     ]),
                 ]),
@@ -65,12 +64,12 @@ class TestSimplifyTemporaries(LanguageTestCase):
                     ]),
                     ('BinaryOperation', [
                         # the operands are now the constant
-                        ('ConstantOperand', [
-                            ('UInt8', (1,)),
+                        ('DummyOperand', [
+                            'temp',
                         ]),
                         'add',
-                        ('ConstantOperand', [
-                            ('UInt8', (1,)),
+                        ('DummyOperand', [
+                            'temp',
                         ]),
                     ]),
                 ]),

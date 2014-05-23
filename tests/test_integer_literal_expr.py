@@ -1,7 +1,6 @@
 
 from alamatic.ast import *
 from alamatic.intermediate import *
-from alamatic.types import *
 from alamatic.testutil import *
 
 
@@ -26,7 +25,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('Int8', (1,)),
+                            1,
                         ]),
                     ]),
                 ]),
@@ -48,7 +47,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('Int8', (-1,)),
+                            -1,
                         ]),
                     ]),
                 ]),
@@ -72,7 +71,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('Int16', (257,)),
+                            257,
                         ]),
                     ]),
                 ]),
@@ -96,7 +95,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('Int32', (65537,)),
+                            65537,
                         ]),
                     ]),
                 ]),
@@ -120,7 +119,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('Int64', (4294967297,)),
+                            4294967297,
                         ]),
                     ]),
                 ]),
@@ -144,7 +143,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('UInt64', ((2 ** 64) - 5,)),
+                            (2 ** 64) - 5,
                         ]),
                     ]),
                 ]),

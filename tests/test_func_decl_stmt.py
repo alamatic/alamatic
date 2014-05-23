@@ -1,6 +1,5 @@
 
 from alamatic.ast import *
-from alamatic.types import *
 from alamatic.intermediate import *
 from alamatic.testutil import *
 from mock import MagicMock
@@ -57,7 +56,7 @@ class TestIntermediate(LanguageTestCase):
                     ]),
                     ('CopyOperation', [
                         ('ConstantOperand', [
-                            ('FunctionTemplate', ()),
+                            ('FunctionTemplate', 'baz'),
                         ]),
                     ]),
                 ]),

@@ -75,47 +75,31 @@ class LiteralExpr(Expression):
 class IntegerLiteralExpr(LiteralExpr):
 
     def make_intermediate_form(self, elems, symbols):
-        from alamatic.types import (
-            Int8,
-            Int16,
-            Int32,
-            Int64,
-            UInt64,
-        )
         from alamatic.intermediate import (
             OperationInstruction,
             CopyOperation,
             ConstantOperand,
             SymbolOperand,
         )
-        src_value = long(self.value)
+        value = long(self.value)
 
         target = symbols.create_temporary().make_operand(
             position=self.position,
         )
 
-        for possible_type in (Int8, Int16, Int32, Int64, UInt64):
-            limits = possible_type.get_limits()
-            if src_value >= limits[0] and src_value <= limits[1]:
-                elems.append(
-                    OperationInstruction(
-                        target,
-                        CopyOperation(
-                            ConstantOperand(
-                                possible_type(src_value),
-                            ),
-                        ),
+        elems.append(
+            OperationInstruction(
+                target,
+                CopyOperation(
+                    ConstantOperand(
+                        value,
                         position=self.position,
-                    )
-                )
-                return target
-
-        # Should never happen
-        raise Exception(
-            "Integer value %i (in %r) does not fit in any integer type",
-            self.value,
-            self,
+                    ),
+                ),
+                position=self.position,
+            )
         )
+        return target
 
 
 class FloatLiteralExpr(LiteralExpr):

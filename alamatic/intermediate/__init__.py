@@ -3,6 +3,7 @@ from alamatic.compilelogging import CompilerError, pos_link
 from alamatic.intermediate.symbols import *
 from alamatic.intermediate.instructions import *
 from alamatic.intermediate.operations import *
+from alamatic.intermediate.constanttypes import *
 from alamatic.intermediate.operands import *
 from alamatic.intermediate.unit import *
 from alamatic.intermediate.controlflowgraph import *

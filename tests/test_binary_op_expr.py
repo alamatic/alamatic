@@ -1,7 +1,6 @@
 
 from alamatic.ast import *
 from alamatic.intermediate import *
-from alamatic.types import *
 from alamatic.testutil import *
 
 
