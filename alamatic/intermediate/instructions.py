@@ -52,6 +52,12 @@ class JumpInstruction(Instruction):
     def replace_operands(self, replace):
         pass
 
+    def get_optimal_equivalent(self):
+        # Must return exactly self if we intend to make no change,
+        # since callers will depend on this to recognize if any
+        # change has been made.
+        return self
+
     @property
     def can_fall_through(self):
         return False
@@ -79,6 +85,17 @@ class JumpIfFalseInstruction(JumpInstruction):
 
     def replace_operands(self, replace):
         self.cond = replace(self.cond)
+
+    def get_optimal_equivalent(self):
+        value = self.cond.constant_value
+        if value is True:
+            return JumpNeverInstruction()
+        elif value is False:
+            return JumpInstruction(
+                label=self.label,
+                position=self.position,
+            )
+        return self
 
     @property
     def can_fall_through(self):
