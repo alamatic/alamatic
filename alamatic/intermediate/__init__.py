@@ -111,6 +111,13 @@ class SymbolTable(object):
         return child
 
 
+class UnknownType(object):
+    pass
+
+
+Unknown = UnknownType()
+
+
 class IncompatibleTypesError(CompilerError):
     pass
 

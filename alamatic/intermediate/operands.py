@@ -17,6 +17,11 @@ class Operand(object):
     def __repr__(self):
         return "<alamatic.intermediate.%s>" % self.__str__()
 
+    @property
+    def constant_value(self):
+        from alamatic.intermediate import Unknown
+        return Unknown
+
     def generate_c_code(self, state, writer):
         raise Exception(
             "generate_c_code not implemented for %r" % self
@@ -32,6 +37,10 @@ class ConstantOperand(Operand):
     @property
     def params(self):
         yield self.value
+
+    @property
+    def constant_value(self):
+        return self.value
 
     def generate_c_code(self, state, writer):
         self.value.generate_c_code(state, writer)
