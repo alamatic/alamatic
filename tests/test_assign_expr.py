@@ -12,7 +12,7 @@ class TestParse(LanguageTestCase):
                 "a %s 1" % operator,
                 ('AssignExpr', (operator,), [
                     ('SymbolNameExpr', ('a',), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
                 allow_assign=True,
             )

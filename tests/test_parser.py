@@ -176,7 +176,7 @@ class TestParser(LanguageTestCase):
             "return 1",
             [
                 ("ReturnStmt", (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ]
         )
@@ -196,7 +196,7 @@ class TestParser(LanguageTestCase):
             [
                 ("ForStmt", (), [
                     ('SymbolNameExpr', ("i",), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                     ('StatementBlock', (), [
                         ('PassStmt', (), []),
                         ('PassStmt', (), []),
@@ -211,7 +211,7 @@ class TestParser(LanguageTestCase):
             [
                 ("ForStmt", (), [
                     ('VarDeclClause', ("i",), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                     ('StatementBlock', (), [
                         ('PassStmt', (), []),
                         ('PassStmt', (), []),
@@ -226,7 +226,7 @@ class TestParser(LanguageTestCase):
             [
                 ("ForStmt", (), [
                     ('ConstDeclClause', ("i",), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                     ('StatementBlock', (), [
                         ('PassStmt', (), []),
                         ('PassStmt', (), []),
@@ -246,35 +246,35 @@ class TestParser(LanguageTestCase):
         # don't actually show up explicitly as nodes in the parse tree.
         self.assertExprParseTree(
             "(1)",
-            ('IntegerLiteralExpr', (1,), []),
+            ('LiteralExpr', (1,), []),
         )
         self.assertExprParseTree(
             "((1))",
-            ('IntegerLiteralExpr', (1,), []),
+            ('LiteralExpr', (1,), []),
         )
 
     def test_number_expressions(self):
         # Decimal integers
         self.assertExprParseTree(
             "1",
-            ("IntegerLiteralExpr", (1,), []),
+            ("LiteralExpr", (1,), []),
         )
         self.assertExprParseTree(
             "0",
-            ("IntegerLiteralExpr", (0,), []),
+            ("LiteralExpr", (0,), []),
         )
         self.assertExprParseTree(
             "92",
-            ("IntegerLiteralExpr", (92,), []),
+            ("LiteralExpr", (92,), []),
         )
         # Hex integers
         self.assertExprParseTree(
             "0x1",
-            ("IntegerLiteralExpr", (1,), []),
+            ("LiteralExpr", (1,), []),
         )
         self.assertExprParseTree(
             "0xff",
-            ("IntegerLiteralExpr", (255,), []),
+            ("LiteralExpr", (255,), []),
         )
         self.assertErrorsInStmts(
             "0xfg",
@@ -285,11 +285,11 @@ class TestParser(LanguageTestCase):
         # Octal integers
         self.assertExprParseTree(
             "01",
-            ("IntegerLiteralExpr", (1,), []),
+            ("LiteralExpr", (1,), []),
         )
         self.assertExprParseTree(
             "010",
-            ("IntegerLiteralExpr", (8,), []),
+            ("LiteralExpr", (8,), []),
         )
         self.assertErrorsInStmts(
             "08",
@@ -300,11 +300,11 @@ class TestParser(LanguageTestCase):
         # Binary integers
         self.assertExprParseTree(
             "0b1",
-            ("IntegerLiteralExpr", (1,), []),
+            ("LiteralExpr", (1,), []),
         )
         self.assertExprParseTree(
             "0b10",
-            ("IntegerLiteralExpr", (2,), []),
+            ("LiteralExpr", (2,), []),
         )
         self.assertErrorsInStmts(
             "0b02",
@@ -315,19 +315,19 @@ class TestParser(LanguageTestCase):
         # Decimal floats
         self.assertExprParseTree(
             "1.0",
-            ("FloatLiteralExpr", (1.0,), []),
+            ("LiteralExpr", (1.0,), []),
         )
         self.assertExprParseTree(
             "92.2",
-            ("FloatLiteralExpr", (92.2,), []),
+            ("LiteralExpr", (92.2,), []),
         )
         self.assertExprParseTree(
             "1.0E+2",
-            ("FloatLiteralExpr", (100.0,), []),
+            ("LiteralExpr", (100.0,), []),
         )
         self.assertExprParseTree(
             "1.0E-1",
-            ("FloatLiteralExpr", (0.1,), []),
+            ("LiteralExpr", (0.1,), []),
         )
 
     def test_assign_disallowed(self):

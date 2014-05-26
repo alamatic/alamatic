@@ -23,7 +23,7 @@ class TestParse(LanguageTestCase):
             [
                 ('DataDeclStmt', (), [
                     ('VarDeclClause', ('i',), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ]
         )
@@ -44,7 +44,7 @@ class TestParse(LanguageTestCase):
             [
                 ('DataDeclStmt', (), [
                     ('ConstDeclClause', ('i',), []),
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ]
         )

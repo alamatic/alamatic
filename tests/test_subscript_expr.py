@@ -11,7 +11,7 @@ class TestParse(LanguageTestCase):
             ('SubscriptExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ])
         )
@@ -20,8 +20,8 @@ class TestParse(LanguageTestCase):
             ('SubscriptExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
-                    ('IntegerLiteralExpr', (2,), []),
+                    ('LiteralExpr', (1,), []),
+                    ('LiteralExpr', (2,), []),
                 ]),
             ])
         )
@@ -30,7 +30,7 @@ class TestParse(LanguageTestCase):
             ('SubscriptExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ])
         )
@@ -39,9 +39,9 @@ class TestParse(LanguageTestCase):
             ('SubscriptExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
-                    ('IntegerLiteralExpr', (2,), []),
-                    ('IntegerLiteralExpr', (3,), []),
+                    ('LiteralExpr', (1,), []),
+                    ('LiteralExpr', (2,), []),
+                    ('LiteralExpr', (3,), []),
                 ]),
             ])
         )
@@ -53,11 +53,11 @@ class TestParse(LanguageTestCase):
                 ('SubscriptExpr', (), [
                     ('SymbolNameExpr', ('a',), []),
                     ('ExpressionList', (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                     ]),
                 ]),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (2,), []),
+                    ('LiteralExpr', (2,), []),
                 ]),
             ])
         )
@@ -71,7 +71,7 @@ class TestParse(LanguageTestCase):
                     ('SubscriptExpr', (), [
                         ('SymbolNameExpr', ('b',), []),
                         ('ExpressionList', (), [
-                            ('IntegerLiteralExpr', (1,), []),
+                            ('LiteralExpr', (1,), []),
                         ]),
                     ]),
                 ]),
@@ -84,7 +84,7 @@ class TestParse(LanguageTestCase):
             ('SubscriptExpr', (), [
                 ('SymbolNameExpr', ('a',), []),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ])
         )
@@ -96,7 +96,7 @@ class TestParse(LanguageTestCase):
                     ('SymbolNameExpr', ('b',), []),
                 ]),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ])
         )
@@ -107,7 +107,7 @@ class TestParse(LanguageTestCase):
                 ('SubscriptExpr', (), [
                     ('SymbolNameExpr', ('b',), []),
                     ('ExpressionList', (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                     ]),
                 ]),
             ])
@@ -120,13 +120,13 @@ class TestParse(LanguageTestCase):
                 ('SubscriptExpr', (), [
                     ('SymbolNameExpr', ('a',), []),
                     ('ExpressionList', (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                     ]),
                 ]),
                 ('SubscriptExpr', (), [
                     ('SymbolNameExpr', ('b',), []),
                     ('ExpressionList', (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                     ]),
                 ]),
             ]),
@@ -140,7 +140,7 @@ class TestParse(LanguageTestCase):
                     ('SymbolNameExpr', ('a',), []),
                 ]),
                 ('ExpressionList', (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                 ]),
             ])
         )

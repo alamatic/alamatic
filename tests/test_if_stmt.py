@@ -13,7 +13,7 @@ class TestParse(LanguageTestCase):
             [
                 ("IfStmt", (), [
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
@@ -31,7 +31,7 @@ class TestParse(LanguageTestCase):
             [
                 ("IfStmt", (), [
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
@@ -56,19 +56,19 @@ class TestParse(LanguageTestCase):
             [
                 ("IfStmt", (), [
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
                     ]),
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (2,), []),
+                        ('LiteralExpr', (2,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
                     ]),
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (3,), []),
+                        ('LiteralExpr', (3,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
@@ -90,19 +90,19 @@ class TestParse(LanguageTestCase):
             [
                 ("IfStmt", (), [
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (1,), []),
+                        ('LiteralExpr', (1,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
                     ]),
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (2,), []),
+                        ('LiteralExpr', (2,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),
                     ]),
                     ("IfClause", (), [
-                        ('IntegerLiteralExpr', (3,), []),
+                        ('LiteralExpr', (3,), []),
                         ('StatementBlock', (), [
                             ('PassStmt', (), []),
                         ]),

@@ -13,7 +13,7 @@ class TestParse(LanguageTestCase):
             '    pass',
             [
                 ("WhileStmt", (), [
-                    ('IntegerLiteralExpr', (1,), []),
+                    ('LiteralExpr', (1,), []),
                     ('StatementBlock', (), [
                         ('PassStmt', (), []),
                         ('PassStmt', (), []),

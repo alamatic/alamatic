@@ -71,9 +71,6 @@ class LiteralExpr(Expression):
     def params(self):
         yield self.value
 
-
-class IntegerLiteralExpr(LiteralExpr):
-
     def make_intermediate_form(self, elems, symbols):
         from alamatic.intermediate import (
             OperationInstruction,
@@ -81,7 +78,7 @@ class IntegerLiteralExpr(LiteralExpr):
             ConstantOperand,
             SymbolOperand,
         )
-        value = long(self.value)
+        value = self.value
 
         target = symbols.create_temporary().make_operand(
             position=self.position,
@@ -100,10 +97,6 @@ class IntegerLiteralExpr(LiteralExpr):
             )
         )
         return target
-
-
-class FloatLiteralExpr(LiteralExpr):
-    pass
 
 
 class BinaryOpExpr(Expression):

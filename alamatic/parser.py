@@ -551,10 +551,7 @@ def p_expr_number(state, scanner):
             "Failed to produce a value for number token " + num_str
         )
 
-    if type(value) in (int, long):
-        return IntegerLiteralExpr(pos, value)
-    else:
-        return FloatLiteralExpr(pos, value)
+    return LiteralExpr(pos, value)
 
 
 def p_data_decl(state, scanner):
