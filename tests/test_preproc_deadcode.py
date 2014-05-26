@@ -15,7 +15,7 @@ class TestOptimizeTerminator(unittest.TestCase):
         result = optimize_terminator(block)
         self.assertEqual(result, False)
         self.assertTrue(block.terminator is terminator)
-        terminator.get_optimal_equivalent.assert_called_with(terminator)
+        terminator.get_optimal_equivalent.assert_called_with()
 
     def test_optimizable(self):
         block = mock.MagicMock('block')
@@ -27,4 +27,4 @@ class TestOptimizeTerminator(unittest.TestCase):
         result = optimize_terminator(block)
         self.assertEqual(result, True)
         self.assertTrue(block.terminator is new_terminator)
-        terminator.get_optimal_equivalent.assert_called_with(terminator)
+        terminator.get_optimal_equivalent.assert_called_with()
