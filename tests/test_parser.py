@@ -241,6 +241,22 @@ class TestParser(LanguageTestCase):
             ("SymbolNameExpr", ('baz',), []),
         )
 
+    def test_boolean_literal_expression(self):
+        self.assertExprParseTree(
+            "true",
+            ("LiteralExpr", (True,), []),
+        )
+        self.assertExprParseTree(
+            "false",
+            ("LiteralExpr", (False,), []),
+        )
+
+    def test_null_literal_expression(self):
+        self.assertExprParseTree(
+            "null",
+            ("LiteralExpr", (None,), []),
+        )
+
     def test_paren_expression(self):
         # Parentheses just affect precedence during parsing... they
         # don't actually show up explicitly as nodes in the parse tree.

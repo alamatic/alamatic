@@ -304,6 +304,12 @@ def p_expr_factor(state, scanner):
 
     ret_expr = None
 
+    ident_literals = {
+        "true": True,
+        "false": False,
+        "null": None,
+    }
+
     if scanner.next_is_punct("("):
         scanner.read()
         ret_expr = p_expression(state, scanner)
@@ -317,7 +323,10 @@ def p_expr_factor(state, scanner):
             ret_expr = p_expr_string(state, scanner)
         elif peek[0] == "IDENT":
             scanner.read()
-            ret_expr = SymbolNameExpr(pos, peek[1])
+            if peek[1] in ident_literals:
+                ret_expr = LiteralExpr(pos, ident_literals[peek[1]])
+            else:
+                ret_expr = SymbolNameExpr(pos, peek[1])
         else:
             raise CompilerError(
                 "Expected expression but found ",
