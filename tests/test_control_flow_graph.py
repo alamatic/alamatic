@@ -449,3 +449,53 @@ class TestControlFlowGraph(LanguageTestCase):
             [closest_loops[block] for block in dummy_blocks],
             [root_loop, child_loop, child_loop, root_loop, None],
         )
+
+    def test_change_block_terminator(self):
+        graph = ControlFlowGraph([])
+        blocks = list(graph.blocks)
+
+        # First assert what we expect our *initial* state to be,
+        # so we can verify that it changed in the way we expect.
+        self.assertEqual(len(blocks), 3)
+
+        entry_block = blocks[0]
+        body_block = blocks[1]
+        exit_block = blocks[2]
+
+        self.assertFalse(entry_block is exit_block)
+        self.assertEqual(
+            entry_block.successors,
+            set([body_block]),
+        )
+        self.assertEqual(
+            body_block.successors,
+            set([exit_block]),
+        )
+        self.assertEqual(
+            exit_block.successors,
+            set([]),
+        )
+        self.assertEqual(
+            body_block.predecessors,
+            set([entry_block]),
+        )
+        self.assertEqual(
+            body_block.dominators,
+            set([entry_block, body_block]),
+        )
+
+        # Change the entry block's terminator such that it
+        # is effectively disconnected from the rest of the graph.
+        entry_block.terminator = IsolateInstruction()
+        self.assertEqual(
+            entry_block.successors,
+            set([]),
+        )
+        self.assertEqual(
+            entry_block.predecessors,
+            set([]),
+        )
+        self.assertEqual(
+            entry_block.dominators,
+            set([entry_block]),
+        )

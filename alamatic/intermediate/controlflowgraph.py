@@ -56,6 +56,11 @@ class BasicBlock(object):
         # update the predecessor map and the dominator map inside the CFG.
         return self._terminator
 
+    @terminator.setter
+    def terminator(self, value):
+        self._terminator = value
+        self._cfg._notify_block_new_terminator(self, value)
+
     @property
     def next_block(self):
         return self._next_block
@@ -168,8 +173,39 @@ class ControlFlowGraph(object):
         self._exit_block = exit_block
         self._blocks_by_label = blocks_by_label
 
-        # After this point we're initialized enough that we can call
-        # into the 'blocks' property to traverse a flattened block graph.
+        # Once we get here it's safe for us to call into the 'blocks'
+        # property to traverse a flattened block graph.
+        self._update_summary_structures()
+
+    @property
+    def entry_block(self):
+        return self._entry_block
+
+    @property
+    def exit_block(self):
+        return self._exit_block
+
+    @property
+    def blocks(self):
+        """
+        Iterable providing a linear traversal of this graph's blocks.
+
+        Guarantees that chains of "fall through" blocks will be
+        returned together and jumps will be returned in a deterministic
+        fashion based on the order in which the blocks were instantiated
+        into the graph. Unreachable blocks will not be included.
+        """
+        for block in _flatten_block_graph(self.entry_block):
+            yield block
+
+    @property
+    def root_loops(self):
+        return frozenset(self._root_loops)
+
+    def get_block_by_label(self, label):
+        return self._blocks_by_label[label]
+
+    def _update_summary_structures(self):
         # We'll traverse this set of blocks a few times here, so we'll
         # cache the result to avoid repeating this graph traversal since
         # we know we're not going to reshape the graph during this process.
@@ -208,34 +244,6 @@ class ControlFlowGraph(object):
         # support loop unrolling, but we can't do that until we support
         # partial updates of the loop information.
 
-    @property
-    def entry_block(self):
-        return self._entry_block
-
-    @property
-    def exit_block(self):
-        return self._exit_block
-
-    @property
-    def blocks(self):
-        """
-        Iterable providing a linear traversal of this graph's blocks.
-
-        Guarantees that chains of "fall through" blocks will be
-        returned together and jumps will be returned in a deterministic
-        fashion based on the order in which the blocks were instantiated
-        into the graph. Unreachable blocks will not be included.
-        """
-        for block in _flatten_block_graph(self.entry_block):
-            yield block
-
-    @property
-    def root_loops(self):
-        return frozenset(self._root_loops)
-
-    def get_block_by_label(self, label):
-        return self._blocks_by_label[label]
-
     def _get_predecessors_for_block(self, block):
         return frozenset(self._block_predecessors[block])
 
@@ -255,6 +263,14 @@ class ControlFlowGraph(object):
         # largely meaningless) ordering of them when needed.
         self.last_block_sequence_id += 1
         return self.last_block_sequence_id
+
+    def _notify_block_new_terminator(self, block, terminator):
+        # Called from inside BasicBlock whenever a block's terminator
+        # is assigned, so we can update our summary data structures.
+        # For the moment we just take the easy (but inefficient) way out
+        # and recompute *all* of the data structures in this case.
+        # Later it would be better to do a partial update.
+        self._update_summary_structures()
 
 
 def _simplify_temporaries_in_element_list(input_elems):
