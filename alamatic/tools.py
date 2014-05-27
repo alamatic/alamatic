@@ -8,6 +8,7 @@ def alac():
     from alamatic.parser import parse_module
     from alamatic.compiler import CompileState
     from alamatic.compilelogging import TerminalCompileLogHandler
+    from alamatic.preprocessor import preprocess_cfg
     fn = sys.argv[1]
     state = CompileState(log_handler=TerminalCompileLogHandler(
         sys.stderr,
@@ -25,3 +26,21 @@ def alac():
 
     unit = module.get_intermediate_form()
     graph = unit.graph
+
+    preprocess_cfg(graph)
+
+    print_graph(graph)
+
+
+def print_graph(graph):
+    print "\n"
+    for block in graph.blocks:
+        label = block.label
+        instructions = block.operation_instructions
+        terminator = block.terminator
+
+        if label:
+            print "%r:" % label
+        for instruction in instructions:
+            print "    %r" % instruction
+        print "    %r\n" % terminator
