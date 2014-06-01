@@ -6,57 +6,61 @@ from alamatic.types import *
 
 class TestTypes(unittest.TestCase):
 
-    def testTypeConstructorSingletons(self):
+    def testTypeConstructorNoArgs(self):
         cons = TypeConstructor()
-        type_1 = cons(1)
-        type_2 = cons(2)
-        type_1_again = cons(1)
+        new_type = cons()
 
-        self.assertTrue(
-            type_1 is type_1_again
-        )
-        self.assertTrue(
-            type_1 is not type_2
+        self.assertEqual(
+            new_type.cons,
+            cons,
         )
 
-    def testTypeUnifyCallbacks(self):
+    def testSimpleUnifyKnownUnknown(self):
         cons = TypeConstructor()
-        type_1 = cons(1)
-        type_2 = cons(2)
+        bound_type = cons()
+
+        var_1 = TypeVariable()
+        var_2 = TypeVariable()
+
+        var_1.type = bound_type
+
+        unified_var = unified_type_variable(var_1, var_2)
 
         self.assertTrue(
-            type_1 is not type_2
+            unified_var.type is bound_type
         )
 
-        callback = mock.Mock()
+    def testNestedUnifyKnownUnknown(self):
+        collection_cons = TypeConstructor()
+        simple_cons = TypeConstructor()
 
-        type_1.on_unify(callback)
-        type_1._notify_unify(type_2)
+        inner_type = simple_cons()
 
-        callback.assert_called_with(type_2)
+        inner_var_1 = TypeVariable()
+        inner_var_2 = TypeVariable()
 
-    # FIXME: There's currently a recursion bug in here.
-    @unittest.expectedFailure
-    def testRecursiveUnify(self):
-        nullary_cons_1 = TypeConstructor()
-        nullary_cons_2 = TypeConstructor()
-        nullary_cons_3 = TypeConstructor()
-        binary_cons = TypeConstructor()
-        inner_1 = nullary_cons_1()
-        inner_2 = nullary_cons_2()
-        inner_3 = nullary_cons_3()
+        collection_type_1 = collection_cons(inner_var_1)
+        collection_type_2 = collection_cons(inner_var_2)
 
-        outer_1 = binary_cons(inner_1, inner_3)
-        outer_2 = binary_cons(inner_2, inner_3)
-        outer_3 = binary_cons(inner_3, inner_3)
+        inner_var_1.type = inner_type
 
-        callback = mock.Mock()
+        outer_var_1 = TypeVariable()
+        outer_var_2 = TypeVariable()
 
-        outer_1.on_unify(callback)
-        inner_1._notify_unify(inner_2)
+        outer_var_1.type = collection_type_1
+        outer_var_2.type = collection_type_2
 
-        callback.assert_called_with(outer_2)
+        unified_var = unified_type_variable(outer_var_1, outer_var_2)
 
-        inner_2._notify_unify(inner_3)
-
-        callback.assert_called_with(outer_3)
+        self.assertEqual(
+            unified_var.type.cons,
+            collection_cons,
+        )
+        self.assertEqual(
+            len(unified_var.type.args),
+            1,
+        )
+        self.assertEqual(
+            unified_var.type.args[0].type,
+            inner_type,
+        )
