@@ -187,6 +187,7 @@ class Scanner(plex.Scanner):
         # Last token position starts of referring to the beginning of the
         # file, so we'll still get a sensible result if we never read any
         # tokens.
+        self._last_token_start_position = (name, 1, 0)
         self._last_token_end_position = (name, 1, 0)
 
     def read(self):
@@ -197,6 +198,11 @@ class Scanner(plex.Scanner):
         # We ignore NEWLINE, INDENT and OUTDENT tokens though, since they
         # are synthetic and thus don't have real bounds to report.
         if result[0] not in ('NEWLINE', 'INDENT', 'OUTDENT'):
+            self._last_token_start_position = (
+                start_position[0],
+                start_position[1],
+                start_position[2],
+            )
             self._last_token_end_position = (
                 start_position[0],
                 start_position[1],
@@ -240,15 +246,45 @@ class Scanner(plex.Scanner):
     @property
     def last_token_end_location(self):
         position = self._last_token_end_position
-        if position is not None:
-            return SourceLocation(
-                position[0],
-                position[1],
-                position[2],
-            )
-        else:
-            # No token has been read yet, presumably.
-            return None
+        return SourceLocation(
+            position[0],
+            position[1],
+            position[2],
+        )
+
+    @property
+    def last_token_range(self):
+        start_position = self._last_token_start_position
+        end_position = self._last_token_end_position
+        return SourceRange(
+            SourceLocation(
+                filename=start_position[0],
+                line=start_position[1],
+                column=start_position[2],
+            ),
+            SourceLocation(
+                filename=end_position[0],
+                line=end_position[1],
+                column=end_position[2],
+            ),
+        )
+
+    @property
+    def next_token_range(self):
+        token = self.peek()
+        start_position = plex.Scanner.position(self)
+        return SourceRange(
+            SourceLocation(
+                filename=start_position[0],
+                line=start_position[1],
+                column=start_position[2],
+            ),
+            SourceLocation(
+                filename=start_position[0],
+                line=start_position[1],
+                column=start_position[2] + len(token[1]),
+            ),
+        )
 
     def begin_range(self):
         return SourceRangeBuilder(self)

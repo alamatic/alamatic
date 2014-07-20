@@ -653,12 +653,28 @@ class TestScanner(unittest.TestCase):
         state = CompileState()
         scanner = Scanner(state, stream, name="a")
 
+        self.assertEqual(
+            scanner.last_token_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 0),
+            )
+        )
+
         empty_range = scanner.begin_range().end()
         self.assertEqual(
             empty_range,
             SourceRange(
                 SourceLocation("a", 1, 0),
                 SourceLocation("a", 1, 0),
+            )
+        )
+
+        self.assertEqual(
+            scanner.next_token_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
             )
         )
 
@@ -684,6 +700,21 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             token,
             ('IDENT', 'a'),
+        )
+
+        self.assertEqual(
+            scanner.last_token_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
+            )
+        )
+        self.assertEqual(
+            scanner.next_token_range,
+            SourceRange(
+                SourceLocation("a", 1, 2),
+                SourceLocation("a", 1, 6),
+            )
         )
 
         a_range = a_range_builder.end()
