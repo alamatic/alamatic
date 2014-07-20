@@ -27,17 +27,36 @@ class LogLine(object):
 
 class pos_link(object):
     def __init__(self, position, text=None):
+        from alamatic.scanner import SourceLocation, SourceRange
+
+        if isinstance(position, tuple):
+            # Upgrade legacy tuple-based position to real location object.
+            position = SourceLocation(
+                filename=position[0],
+                line=position[1],
+                column=position[2],
+            )
+        elif isinstance(position, SourceRange):
+            # Lower a source range into its start position.
+            position = position.start
+        elif position is not None and not isinstance(position, SourceLocation):
+            raise Exception(
+                "Position is defined but it's a %s when it should "
+                "be a SourceLocation, SourceRange, or tuple" % (
+                    type(position)
+                )
+            )
+
         self.position = position
         if text is not None:
             self.text = text
         else:
             if position is not None:
-                if type(position) is not tuple:
-                    raise Exception(
-                        "Position is defined but it's a %s when it should "
-                        "be a tuple" % type(position)
-                    )
-                self.text = "%s:%s,%s" % position
+                self.text = "%s:%s,%s" % (
+                    position.filename,
+                    position.line,
+                    position.column,
+                )
             else:
                 self.text = "unknown position"
 
@@ -46,15 +65,15 @@ class pos_link(object):
 
     @property
     def filename(self):
-        return self.position[0]
+        return self.position.filename
 
     @property
     def line(self):
-        return self.position[1]
+        return self.position.line
 
     @property
     def column(self):
-        return self.position[2]
+        return self.position.column
 
 
 class CompilerError(Exception):

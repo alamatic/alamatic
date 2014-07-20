@@ -17,10 +17,10 @@ class Instruction(Element):
 
 class OperationInstruction(Instruction):
 
-    def __init__(self, target, operation, position=None):
+    def __init__(self, target, operation, source_range=None):
         self.target = target
         self.operation = operation
-        self.position = position
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -38,9 +38,9 @@ class OperationInstruction(Instruction):
 
 
 class JumpInstruction(Instruction):
-    def __init__(self, label, position=None):
+    def __init__(self, label, source_range=None):
         self.label = label
-        self.position = position
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -68,10 +68,10 @@ class JumpInstruction(Instruction):
 
 
 class JumpIfFalseInstruction(JumpInstruction):
-    def __init__(self, cond, label, position=None):
+    def __init__(self, cond, label, source_range=None):
         self.cond = cond
         self.label = label
-        self.position = position
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -93,7 +93,7 @@ class JumpIfFalseInstruction(JumpInstruction):
         elif value is False:
             return JumpInstruction(
                 label=self.label,
-                position=self.position,
+                source_range=self.source_range,
             )
         return self
 

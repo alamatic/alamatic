@@ -12,8 +12,8 @@ class Statement(AstNode):
 
 class ExpressionStmt(Statement):
 
-    def __init__(self, position, expr):
-        self.position = position
+    def __init__(self, source_range, expr):
+        self.source_range = source_range
         self.expr = expr
 
     @property
@@ -28,7 +28,7 @@ class ExpressionStmt(Statement):
         if not self.expr.can_be_statement:
             raise CompilerError(
                 "Expression cannot be statement at ",
-                pos_link(self.expr.position),
+                pos_link(self.expr.source_range),
             )
 
         self.expr.make_intermediate_form(
@@ -57,7 +57,7 @@ class LoopJumpStmt(Statement):
             elems.append(
                 JumpInstruction(
                     label,
-                    position=self.position,
+                    source_range=self.source_range,
                 ),
             )
         else:
@@ -65,7 +65,7 @@ class LoopJumpStmt(Statement):
                 "Attempted to '%s' outside of a loop at " % (
                     self.jump_type_name
                 ),
-                self.pos_link(self.position),
+                self.pos_link(self.source_range),
             )
 
 
@@ -91,8 +91,8 @@ class ContinueStmt(LoopJumpStmt):
 
 class ReturnStmt(Statement):
 
-    def __init__(self, position, expr=None):
-        self.position = position
+    def __init__(self, source_range, expr=None):
+        self.source_range = source_range
         self.expr = expr
 
     @property
@@ -103,8 +103,8 @@ class ReturnStmt(Statement):
 
 class IfStmt(Statement):
 
-    def __init__(self, position, clauses):
-        self.position = position
+    def __init__(self, source_range, clauses):
+        self.source_range = source_range
         self.clauses = clauses
 
     @property
@@ -119,17 +119,17 @@ class IfStmt(Statement):
             JumpIfFalseInstruction,
         )
 
-        # FIXME: It would be better to use the position of the
+        # FIXME: It would be better to use the source_range of the
         # end of the statement, but the parser doesn't currently
         # preserve that information.
-        end_label = Label(position=self.position)
+        end_label = Label(source_range=self.source_range)
 
         for clause in self.clauses:
             if isinstance(clause, IfClause):
-                # FIXME: It would be better to use the position of the
+                # FIXME: It would be better to use the source_range of the
                 # end of the clause, but the parser doesn't currently
                 # preserve that information.
-                skip_label = Label(position=clause.position)
+                skip_label = Label(source_range=clause.source_range)
                 test_operand = clause.test_expr.make_intermediate_form(
                     elems, symbols,
                 )
@@ -137,7 +137,7 @@ class IfStmt(Statement):
                     JumpIfFalseInstruction(
                         test_operand,
                         skip_label,
-                        position=clause.position,
+                        source_range=clause.source_range,
                     )
                 )
                 clause.block.make_intermediate_form(
@@ -146,7 +146,7 @@ class IfStmt(Statement):
                 elems.append(
                     JumpInstruction(
                         end_label,
-                        position=skip_label.position,
+                        source_range=skip_label.source_range,
                     ),
                 )
                 elems.append(
@@ -164,8 +164,8 @@ class IfStmt(Statement):
 
 class IfClause(AstNode):
 
-    def __init__(self, position, test_expr, block):
-        self.position = position
+    def __init__(self, source_range, test_expr, block):
+        self.source_range = source_range
         self.test_expr = test_expr
         self.block = block
 
@@ -177,8 +177,8 @@ class IfClause(AstNode):
 
 class ElseClause(AstNode):
 
-    def __init__(self, position, block):
-        self.position = position
+    def __init__(self, source_range, block):
+        self.source_range = source_range
         self.block = block
 
     @property
@@ -188,8 +188,8 @@ class ElseClause(AstNode):
 
 class WhileStmt(Statement):
 
-    def __init__(self, position, test_expr, block):
-        self.position = position
+    def __init__(self, source_range, test_expr, block):
+        self.source_range = source_range
         self.test_expr = test_expr
         self.block = block
 
@@ -205,11 +205,11 @@ class WhileStmt(Statement):
             JumpIfFalseInstruction,
         )
 
-        head_label = Label(position=self.position)
-        # FIXME: It'd be nicer to report the position of the
+        head_label = Label(source_range=self.source_range)
+        # FIXME: It'd be nicer to report the source_range of the
         # *end* of the loop here but the parser doesn't currently preserve
         # that information.
-        end_label = Label(position=self.position)
+        end_label = Label(source_range=self.source_range)
 
         elems.append(head_label)
 
@@ -221,7 +221,7 @@ class WhileStmt(Statement):
             JumpIfFalseInstruction(
                 test_operand,
                 end_label,
-                self.test_expr.position,
+                self.test_expr.source_range,
             )
         )
 
@@ -234,7 +234,7 @@ class WhileStmt(Statement):
         elems.append(
             JumpInstruction(
                 head_label,
-                position=end_label.position,
+                source_range=end_label.source_range,
             )
         )
         elems.append(end_label)
@@ -242,9 +242,9 @@ class WhileStmt(Statement):
 
 class ForStmt(Statement):
 
-    def __init__(self, position, target, source_expr, block):
+    def __init__(self, source_range, target, source_expr, block):
         # target is either a variable declaration or an lvalue expression
-        self.position = position
+        self.source_range = source_range
         self.target = target
         self.source_expr = source_expr
         self.block = block
@@ -258,8 +258,8 @@ class ForStmt(Statement):
 
 class DataDeclStmt(Statement):
 
-    def __init__(self, position, decl, expr):
-        self.position = position
+    def __init__(self, source_range, decl, expr):
+        self.source_range = source_range
         self.decl = decl
         self.expr = expr
 
@@ -287,7 +287,7 @@ class DataDeclStmt(Statement):
             if const:
                 raise NotConstantError(
                     "Constant '%s'," % self.decl.name,
-                    " declared at ", pos_link(self.position),
+                    " declared at ", pos_link(self.source_range),
                     ", must be assigned an initial value",
                 )
             else:
@@ -295,7 +295,7 @@ class DataDeclStmt(Statement):
                 symbols.declare(
                     self.decl.name,
                     const=False,
-                    position=self.position,
+                    source_range=self.source_range,
                 )
         else:
             # We do a two-stage declaration here because we can't
@@ -304,11 +304,11 @@ class DataDeclStmt(Statement):
             symbol = symbols.begin_declare(
                 self.decl.name,
                 const=const,
-                position=self.position,
+                source_range=self.source_range,
             )
             assign_target = SymbolOperand(
                 symbol,
-                position=self.decl.position,
+                source_range=self.decl.source_range,
             )
             initializer = self.expr.make_intermediate_form(
                 elems, symbols,
@@ -319,7 +319,7 @@ class DataDeclStmt(Statement):
                     CopyOperation(
                         initializer,
                     ),
-                    position=self.position,
+                    source_range=self.source_range,
                 )
             )
             symbols.complete_declare(symbol)
@@ -327,8 +327,8 @@ class DataDeclStmt(Statement):
 
 class FuncDeclStmt(Statement):
 
-    def __init__(self, position, decl, block):
-        self.position = position
+    def __init__(self, source_range, decl, block):
+        self.source_range = source_range
         self.decl = decl
         self.block = block
 
@@ -355,7 +355,7 @@ class FuncDeclStmt(Statement):
         symbol = symbols.declare(
             self.decl.name,
             const=True,  # function templates are always constant
-            position=self.position,
+            source_range=self.source_range,
         )
         elems.append(
             OperationInstruction(
@@ -365,6 +365,6 @@ class FuncDeclStmt(Statement):
                         template_value,
                     )
                 ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )

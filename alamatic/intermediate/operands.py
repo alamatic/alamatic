@@ -1,9 +1,9 @@
 
 class Operand(object):
-    position = None
+    source_range = None
 
-    def __init__(self, position=None):
-        self.position = position
+    def __init__(self, source_range=None):
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -12,7 +12,7 @@ class Operand(object):
     def __str__(self):
         return type(self).__name__ + "(" + (', '.join(
             (str(x) for x in self.params)
-        )) + " : " + repr(self.position) + ")"
+        )) + " : " + repr(self.source_range) + ")"
 
     def __repr__(self):
         return "<alamatic.intermediate.%s>" % self.__str__()
@@ -30,9 +30,9 @@ class Operand(object):
 
 class ConstantOperand(Operand):
     # rvalue only
-    def __init__(self, value, position=None):
+    def __init__(self, value, source_range=None):
         self.value = value
-        self.position = position
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -48,9 +48,9 @@ class ConstantOperand(Operand):
 
 class SymbolOperand(Operand):
     # both lvalue and rvalue
-    def __init__(self, symbol, position=None):
+    def __init__(self, symbol, source_range=None):
         self.symbol = symbol
-        self.position = position
+        self.source_range = source_range
 
     @property
     def params(self):
@@ -62,22 +62,22 @@ class SymbolOperand(Operand):
 
 class IndexOperand(Operand):
     # lvalue only
-    def __init__(self, source, index, position=None):
+    def __init__(self, source, index, source_range=None):
         self.source = source
         self.index = index
-        self.position = position
+        self.source_range = source_range
 
 
 class AttributeOperand(Operand):
     # lvalue only
-    def __init__(self, source, name, position=None):
+    def __init__(self, source, name, source_range=None):
         self.source = source
         self.name = name
-        self.position = position
+        self.source_range = source_range
 
 
 class DereferenceOperand(Operand):
     # lvalue only
-    def __init__(self, source, position=None):
+    def __init__(self, source, source_range=None):
         self.source = source
-        self.position = position
+        self.source_range = source_range

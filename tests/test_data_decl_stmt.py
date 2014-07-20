@@ -93,7 +93,7 @@ class TestIntermediate(LanguageTestCase):
             symbol.const,
         )
         self.assertEqual(
-            symbol.decl_position,
+            symbol.decl_source_range,
             ('datadecl.ala', 1, 0),
         )
 
@@ -138,7 +138,7 @@ class TestIntermediate(LanguageTestCase):
             symbol.const,
         )
         self.assertEqual(
-            symbol.decl_position,
+            symbol.decl_source_range,
             ('datadecl.ala', 1, 0),
         )
 
@@ -169,7 +169,7 @@ class TestIntermediate(LanguageTestCase):
             symbol.const,
         )
         self.assertEqual(
-            symbol.decl_position,
+            symbol.decl_source_range,
             ('datadecl.ala', 1, 0),
         )
 

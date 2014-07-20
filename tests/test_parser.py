@@ -62,6 +62,7 @@ class TestParser(LanguageTestCase):
     )
 
     def test_basics(self):
+        from alamatic.scanner import SourceRange, SourceLocation
 
         # Empty module
         state = CompileState()
@@ -72,7 +73,13 @@ class TestParser(LanguageTestCase):
             "foo.ala",
         )
         self.assertEqual(module.name, "foo")
-        self.assertEqual(module.position, ("foo.ala", 1, 0))
+        self.assertEqual(
+            module.source_range,
+            SourceRange(
+                SourceLocation("foo.ala", 1, 0),
+                SourceLocation("foo.ala", 1, 0),
+            )
+        )
         self.assertEqual(module.block.stmts, [])
 
         # Module with two simple statements

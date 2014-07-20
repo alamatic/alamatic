@@ -4,18 +4,18 @@ class Symbol(object):
     def __init__(
         self,
         decl_table,
-        decl_position=None,
+        decl_source_range=None,
     ):
         self.decl_table = decl_table
-        self.decl_position = decl_position
+        self.decl_source_range = decl_source_range
         self.type = None
-        self.init_position = None
+        self.init_source_range = None
 
-    def make_operand(self, position=None):
+    def make_operand(self, source_range=None):
         from alamatic.intermediate.operands import SymbolOperand
         return SymbolOperand(
             self,
-            position=position,
+            source_range=source_range,
         )
 
     @property
@@ -36,19 +36,19 @@ class NamedSymbol(Symbol):
         decl_table,
         decl_name,
         const=False,
-        decl_position=None
+        decl_source_range=None
     ):
         super(NamedSymbol, self).__init__(
-            decl_table, decl_position=decl_position,
+            decl_table, decl_source_range=decl_source_range,
         )
         self.decl_name = decl_name
         self.const = const
 
-    def initialize(self, type_, const=False, position=None):
+    def initialize(self, type_, const=False, source_range=None):
         if self.type is None:
             self.type = type_
             self.const = const
-            self.init_position = position
+            self.init_source_range = source_range
         else:
             # Should never happen
             raise Exception(
@@ -70,7 +70,7 @@ class NamedSymbol(Symbol):
     def __str__(self):
         return '%s from %r' % (
             self.decl_name,
-            self.decl_position,
+            self.decl_source_range,
         )
 
 
@@ -82,7 +82,7 @@ class TemporarySymbol(Symbol):
         index=None,
     ):
         super(TemporarySymbol, self).__init__(
-            decl_table, decl_position=None,
+            decl_table, decl_source_range=None,
         )
         self.index = index
 

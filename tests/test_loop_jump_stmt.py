@@ -27,9 +27,9 @@ class TestIntermediate(LanguageTestCase):
 
     def test_break(self):
         symbols = SymbolTable()
-        symbols.break_label = Label(position=('label', 1, 0))
+        symbols.break_label = Label(source_range=('label', 1, 0))
         symbols.break_label._test_index = 4
-        stmt = BreakStmt(position=('break', 1, 0))
+        stmt = BreakStmt(source_range=('break', 1, 0))
         elems = []
         stmt.make_intermediate_form(elems, symbols)
         self.assertEqual(
@@ -47,9 +47,9 @@ class TestIntermediate(LanguageTestCase):
 
     def test_continue(self):
         symbols = SymbolTable()
-        symbols.continue_label = Label(position=('label', 1, 0))
+        symbols.continue_label = Label(source_range=('label', 1, 0))
         symbols.continue_label._test_index = 5
-        stmt = ContinueStmt(position=('continue', 1, 0))
+        stmt = ContinueStmt(source_range=('continue', 1, 0))
         elems = []
         stmt.make_intermediate_form(elems, symbols)
         self.assertEqual(
@@ -80,7 +80,7 @@ class TestIntermediate(LanguageTestCase):
                 return 'dummy'
 
         symbols = SymbolTable()
-        stmt = Dummy(position=('dummy', 2, 3))
+        stmt = Dummy(source_range=('dummy', 2, 3))
         elems = []
 
         self.assertRaises(

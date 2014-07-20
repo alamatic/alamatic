@@ -437,7 +437,7 @@ def testcase_assertErrorsInStmts(testcase, inp, positions):
     for line in in_memory_log_handler.lines:
         if line.level == ERROR:
             for position in line.positions_mentioned:
-                got_positions.append((position[1], position[2]))
+                got_positions.append((position.line, position.column))
 
     testcase.assertEqual(got_positions, positions)
 testcase_assertErrorsInStmts.__name__ = "assertErrorsInStmts"
@@ -473,7 +473,7 @@ def testcase_assertErrorsInExpr(self, inp, positions, allow_assign=False):
     for line in in_memory_log_handler.lines:
         if line.level == ERROR:
             for position in line.positions_mentioned:
-                got_positions.append((position[1], position[2]))
+                got_positions.append((position.line, position.column))
 
     self.assertEqual(got_positions, positions)
 testcase_assertErrorsInExpr.__name__ = "assertErrorsInExpr"

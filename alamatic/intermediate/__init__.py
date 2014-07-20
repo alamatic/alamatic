@@ -26,7 +26,7 @@ class SymbolTable(object):
         self._break_label = None
         self._continue_label = None
 
-    def lookup(self, name, position=None):
+    def lookup(self, name, source_range=None):
         current = self
         while current is not None:
             try:
@@ -35,7 +35,7 @@ class SymbolTable(object):
                 current = current.parent
         raise UnknownSymbolError(
             "Unknown symbol '%s' at " % name,
-            pos_link(position),
+            pos_link(source_range),
         )
 
     @property
@@ -74,13 +74,15 @@ class SymbolTable(object):
     def continue_label(self, value):
         self._continue_label = value
 
-    def declare(self, name, const=False, position=None):
-        symbol = self.begin_declare(name, const=const, position=position)
+    def declare(self, name, const=False, source_range=None):
+        symbol = self.begin_declare(
+            name, const=const, source_range=source_range
+        )
         self.complete_declare(symbol)
         return symbol
 
-    def begin_declare(self, name, const=False, position=None):
-        return NamedSymbol(self, name, const, position)
+    def begin_declare(self, name, const=False, source_range=None):
+        return NamedSymbol(self, name, const, source_range)
 
     def complete_declare(self, symbol):
         if isinstance(symbol, NamedSymbol):

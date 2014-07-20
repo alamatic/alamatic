@@ -72,6 +72,6 @@ class TestIntermediate(LanguageTestCase):
             symbol.const,
         )
         self.assertEqual(
-            symbol.decl_position,
+            symbol.decl_source_range,
             ('funcdecl.ala', 1, 0),
         )

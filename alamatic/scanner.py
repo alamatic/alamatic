@@ -213,6 +213,18 @@ class Scanner(plex.Scanner):
             self.peek()
         return plex.Scanner.position(self)
 
+    @property
+    def location(self):
+        position = self.position()
+        return SourceLocation(
+            position[0],
+            position[1],
+            position[2],
+        )
+
+    def begin_range(self):
+        return SourceRangeBuilder(self)
+
     def next_is_punct(self, symbol):
         token = self.peek()
         return (token[0] == symbol and token[1] == symbol)
@@ -353,6 +365,62 @@ class Scanner(plex.Scanner):
             return "documentation comment"
         else:
             return token[1]
+
+
+class SourceLocation(object):
+
+    def __init__(self, filename, line, column):
+        self.filename = filename
+        self.line = line
+        self.column = column
+
+    def __eq__(self, other):
+        if isinstance(other, tuple):
+            other = SourceLocation(*other)
+        return (
+            self.filename == other.filename
+            and self.line == other.line
+            and self.column == other.column
+        )
+
+    def __str__(self):
+        return "%s:%r,%r" % (
+            self.filename,
+            self.line,
+            self.column,
+        )
+
+    def __repr__(self):
+        return "SourceLocation<%s>" % self
+
+
+class SourceRange(object):
+
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end
+
+    def __str__(self):
+        return "%s to %s" % (self.start, self.end)
+
+    def __repr__(self):
+        return "SourceRange<%s>" % self
+
+
+class SourceRangeBuilder(object):
+
+    def __init__(self, scanner):
+        self.scanner = scanner
+        self.start = scanner.location
+
+    def end(self):
+        return SourceRange(
+            self.start,
+            self.scanner.location,
+        )
 
 
 class IndentationError(CompilerError):

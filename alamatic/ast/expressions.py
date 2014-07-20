@@ -14,14 +14,14 @@ class Expression(AstNode):
     def get_lvalue_operand(self, elems, symbols):
         from alamatic.intermediate import InvalidLValueError
         raise InvalidLValueError(
-            "Expression at ", pos_link(self.position), " is not assignable"
+            "Expression at ", pos_link(self.source_range), " is not assignable"
         )
 
 
 class SymbolNameExpr(Expression):
 
-    def __init__(self, position, name):
-        self.position = position
+    def __init__(self, source_range, name):
+        self.source_range = source_range
         self.name = name
 
     @property
@@ -35,19 +35,19 @@ class SymbolNameExpr(Expression):
             SymbolOperand,
         )
         target = symbols.create_temporary().make_operand(
-            position=self.position,
+            source_range=self.source_range,
         )
-        symbol = symbols.lookup(self.name, position=self.position)
+        symbol = symbols.lookup(self.name, source_range=self.source_range)
         elems.append(
             OperationInstruction(
                 target,
                 CopyOperation(
                     SymbolOperand(
                         symbol,
-                        position=self.position,
+                        source_range=self.source_range,
                     ),
                 ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )
         return target
@@ -56,15 +56,15 @@ class SymbolNameExpr(Expression):
         from alamatic.intermediate import (
             SymbolOperand,
         )
-        return symbols.lookup(self.name, self.position).make_operand(
-            position=self.position,
+        return symbols.lookup(self.name, self.source_range).make_operand(
+            source_range=self.source_range,
         )
 
 
 class LiteralExpr(Expression):
 
-    def __init__(self, position, value):
-        self.position = position
+    def __init__(self, source_range, value):
+        self.source_range = source_range
         self.value = value
 
     @property
@@ -81,7 +81,7 @@ class LiteralExpr(Expression):
         value = self.value
 
         target = symbols.create_temporary().make_operand(
-            position=self.position,
+            source_range=self.source_range,
         )
 
         elems.append(
@@ -90,10 +90,10 @@ class LiteralExpr(Expression):
                 CopyOperation(
                     ConstantOperand(
                         value,
-                        position=self.position,
+                        source_range=self.source_range,
                     ),
                 ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )
         return target
@@ -101,8 +101,8 @@ class LiteralExpr(Expression):
 
 class BinaryOpExpr(Expression):
 
-    def __init__(self, position, lhs, op, rhs):
-        self.position = position
+    def __init__(self, source_range, lhs, op, rhs):
+        self.source_range = source_range
         self.lhs = lhs
         self.op = op
         self.rhs = rhs
@@ -122,7 +122,7 @@ class BinaryOpExpr(Expression):
             BinaryOperation,
         )
         target = symbols.create_temporary().make_operand(
-            position=self.position,
+            source_range=self.source_range,
         )
 
         lhs_operand = self.lhs.make_intermediate_form(elems, symbols)
@@ -137,7 +137,7 @@ class BinaryOpExpr(Expression):
                     operator_name,
                     rhs_operand,
                 ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )
         return target
@@ -145,8 +145,8 @@ class BinaryOpExpr(Expression):
 
 class UnaryOpExpr(Expression):
 
-    def __init__(self, position, operand, op):
-        self.position = position
+    def __init__(self, source_range, operand, op):
+        self.source_range = source_range
         self.operand = operand
         self.op = op
 
@@ -180,7 +180,7 @@ class AssignExpr(BinaryOpExpr):
                 CopyOperation(
                     rhs_operand,
                 ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )
 
@@ -272,8 +272,8 @@ class BitwiseNotExpr(UnaryOpExpr):
 class CallExpr(Expression):
     can_be_statement = True
 
-    def __init__(self, position, callee_expr, args):
-        self.position = position
+    def __init__(self, source_range, callee_expr, args):
+        self.source_range = source_range
         self.callee_expr = callee_expr
         self.args = args
 
@@ -302,7 +302,7 @@ class CallExpr(Expression):
             for k in sorted(self.args.keyword)
         }
         target = symbols.create_temporary().make_operand(
-            position=self.position,
+            source_range=self.source_range,
         )
         elems.append(
             OperationInstruction(
@@ -312,15 +312,15 @@ class CallExpr(Expression):
                     arg_operands,
                     kwarg_operands,
                     ),
-                position=self.position,
+                source_range=self.source_range,
             )
         )
         return target
 
 
 class SubscriptExpr(Expression):
-    def __init__(self, position, target_expr, args):
-        self.position = position
+    def __init__(self, source_range, target_expr, args):
+        self.source_range = source_range
         self.target_expr = target_expr
         self.args = args
 
@@ -331,8 +331,8 @@ class SubscriptExpr(Expression):
 
 
 class AttributeExpr(Expression):
-    def __init__(self, position, target_expr, attr_name):
-        self.position = position
+    def __init__(self, source_range, target_expr, attr_name):
+        self.source_range = source_range
         self.target_expr = target_expr
         self.attr_name = attr_name
 

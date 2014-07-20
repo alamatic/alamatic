@@ -1,10 +1,10 @@
 
 
 class AstNode(object):
-    position = None
+    source_range = None
 
-    def __init__(self, position):
-        self.position = position
+    def __init__(self, source_range):
+        self.source_range = source_range
 
     @property
     def child_nodes(self):
@@ -17,7 +17,7 @@ class AstNode(object):
     def __str__(self):
         return type(self).__name__ + "(" + (','.join(
             (str(x) for x in self.params)
-        )) + " : " + repr(self.position) + ")"
+        )) + " : " + repr(self.source_range) + ")"
 
     def as_tree_rows(self, indent=0):
         yield ("  " * indent) + "- " + str(self)
@@ -116,10 +116,10 @@ class ExpressionList(AstNode):
 
 class Module(AstNode):
 
-    def __init__(self, position, name, block, doc=None):
+    def __init__(self, source_range, name, block, doc=None):
         self.name = name
         self.block = block
-        self.position = position
+        self.source_range = source_range
         self.doc = doc
 
     @property
@@ -182,7 +182,7 @@ class Module(AstNode):
         args_type = RuntimeFunctionArgs.make_args_type([])
 
         function = RuntimeFunction(
-            self.position,
+            self.source_range,
             runtime_block,
             args_type,
             # Modules never return anything.

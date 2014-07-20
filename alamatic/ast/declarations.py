@@ -4,8 +4,8 @@ from alamatic.ast import *
 
 class DataDeclClause(AstNode):
 
-    def __init__(self, position, name):
-        self.position = position
+    def __init__(self, source_range, name):
+        self.source_range = source_range
         self.name = name
 
     @property
@@ -23,8 +23,8 @@ class ConstDeclClause(DataDeclClause):
 
 class FuncDeclClause(AstNode):
 
-    def __init__(self, position, name, param_decls):
-        self.position = position
+    def __init__(self, source_range, name, param_decls):
+        self.source_range = source_range
         self.name = name
         self.param_decls = param_decls
 
@@ -39,8 +39,8 @@ class FuncDeclClause(AstNode):
 
 class ParamDeclClause(AstNode):
 
-    def __init__(self, position, name, type_expr):
-        self.position = position
+    def __init__(self, source_range, name, type_expr):
+        self.source_range = source_range
         self.name = name
         self.type_expr = type_expr
 

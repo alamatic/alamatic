@@ -7,6 +7,8 @@ from alamatic.compilelogging import pos_link, CompilerError
 def parse_module(state, stream, name, filename):
     scanner = Scanner(state, stream, filename)
 
+    full_range = scanner.begin_range()
+
     # doc comments at the immediate start of a module are for the
     # module itself.
     doc = p_doc_comments(state, scanner)
@@ -26,7 +28,7 @@ def parse_module(state, stream, name, filename):
     stmts = p_statements(state, scanner, lambda s: s.next_is_eof())
     block = StatementBlock(stmts)
 
-    return Module((filename, 1, 0), name, block, doc=doc)
+    return Module(full_range.end(), name, block, doc=doc)
 
 
 def parse_expression(state, stream, filename, allow_assign=False):
@@ -125,7 +127,7 @@ def p_arguments(state, scanner, terminator_punct):
 
 
 def p_statement(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     if scanner.next_is_newline():
         # empty statement
@@ -138,29 +140,29 @@ def p_statement(state, scanner):
         if ident == "pass":
             scanner.read()
             scanner.require_newline()
-            return PassStmt(pos)
+            return PassStmt(full_range.end())
         if ident == "break":
             scanner.read()
             scanner.require_newline()
-            return BreakStmt(pos)
+            return BreakStmt(full_range.end())
         if ident == "continue":
             scanner.read()
             scanner.require_newline()
-            return ContinueStmt(pos)
+            return ContinueStmt(full_range.end())
         if ident == "return":
             scanner.read()
             expr = None
             if not scanner.next_is_newline():
                 expr = p_expression(state, scanner)
             scanner.require_newline()
-            return ReturnStmt(pos, expr)
+            return ReturnStmt(full_range.end(), expr)
         if ident == "if":
             return p_if_stmt(state, scanner)
         if ident == "while":
             scanner.read()
             expr = p_expression(state, scanner)
             block = p_indented_block(state, scanner)
-            return WhileStmt(pos, expr, block)
+            return WhileStmt(full_range.end(), expr, block)
         if ident == "for":
             return p_for_stmt(state, scanner)
         if ident == "var" or ident == "const":
@@ -170,50 +172,50 @@ def p_statement(state, scanner):
                 scanner.read()
                 expr = p_expression(state, scanner)
             scanner.require_newline()
-            return DataDeclStmt(pos, decl, expr)
+            return DataDeclStmt(full_range.end(), decl, expr)
         if ident == "func":
             decl = p_func_decl(state, scanner)
             block = p_indented_block(state, scanner)
-            return FuncDeclStmt(pos, decl, block)
+            return FuncDeclStmt(full_range.end(), decl, block)
 
     expr = p_expression(state, scanner, allow_assign=True)
     scanner.require_newline()
     # FIXME: Should fail if an expression statement has no
     # direct side-effects... that is, if it's not a call or an
     # assignment node.
-    return ExpressionStmt(pos, expr)
+    return ExpressionStmt(full_range.end(), expr)
 
 
 def p_if_stmt(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     clauses = []
 
-    if_pos = scanner.position()
+    if_range = scanner.begin_range()
     scanner.require_keyword("if")
     if_expr = p_expression(state, scanner)
     if_block = p_indented_block(state, scanner)
 
-    clauses.append(IfClause(if_pos, if_expr, if_block))
+    clauses.append(IfClause(if_range.end(), if_expr, if_block))
 
     while scanner.next_is_keyword("elif"):
-        elif_pos = scanner.position()
+        elif_range = scanner.begin_range()
         scanner.read()
         elif_expr = p_expression(state, scanner)
         elif_block = p_indented_block(state, scanner)
-        clauses.append(IfClause(elif_pos, elif_expr, elif_block))
+        clauses.append(IfClause(elif_range.end(), elif_expr, elif_block))
 
     if scanner.next_is_keyword("else"):
-        else_pos = scanner.position()
+        else_range = scanner.begin_range()
         scanner.read()
         else_block = p_indented_block(state, scanner)
-        clauses.append(ElseClause(else_pos, else_block))
+        clauses.append(ElseClause(else_range.end(), else_block))
 
-    return IfStmt(pos, clauses)
+    return IfStmt(full_range.end(), clauses)
 
 
 def p_for_stmt(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     scanner.require_keyword("for")
     if scanner.next_is_keyword("var") or scanner.next_is_keyword("const"):
@@ -226,7 +228,7 @@ def p_for_stmt(state, scanner):
 
     block = p_indented_block(state, scanner)
 
-    return ForStmt(pos, target, source_expr, block)
+    return ForStmt(full_range.end(), target, source_expr, block)
 
 
 def p_expression(state, scanner, allow_assign=False):
@@ -244,7 +246,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
     this_parser = None
 
     def this_parser(state, scanner):
-        pos = scanner.position()
+        full_range = scanner.begin_range()
 
         lhs = next_parser(state, scanner)
 
@@ -270,7 +272,7 @@ def make_p_expr_binary_op(name, operator_map, next_parser, allow_chain=True):
         else:
             rhs = next_parser(state, scanner)
 
-        return ast_class(pos, lhs, operator, rhs)
+        return ast_class(full_range.end(), lhs, operator, rhs)
 
     this_parser.__name__ = name
     return this_parser
@@ -280,7 +282,7 @@ def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
     this_parser = None
 
     def this_parser(state, scanner):
-        pos = scanner.position()
+        full_range = scanner.begin_range()
 
         peek = scanner.peek()
         if peek[0] in ("IDENT", peek[1]) and peek[1] in operator_map:
@@ -291,7 +293,7 @@ def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
             # like "not not a". Isn't incredibly useful but it ought to
             # work anyway for consistency.
             operand = this_parser(state, scanner)
-            return ast_class(pos, operand, operator)
+            return ast_class(full_range.end(), operand, operator)
         else:
             return next_parser(state, scanner)
 
@@ -300,7 +302,7 @@ def make_p_expr_prefix_unary_op(name, operator_map, next_parser):
 
 
 def p_expr_factor(state, scanner):
-    pos = scanner.position()
+    source_range = scanner.begin_range()
 
     ret_expr = None
 
@@ -324,14 +326,17 @@ def p_expr_factor(state, scanner):
         elif peek[0] == "IDENT":
             scanner.read()
             if peek[1] in ident_literals:
-                ret_expr = LiteralExpr(pos, ident_literals[peek[1]])
+                ret_expr = LiteralExpr(
+                    source_range.end(),
+                    ident_literals[peek[1]],
+                )
             else:
-                ret_expr = SymbolNameExpr(pos, peek[1])
+                ret_expr = SymbolNameExpr(source_range.end(), peek[1])
         else:
             raise CompilerError(
                 "Expected expression but found ",
                 scanner.token_display_name(scanner.peek()),
-                " at ", pos_link(pos),
+                " at ", pos_link(source_range.start),
             )
 
     # Now handle calls, subscripts and attribute access, if present.
@@ -341,7 +346,7 @@ def p_expr_factor(state, scanner):
             scanner.read()
             args = p_arguments(state, scanner, ")")
             ret_expr = CallExpr(
-                pos,
+                source_range.end(),
                 ret_expr,
                 args,
             )
@@ -349,7 +354,7 @@ def p_expr_factor(state, scanner):
             scanner.read()
             args = p_expr_list(state, scanner, "]")
             ret_expr = SubscriptExpr(
-                pos,
+                source_range.end(),
                 ret_expr,
                 args,
             )
@@ -363,7 +368,7 @@ def p_expr_factor(state, scanner):
                 )
             attr_name = scanner.read()[1]
             ret_expr = AttributeExpr(
-                pos,
+                source_range.end(),
                 ret_expr,
                 attr_name,
             )
@@ -504,14 +509,14 @@ p_expr_assign = make_p_expr_binary_op(
 
 
 def p_expr_number(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     token = scanner.read()
     if token[0] != "NUMBER":
         raise CompilerError(
             "Expected number but got ",
             scanner.token_display_name(token),
-            " at ", pos_link(pos),
+            " at ", pos_link(full_range.start),
         )
 
     num_str = token[1]
@@ -522,7 +527,7 @@ def p_expr_number(state, scanner):
         except ValueError:
             raise CompilerError(
                 num_str[2:], " is not a valid hexadecimal number, "
-                " at ", pos_link(pos),
+                " at ", pos_link(full_range.start),
             )
     elif num_str.startswith("0b"):
         try:
@@ -530,7 +535,7 @@ def p_expr_number(state, scanner):
         except ValueError:
             raise CompilerError(
                 num_str[2:], " is not a valid binary number, "
-                " at ", pos_link(pos),
+                " at ", pos_link(full_range.start),
             )
     elif num_str.startswith("0") and len(num_str) > 1:
         try:
@@ -538,7 +543,7 @@ def p_expr_number(state, scanner):
         except ValueError:
             raise CompilerError(
                 num_str[1:], " is not a valid octal number, "
-                " at ", pos_link(pos),
+                " at ", pos_link(full_range.start),
             )
     else:
         # Try to parse it as a base-10 int, and if that fails
@@ -551,7 +556,7 @@ def p_expr_number(state, scanner):
             except ValueError:
                 raise CompilerError(
                     num_str, " is not a valid number, "
-                    " at ", pos_link(pos),
+                    " at ", pos_link(full_range.start),
                 )
 
     if value is None:
@@ -560,11 +565,11 @@ def p_expr_number(state, scanner):
             "Failed to produce a value for number token " + num_str
         )
 
-    return LiteralExpr(pos, value)
+    return LiteralExpr(full_range.end(), value)
 
 
 def p_data_decl(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     if scanner.next_is_keyword("var"):
         decl_type = VarDeclClause
@@ -574,7 +579,7 @@ def p_data_decl(state, scanner):
         raise CompilerError(
             "Expected declaration but got ",
             scanner.token_display_name(scanner.peek()),
-            " at ", pos_link(pos),
+            " at ", pos_link(full_range.start),
         )
 
     scanner.read()
@@ -588,11 +593,11 @@ def p_data_decl(state, scanner):
 
     name = scanner.read()[1]
 
-    return decl_type(pos, name)
+    return decl_type(full_range.end(), name)
 
 
 def p_func_decl(state, scanner):
-    pos = scanner.position()
+    full_range = scanner.begin_range()
 
     scanner.require_keyword("func")
 
@@ -617,13 +622,15 @@ def p_func_decl(state, scanner):
                     scanner.token_display_name(scanner.peek()),
                     " at ", pos_link(scanner.position()),
                 )
-            arg_pos = scanner.position()
+            arg_range = scanner.begin_range()
             arg_name = scanner.read()[1]
             arg_type_expr = None
             if scanner.next_is_keyword("as"):
                 scanner.read()
                 arg_type_expr = p_expression(state, scanner)
-            params.append(ParamDeclClause(arg_pos, arg_name, arg_type_expr))
+            params.append(
+                ParamDeclClause(arg_range.end(), arg_name, arg_type_expr)
+            )
 
             if scanner.next_is_punct(")"):
                 scanner.read()
@@ -633,4 +640,4 @@ def p_func_decl(state, scanner):
                 scanner.read()
                 break
 
-    return FuncDeclClause(pos, name, params)
+    return FuncDeclClause(full_range.end(), name, params)
