@@ -2,7 +2,13 @@
 import unittest
 from StringIO import StringIO
 from alamatic.compiler import CompileState
-from alamatic.scanner import Scanner, IndentationError, UnexpectedTokenError
+from alamatic.scanner import (
+    Scanner,
+    SourceRange,
+    SourceLocation,
+    IndentationError,
+    UnexpectedTokenError,
+)
 from plex.errors import UnrecognizedInput
 
 
@@ -640,3 +646,105 @@ class TestScanner(unittest.TestCase):
         self.assertFalse(scanner.next_is_punct("="))
         self.assertFalse(scanner.next_is_keyword("else"))
         self.assertEqual(scanner.read(), ('EOF', ''))
+
+    def test_range_building(self):
+        inp = "a bbbb\nccc"
+        stream = StringIO(inp)
+        state = CompileState()
+        scanner = Scanner(state, stream, name="a")
+
+        empty_range = scanner.begin_range().end()
+        self.assertEqual(
+            empty_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 0),
+            )
+        )
+
+        a_range_builder = scanner.begin_range()
+
+        token = scanner.peek()
+        self.assertEqual(
+            token,
+            ('IDENT', 'a'),
+        )
+
+        # Range should still be empty because we only peeked.
+        empty_range_2 = a_range_builder.end()
+        self.assertEqual(
+            empty_range_2,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 0),
+            )
+        )
+
+        token = scanner.read()
+        self.assertEqual(
+            token,
+            ('IDENT', 'a'),
+        )
+
+        a_range = a_range_builder.end()
+        self.assertEqual(
+            a_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
+            )
+        )
+
+        b_range_builder = scanner.begin_range()
+
+        token = scanner.read()
+
+        b_range = b_range_builder.end()
+        ab_range = a_range_builder.end()
+        self.assertEqual(
+            b_range,
+            SourceRange(
+                SourceLocation("a", 1, 2),
+                SourceLocation("a", 1, 6),
+            )
+        )
+        self.assertEqual(
+            ab_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 6),
+            )
+        )
+
+        scanner.require_newline()
+        # Ranges don't consider newlines, so our range should
+        # still be on the previous line.
+        b_range_2 = b_range_builder.end()
+        self.assertEqual(
+            b_range_2,
+            SourceRange(
+                SourceLocation("a", 1, 2),
+                SourceLocation("a", 1, 6),
+            )
+        )
+
+        c_range_builder = scanner.begin_range()
+
+        scanner.read()
+
+        c_range = c_range_builder.end()
+        abc_range = a_range_builder.end()
+        self.assertEqual(
+            c_range,
+            SourceRange(
+                SourceLocation("a", 2, 0),
+                SourceLocation("a", 2, 3),
+            )
+        )
+        self.assertEqual(
+            abc_range,
+            SourceRange(
+                SourceLocation("a", 1, 0),
+                SourceLocation("a", 2, 3),
+            )
+        )

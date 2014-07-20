@@ -184,9 +184,24 @@ class Scanner(plex.Scanner):
             self.begin('indent')
         self.peeked = None
         self.peeking = False
+        # Last token position starts of referring to the beginning of the
+        # file, so we'll still get a sensible result if we never read any
+        # tokens.
+        self._last_token_end_position = (name, 1, 0)
 
     def read(self):
         result = self.peek()
+        start_position = self.position()
+        # Compute the end of the token we read by assuming it's all
+        # on one line and is the same length as what's in result[1].
+        # We ignore NEWLINE, INDENT and OUTDENT tokens though, since they
+        # are synthetic and thus don't have real bounds to report.
+        if result[0] not in ('NEWLINE', 'INDENT', 'OUTDENT'):
+            self._last_token_end_position = (
+                start_position[0],
+                start_position[1],
+                start_position[2] + len(result[1]),
+            )
         self.peeked = None
         return result
 
@@ -221,6 +236,19 @@ class Scanner(plex.Scanner):
             position[1],
             position[2],
         )
+
+    @property
+    def last_token_end_location(self):
+        position = self._last_token_end_position
+        if position is not None:
+            return SourceLocation(
+                position[0],
+                position[1],
+                position[2],
+            )
+        else:
+            # No token has been read yet, presumably.
+            return None
 
     def begin_range(self):
         return SourceRangeBuilder(self)
@@ -375,6 +403,8 @@ class SourceLocation(object):
         self.column = column
 
     def __eq__(self, other):
+        if other is None:
+            return False
         if isinstance(other, tuple):
             other = SourceLocation(*other)
         return (
@@ -401,6 +431,8 @@ class SourceRange(object):
         self.end = end
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.start == other.start and self.end == other.end
 
     def __str__(self):
@@ -419,7 +451,7 @@ class SourceRangeBuilder(object):
     def end(self):
         return SourceRange(
             self.start,
-            self.scanner.location,
+            self.scanner.last_token_end_location,
         )
 
 
