@@ -1,5 +1,5 @@
 
-from alamatic.compilelogging import CompilerError, pos_link
+from alamatic.compilelogging import CompilerError, range_link
 from alamatic.intermediate.symbols import *
 from alamatic.intermediate.instructions import *
 from alamatic.intermediate.operations import *
@@ -34,8 +34,10 @@ class SymbolTable(object):
             except KeyError:
                 current = current.parent
         raise UnknownSymbolError(
-            "Unknown symbol '%s' at " % name,
-            pos_link(source_range),
+            range_link(
+                source_range,
+                text="Unknown symbol '%s'" % name,
+            )
         )
 
     @property
