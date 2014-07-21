@@ -10,10 +10,13 @@ def alac():
     from alamatic.compilelogging import TerminalCompileLogHandler
     from alamatic.preprocessor import preprocess_cfg
     fn = sys.argv[1]
-    state = CompileState(log_handler=TerminalCompileLogHandler(
+
+    log_handler = TerminalCompileLogHandler(
         sys.stderr,
         sys.stdout,
-    ))
+    )
+
+    state = CompileState(log_handler=log_handler)
 
     module = parse_module(
         state,
@@ -21,6 +24,7 @@ def alac():
         None,
         fn,
     )
+    log_handler.close()
     if state.error_count > 0:
         return 1
 
