@@ -438,6 +438,19 @@ def testcase_assertErrorsInStmts(testcase, inp, positions):
         if line.level == ERROR:
             for position in line.positions_mentioned:
                 got_positions.append((position.line, position.column))
+            for source_range in line.source_ranges_mentioned:
+                got_positions.append(
+                    (
+                        (
+                            source_range.start.line,
+                            source_range.start.column,
+                        ),
+                        (
+                            source_range.end.line,
+                            source_range.end.column,
+                        ),
+                    )
+                )
 
     testcase.assertEqual(got_positions, positions)
 testcase_assertErrorsInStmts.__name__ = "assertErrorsInStmts"
@@ -474,6 +487,19 @@ def testcase_assertErrorsInExpr(self, inp, positions, allow_assign=False):
         if line.level == ERROR:
             for position in line.positions_mentioned:
                 got_positions.append((position.line, position.column))
+            for source_range in line.source_ranges_mentioned:
+                got_positions.append(
+                    (
+                        (
+                            source_range.start.line,
+                            source_range.start.column,
+                        ),
+                        (
+                            source_range.end.line,
+                            source_range.end.column,
+                        ),
+                    )
+                )
 
     self.assertEqual(got_positions, positions)
 testcase_assertErrorsInExpr.__name__ = "assertErrorsInExpr"

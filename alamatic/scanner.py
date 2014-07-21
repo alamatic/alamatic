@@ -233,9 +233,23 @@ class Scanner(plex.Scanner):
                 if self.peeked[0] is None:
                     self.peeked = plex.Scanner.read(self)
             except UnrecognizedInput, ex:
+                position = self.position()
                 raise UnexpectedTokenError(
-                    "Invalid token",
-                    " at ", pos_link(self.position())
+                    range_link(
+                        SourceRange(
+                            SourceLocation(
+                                filename=position[0],
+                                line=position[1],
+                                column=position[2],
+                            ),
+                            SourceLocation(
+                                filename=position[0],
+                                line=position[1],
+                                column=position[2] + 1,
+                            ),
+                        ),
+                        text="Invalid token",
+                    )
                 )
             finally:
                 self.peeking = False
@@ -325,8 +339,11 @@ class Scanner(plex.Scanner):
         if not self.next_is_punct(symbol):
             raise UnexpectedTokenError(
                 "Expected ", symbol,
-                " but got ", self.token_display_name(self.peek()),
-                " at ", pos_link(self.position()),
+                " but got ",
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
+                ),
             )
         return self.read()
 
@@ -334,8 +351,11 @@ class Scanner(plex.Scanner):
         if not self.next_is_keyword(name):
             raise UnexpectedTokenError(
                 "Expected ", name,
-                " but got ", self.token_display_name(self.peek()),
-                " at ", pos_link(self.position()),
+                " but got ",
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
+                ),
             )
         return self.read()
 
@@ -343,8 +363,10 @@ class Scanner(plex.Scanner):
         if not self.next_is_indent():
             raise UnexpectedTokenError(
                 "Expected indent but got ",
-                self.token_display_name(self.peek()),
-                " at ", pos_link(self.position()),
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
+                ),
             )
         return self.read()
 
@@ -352,28 +374,32 @@ class Scanner(plex.Scanner):
         if not self.next_is_outdent():
             raise UnexpectedTokenError(
                 "Expected outdent but got ",
-                self.token_display_name(self.peek()),
-                " at ", pos_link(self.position()),
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
+                ),
             )
         return self.read()
 
     def require_newline(self):
         if not self.next_is_newline():
             raise UnexpectedTokenError(
-                "Expected newline but got %r" % (
-                    self.token_display_name(self.peek())
+                "Expected newline but got ",
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
                 ),
-                " at ", pos_link(self.position()),
             )
         return self.read()
 
     def require_eof(self):
         if not self.next_is_eof():
             raise UnexpectedTokenError(
-                "Expected end of file but got %r" % (
-                    self.token_display_name(self.peek())
+                "Expected end of file but got ",
+                range_link(
+                    self.next_token_range,
+                    text=self.token_display_name(self.peek()),
                 ),
-                " at ", pos_link(self.position()),
             )
         return self.read()
 

@@ -20,7 +20,7 @@ class TestParse(LanguageTestCase):
         self.assertErrorsInExpr(
             "a = b = 1",
             [
-                (1, 6),
+                ((1, 6), (1, 7)),
             ],
             allow_assign=True,
         )

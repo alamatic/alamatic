@@ -53,7 +53,7 @@ class TestParse(LanguageTestCase):
         self.assertErrorsInStmts(
             "var i 1",
             [
-                (1, 6),
+                ((1, 6), (1, 7)),
             ]
         )
 
@@ -69,7 +69,7 @@ class TestParse(LanguageTestCase):
         self.assertErrorsInStmts(
             "var i = 1 2",
             [
-                (1, 10),
+                ((1, 10), (1, 11)),
             ]
         )
 

@@ -173,7 +173,7 @@ class TestParser(LanguageTestCase):
         self.assertErrorsInStmts(
             "pass pass",
             [
-                (1, 5),
+                ((1, 5), (1, 9)),
             ]
         )
 
@@ -357,7 +357,7 @@ class TestParser(LanguageTestCase):
         self.assertErrorsInExpr(
             "a = 1",
             [
-                (1, 2),
+                ((1, 2), (1, 3)),
             ],
             allow_assign=False,
         )
