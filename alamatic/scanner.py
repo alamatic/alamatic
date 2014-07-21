@@ -15,7 +15,7 @@ from plex import (
 )
 from plex.errors import UnrecognizedInput
 
-from alamatic.compilelogging import CompilerError, pos_link
+from alamatic.compilelogging import CompilerError, range_link
 
 
 class Scanner(plex.Scanner):
@@ -38,13 +38,25 @@ class Scanner(plex.Scanner):
             indent_change = new_level - current_level
             if indent_change != 4:
                 position = self.position()
-                # report it from the end of the whitespace rather than
-                # the start.
-                position = (position[0], position[1], indent_change - 1)
+                source_range = SourceRange(
+                    SourceLocation(
+                        filename=position[0],
+                        line=position[1],
+                        column=0,
+                    ),
+                    SourceLocation(
+                        filename=position[0],
+                        line=position[1],
+                        column=indent_change,
+                    ),
+                )
                 self.state.warn(
-                    "Blocks should be indented by 4 spaces, but ",
-                    pos_link(position),
-                    " indents by ", indent_change,
+                    range_link(
+                        source_range,
+                        text="Block should be indented by 4 spaces, not %r" % (
+                            indent_change
+                        )
+                    )
                 )
             self.produce('INDENT', indent_change)
         elif new_level < current_level:
