@@ -15,7 +15,7 @@ from plex import (
 )
 from plex.errors import UnrecognizedInput
 
-from alamatic.compilelogging import CompilerError, range_link
+from alamatic.compilelogging import CompilerError, pos_link, range_link
 
 
 class Scanner(plex.Scanner):
