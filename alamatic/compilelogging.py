@@ -155,32 +155,48 @@ class TerminalCompileLogHandler(CompileLogHandler):
             out_stream = error_stream
         self.error_stream = error_stream
         self.out_stream = out_stream
-        self._generated_out = False
         self._generated_error = False
+        self._generated_out = False
+
+        if self.error_stream.isatty():
+            self.error_stream.write("\x1b[0;37;40m")
+        if self.out_stream.isatty():
+            self.out_stream.write("\x1b[0;37;40m")
 
     def __call__(self, line):
         msg = str(line)
         level = "???????"
+        color = ""
         stream = self.error_stream
         if line.level == ERROR:
             level = " ERROR "
+            color = "\x1b[31m"
             self._generated_error = True
         if line.level == WARNING:
             level = "WARNING"
+            color = "\x1b[33m"
             self._generated_error = True
         if line.level == INFO:
             level = " INFO  "
+            color = "\x1b[36m"
             stream = self.out_stream
             self._generated_out = True
 
         if len(line.additional_info_lines) > 0:
             stream.write("\n")
 
-        stream.write("\n[ %s ] %s\n" % (level, msg))
+        if stream.isatty():
+            uncolor = "\x1b[37m"
+        else:
+            uncolor = ""
+            color = ""
+
+        stream.write("\n[ %s%s%s ] %s\n" % (color, level, uncolor, msg))
 
         for source_range in line.source_ranges_mentioned:
             self._write_source_range(
                 source_range,
+                stream,
                 indent=12,
             )
 
@@ -190,18 +206,86 @@ class TerminalCompileLogHandler(CompileLogHandler):
             stream.write("\n")
 
     def close(self):
+        if self.error_stream.isatty():
+            self.error_stream.write("\x1b[0m")
+        if self.out_stream.isatty():
+            self.out_stream.write("\x1b[0m")
+
         if self._generated_error:
             self.error_stream.write("\n")
         elif self._generated_out:
             self.out_stream.write("\n")
 
-    def _write_source_range(self, source_range, indent=0):
+    def _write_source_range(self, source_range, stream, indent=0):
         # TODO: Actually go fetch the source code line and show it
         # with the given range highlighted.
-        print "%s%s: ..." % (
+        start_str = str(source_range.start.filename)
+
+        source_str = "(source not available)"
+
+        # This should always be true for all sane ranges, but
+        # let's just be sure so we don't end up doing something crazy.
+        if (
+            source_range.start.filename == source_range.end.filename
+            and source_range.start.line <= source_range.end.line
+        ):
+            try:
+                f = open(source_range.start.filename, 'r')
+            except IOError, ex:
+                pass
+
+            start_line = source_range.start.line
+            end_line = source_range.end.line
+            found_snippet = False
+            source_str_parts = []
+
+            if f is not None:
+
+                line_number_format = "%%%ii: " % len(str(end_line))
+
+                for idx, line in enumerate(f):
+                    line_number = idx + 1
+
+                    # Put the end marker in first, before the start marker,
+                    # so that we don't need to worry about the start
+                    # marker moving the end position later in the string.
+                    if line_number == end_line:
+                        if stream.isatty():
+                            line = (
+                                line[0:source_range.end.column] +
+                                "\x1b[0;37;40m" +
+                                line[source_range.end.column:]
+                            )
+
+                    if line_number == start_line:
+                        found_snippet = True
+                        if stream.isatty():
+                            line = (
+                                line[0:source_range.start.column] +
+                                "\x1b[1;4;40m" +
+                                line[source_range.start.column:]
+                            )
+
+                    if found_snippet:
+                        source_str_parts.append(
+                            " " * (indent + 4)
+                        )
+                        source_str_parts.append(
+                            line_number_format % line_number
+                        )
+                        source_str_parts.append(line)
+
+                    if line_number == end_line:
+                        break
+
+            if found_snippet:
+                source_str = "".join(source_str_parts)
+
+        stream.write("%s%s:\n%s\n" % (
             " " * indent,
-            source_range.start,
-        )
+            start_str,
+            source_str,
+        ))
 
 
 class MultiCompileLogHandler(CompileLogHandler):
