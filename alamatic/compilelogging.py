@@ -24,6 +24,10 @@ class LogLine(object):
     def positions_mentioned(self):
         return [x.position for x in self.parts if type(x) is pos_link]
 
+    @property
+    def source_ranges_mentioned(self):
+        return [x.source_range for x in self.parts if type(x) is range_link]
+
 
 class pos_link(object):
     def __init__(self, position, text=None):
@@ -76,6 +80,22 @@ class pos_link(object):
         return self.position.column
 
 
+class range_link(object):
+    def __init__(self, source_range, highlight_ranges=set(), text=None):
+        self.source_range = source_range
+        self.highlight_ranges = highlight_ranges
+        if text is not None:
+            self.text = text
+        else:
+            if source_range is not None:
+                self.text = str(source_range)
+            else:
+                self.text = "unknown position"
+
+    def __unicode__(self):
+        return self.text
+
+
 class CompilerError(Exception):
     def __init__(self, *log_parts):
         additional_info_lines = [
@@ -95,6 +115,9 @@ class CompilerError(Exception):
 
 class CompileLogHandler(object):
     def __call__(self, line):
+        pass
+
+    def close(self):
         pass
 
 
@@ -132,6 +155,8 @@ class TerminalCompileLogHandler(CompileLogHandler):
             out_stream = error_stream
         self.error_stream = error_stream
         self.out_stream = out_stream
+        self._generated_out = False
+        self._generated_error = False
 
     def __call__(self, line):
         msg = str(line)
@@ -139,21 +164,44 @@ class TerminalCompileLogHandler(CompileLogHandler):
         stream = self.error_stream
         if line.level == ERROR:
             level = " ERROR "
+            self._generated_error = True
         if line.level == WARNING:
             level = "WARNING"
+            self._generated_error = True
         if line.level == INFO:
             level = " INFO  "
             stream = self.out_stream
+            self._generated_out = True
 
         if len(line.additional_info_lines) > 0:
             stream.write("\n")
 
-        stream.write("[ %s ] %s\n" % (level, msg))
+        stream.write("\n[ %s ] %s\n" % (level, msg))
+
+        for source_range in line.source_ranges_mentioned:
+            self._write_source_range(
+                source_range,
+                indent=12,
+            )
 
         if len(line.additional_info_lines) > 0:
             for additional_line in line.additional_info_lines:
                 stream.write("            %s\n" % str(additional_line))
             stream.write("\n")
+
+    def close(self):
+        if self._generated_error:
+            self.error_stream.write("\n")
+        elif self._generated_out:
+            self.out_stream.write("\n")
+
+    def _write_source_range(self, source_range, indent=0):
+        # TODO: Actually go fetch the source code line and show it
+        # with the given range highlighted.
+        print "%s%s: ..." % (
+            " " * indent,
+            source_range.start,
+        )
 
 
 class MultiCompileLogHandler(CompileLogHandler):
