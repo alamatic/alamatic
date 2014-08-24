@@ -3,16 +3,7 @@ from alamatic.intermediate.base import Element
 
 
 class Instruction(Element):
-    def generate_c_code(self, state, writer):
-        writer.indent()
-        self._generate_c_code(state, writer)
-        writer.writeln(";")
-        writer.outdent()
-
-    def _generate_c_code(self, state, writer):
-        raise Exception(
-            "_generate_c_code not implemented for %r" % self
-        )
+    pass
 
 
 class OperationInstruction(Instruction):
@@ -31,11 +22,6 @@ class OperationInstruction(Instruction):
         self.target = replace(self.target)
         self.operation.replace_operands(replace)
 
-    def _generate_c_code(self, state, writer):
-        self.target.generate_c_code(state, writer)
-        writer.write(' = ')
-        self.operation.generate_c_code(state, writer)
-
 
 class JumpInstruction(Instruction):
     def __init__(self, label, source_range=None):
@@ -45,9 +31,6 @@ class JumpInstruction(Instruction):
     @property
     def params(self):
         yield self.label
-
-    def _generate_c_code(self, state, writer):
-        writer.write("goto %s" % self.label.codegen_name)
 
     def replace_operands(self, replace):
         pass
@@ -77,11 +60,6 @@ class JumpIfFalseInstruction(JumpInstruction):
     def params(self):
         yield self.cond
         yield self.label
-
-    def _generate_c_code(self, state, writer):
-        writer.write("if (! ")
-        self.cond.generate_c_code(state, writer)
-        writer.write(") goto %s" % self.label.codegen_name)
 
     def replace_operands(self, replace):
         self.cond = replace(self.cond)
@@ -118,10 +96,6 @@ class JumpNeverInstruction(JumpInstruction):
     def params(self):
         return []
 
-    def generate_c_code(self, state, writer):
-        # nothing to generate, since this is just a no-op
-        pass
-
     @property
     def can_fall_through(self):
         return True
@@ -143,13 +117,6 @@ class IsolateInstruction(JumpInstruction):
     @property
     def params(self):
         return []
-
-    def generate_c_code(self, state, writer):
-        # This should never happen since this instruction is only used
-        # to terminate unreachable blocks.
-        raise Exception(
-            "Somehow ended up generating C code for IsolateInstruction"
-        )
 
     @property
     def can_fall_through(self):

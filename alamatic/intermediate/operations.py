@@ -5,11 +5,6 @@ class Operation(object):
         params = tuple(self.params)
         return "<alamatic.intermediate.%s%r>" % (type(self).__name__, params)
 
-    def _generate_c_code(self, state, writer):
-        raise Exception(
-            "generate_c_code not implemented for %r" % self
-        )
-
 
 class CopyOperation(Operation):
 
@@ -22,9 +17,6 @@ class CopyOperation(Operation):
 
     def replace_operands(self, replace):
         self.operand = replace(self.operand)
-
-    def generate_c_code(self, state, writer):
-        self.operand.generate_c_code(state, writer)
 
 
 class UnaryOperation(Operation):
@@ -54,14 +46,6 @@ class BinaryOperation(Operation):
         self.lhs = replace(self.lhs)
         self.rhs = replace(self.rhs)
 
-    def generate_c_code(self, state, writer):
-        self.lhs.generate_c_code(state, writer)
-        # FIXME: Assuming for now that intermediate operators are
-        # one-to-one with C operators, which won't actually be true
-        # in practice
-        writer.write(" " + self.operator + " ")
-        self.rhs.generate_c_code(state, writer)
-
 
 class CallOperation(Operation):
     def __init__(self, callee, args, kwargs):
@@ -81,24 +65,6 @@ class CallOperation(Operation):
             self.args[i] = replace(self.args[i])
         for k, arg in self.kwargs.iteritems():
             self.kwargs[k] = replace(self.kwargs[k])
-
-    def generate_c_code(self, state, writer):
-        if len(self.kwargs):
-            # Should never happen - kwargs should get transformed into
-            # flat args by the time we get to code generation.
-            raise Exception(
-                "Can't generate C code for call with kwargs",
-            )
-        self.callee.generate_c_code(state, writer)
-        writer.write("(")
-        first = True
-        for arg in self.args:
-            if first:
-                first = False
-            else:
-                writer.write(", ")
-            arg.generate_c_code(state, writer)
-        writer.write(")")
 
 
 class AttributeLookupOperation(Operation):

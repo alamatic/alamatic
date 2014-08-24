@@ -23,16 +23,8 @@ class Element(object):
     def __repr__(self):
         return "<alamatic.intermediate.%s>" % self.__str__()
 
-    def generate_c_code(self, state, writer):
-        raise Exception(
-            "generate_c_code not implemented for %r" % self
-        )
-
 
 class Label(Element):
-
-    def generate_c_code(self, state, writer):
-        writer.writeln("%s:" % self.codegen_name)
 
     @property
     def codegen_name(self):

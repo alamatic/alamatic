@@ -318,9 +318,6 @@ class DummyOperand(alamatic.intermediate.Operand):
     def params(self):
         yield self.sigil
 
-    def generate_c_code(self, state, writer):
-        writer.write("DUMMY(%s)" % self.sigil)
-
 
 def binary_expr_operator_map_case_func(expr_type, ast_op, int_op):
     def test_impl(self):

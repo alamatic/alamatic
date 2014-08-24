@@ -22,11 +22,6 @@ class Operand(object):
         from alamatic.intermediate import Unknown
         return Unknown
 
-    def generate_c_code(self, state, writer):
-        raise Exception(
-            "generate_c_code not implemented for %r" % self
-        )
-
 
 class ConstantOperand(Operand):
     # rvalue only
@@ -42,9 +37,6 @@ class ConstantOperand(Operand):
     def constant_value(self):
         return self.value
 
-    def generate_c_code(self, state, writer):
-        self.value.generate_c_code(state, writer)
-
 
 class SymbolOperand(Operand):
     # both lvalue and rvalue
@@ -55,9 +47,6 @@ class SymbolOperand(Operand):
     @property
     def params(self):
         yield self.symbol
-
-    def generate_c_code(self, state, writer):
-        writer.write(self.symbol.codegen_name)
 
 
 class IndexOperand(Operand):
