@@ -9,4 +9,6 @@ install:
   - "pip install --pre --use-mirrors plex==2.0.0dev datafork>=0.0.5"
   # Testing dependencies
   - "pip install --use-mirrors -U -r requirements-dev.txt"
+  - "pip install coveralls"
 script: nosetests -v --with-coverage --cover-erase --cover-inclusive --cover-branches --cover-min-percentage=74 --cover-package=alamatic
+after_success: coveralls
