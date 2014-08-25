@@ -6,6 +6,7 @@ __all__ = [
     "TypeConstructor",
     "Type",
     "TypeImplementation",
+    "get_fresh_type_variable",
     "get_type_display_names",
 ]
 
@@ -103,6 +104,10 @@ class TypeImplementation(object):
     @property
     def display_name(self):
         raise Exception("No display_name for %r" % type(self))
+
+
+def get_fresh_type_variable():
+    return TypeConstructor().instantiate()
 
 
 def get_type_display_names(types):
