@@ -47,12 +47,17 @@ class TypeTable(object):
 
     def merge(self, other):
         for symbol, other_type in other._symbol_types.iteritems():
-            if symbol in self._symbol_types:
-                self._symbol_types[symbol] = self._symbol_types[symbol].merge(
-                    other_type,
-                )
-            else:
-                self._symbol_types[symbol] = other_type
+            self.add(symbol, other_type)
+
+    def add(self, symbol, new_type):
+        if symbol in self._symbol_types:
+            existing_type = self[symbol]
+            unified_type = existing_type.unify(
+                new_type,
+            )
+            self._symbol_types[symbol] = unified_type
+        else:
+            self._symbol_types[symbol] = new_type
 
     def __getitem__(self, key):
         return self._symbol_types[key]
