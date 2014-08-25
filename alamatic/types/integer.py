@@ -23,6 +23,13 @@ class IntegerImpl(TypeImplementation):
         self.bits = bits
         self.signed = signed
 
+    @property
+    def display_name(self):
+        return "%sInt%i" % (
+            "" if self.signed else "U",
+            self.bits,
+        )
+
 
 class UnknownSizeIntegerImpl(TypeImplementation):
     """
@@ -43,7 +50,12 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     cause a special error message to be returned if a programmer attempts to
     use an integer literal without first converting it to a real integer type.
     """
-    pass
+
+    @property
+    def display_name(self):
+        # This type is an implementation detail and so it doesn't have a name
+        # since the end-user should never see it.
+        return None
 
 
 Int64 = IntegerImpl(64, True).make_no_arg_type()

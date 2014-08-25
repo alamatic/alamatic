@@ -6,6 +6,7 @@ __all__ = [
     "TypeConstructor",
     "Type",
     "TypeImplementation",
+    "get_type_display_names",
 ]
 
 
@@ -62,6 +63,10 @@ class Type(object):
             )
         )
 
+    @property
+    def display_name(self):
+        return get_type_display_names([self])[self]
+
     def __hash__(self):
         return self._hash
 
@@ -94,3 +99,67 @@ class TypeImplementation(object):
             MyType = MyTypeImpl().make_no_arg_type()
         """
         return TypeConstructor(self).instantiate()
+
+    @property
+    def display_name(self):
+        raise Exception("No display_name for %r" % type(self))
+
+
+def get_type_display_names(types):
+    """
+    Given an iterable of types, returns a mapping from each type to a
+    string containing a reasonable display name for it.
+
+    When type variables are present, this function guarantees that they
+    will each have a unique placeholder name that will be consistent
+    across all of the generated names. These will be single uppercase letters
+    starting with T and continuing with U, V, etc. If there are more than
+    26 distinct type variables then some of their names will overlap.
+    """
+    next_var_letter_idx = [19]  # index into the alphabet; 19 = T
+    var_letters = {}
+    ret = {}
+
+    def cons_name(cons):
+        display_name = None
+        if len(cons.impls) == 1:
+            display_name = cons.impls[0].display_name
+
+        if display_name is not None:
+            return display_name
+        else:
+            try:
+                return var_letters[cons]
+            except KeyError:
+                letter = chr(65 + next_var_letter_idx[0])
+                next_var_letter_idx[0] = next_var_letter_idx[0] + 1
+                if next_var_letter_idx[0] > 25:
+                    next_var_letter_idx[0] = 0
+                var_letters[cons] = letter
+                return letter
+
+    def value_as_str(value):
+        if type(value) is bool:
+            return "true" if bool else "false"
+        else:
+            return repr(value)
+
+    def name(type):
+        if len(type.type_args) == 0 and len(type.value_args) == 0:
+            # Easy case
+            return cons_name(type.cons)
+        else:
+            arg_parts = (
+                name(t) for t in type.type_args
+            ) + (
+                value_as_str(v) for v in type.value_args
+            )
+            return "%s<%s>" % (
+                cons_name(type.cons),
+                ", ".join(arg_parts),
+            )
+
+    for type in types:
+        ret[type] = name(type)
+
+    return ret
