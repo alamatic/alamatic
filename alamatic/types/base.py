@@ -68,6 +68,10 @@ class Type(object):
     def display_name(self):
         return get_type_display_names([self])[self]
 
+    @property
+    def is_variable(self):
+        return self.cons.is_variable
+
     def __hash__(self):
         return self._hash
 
