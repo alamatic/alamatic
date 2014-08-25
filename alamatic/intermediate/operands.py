@@ -37,6 +37,10 @@ class ConstantOperand(Operand):
     def constant_value(self):
         return self.value
 
+    def get_type(self, symbol_types):
+        from alamatic.types import get_type_for_constant
+        return get_type_for_constant(self.value)
+
 
 class SymbolOperand(Operand):
     # both lvalue and rvalue
@@ -47,6 +51,9 @@ class SymbolOperand(Operand):
     @property
     def params(self):
         yield self.symbol
+
+    def get_type(self, symbol_types):
+        return symbol_types[self.symbol]
 
 
 class IndexOperand(Operand):

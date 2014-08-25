@@ -5,6 +5,11 @@ class Operation(object):
         params = tuple(self.params)
         return "<alamatic.intermediate.%s%r>" % (type(self).__name__, params)
 
+    def get_result_type(self, context):
+        # FIXME: Once the others are all implemented, it should be a
+        # fatal error not to have a get_result_type implementation.
+        return context.unknown()
+
 
 class CopyOperation(Operation):
 
@@ -17,6 +22,9 @@ class CopyOperation(Operation):
 
     def replace_operands(self, replace):
         self.operand = replace(self.operand)
+
+    def get_result_type(self, context):
+        return context.operand_type(self.operand)
 
 
 class UnaryOperation(Operation):

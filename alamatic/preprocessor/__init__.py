@@ -1,14 +1,20 @@
 
 from collections import deque
 from alamatic.preprocessor.deadcode import *
+from alamatic.preprocessor.typeinfer import *
 
 
 def preprocess_cfg(graph):
     preprocessors = []
 
+    type_inferer = TypeInferer()
+
     ## Dead Code Removal Phases
     # Optimize conditional terminators with constant operands
     preprocessors.append(optimize_terminator)
+
+    ## Type Inference Phase
+    preprocessors.append(type_inferer.infer_types_for_block)
 
     _preprocess_cfg(graph, preprocessors)
 
@@ -32,6 +38,7 @@ def _preprocess_cfg(graph, preprocessors):
 
     while len(queue) > 0:
         current_block = queue.popleft()
+
         queue_successors = False
         run_again = True
         while run_again:
