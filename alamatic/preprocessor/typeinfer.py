@@ -77,5 +77,17 @@ class TypeTable(object):
 
         return self._symbol_types[key]
 
+    def __iter__(self):
+        for symbol in self._symbol_types:
+            yield symbol
+
+    def itervalues(self):
+        for symbol in self:
+            yield self[symbol]
+
+    def iteritems(self):
+        for symbol in self:
+            yield symbol, self[symbol]
+
     def __eq__(self, other):
         return self._symbol_types == other._symbol_types
