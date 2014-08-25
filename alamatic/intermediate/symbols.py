@@ -95,7 +95,7 @@ class TemporarySymbol(Symbol):
         # temporaries should never end up being presented to the user,
         # but if there's a bug then returning something nice here may
         # help debug it.
-        return "temporary %x" % (self.index, id(self))
+        return "temporary %x" % self.index
 
     def __str__(self):
         return 'temp(%x)' % (
