@@ -29,10 +29,19 @@ class TypeInferer(object):
                 # produce a result and then we'll get re-queued.
                 return False
 
-        # TODO: Actually do some type inference.
+        context = TypeContext(inferences)
+
+        for instruction in block.operation_instructions:
+            operation = instruction.operation
+            target = instruction.target
+            if hasattr(target, "symbol"):  # looks like a SymbolOperand
+                inferences.add(
+                    target.symbol,
+                    operation.get_result_type(context),
+                )
 
         self._block_inferences[block] = inferences
-        return False
+        return inferences != old_inferences
 
     def get_inferences_for_block(self, block):
         return self._block_inferences.get(block, TypeTable())
@@ -91,3 +100,15 @@ class TypeTable(object):
 
     def __eq__(self, other):
         return self._symbol_types == other._symbol_types
+
+
+class TypeContext(object):
+
+    def __init__(self, type_table):
+        self.type_table = type_table
+
+    def operand_type(self, operand):
+        return operand.get_type(self.type_table)
+
+    def unknown(self):
+        return get_fresh_type_variable()
