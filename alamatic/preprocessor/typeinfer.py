@@ -41,9 +41,8 @@ class TypeInferer(object):
 class TypeTable(object):
 
     def __init__(self):
-        self._symbol_types = collections.defaultdict(
-            lambda x: TypeConstructor().instantiate()
-        )
+        self._symbol_types = weakref.WeakKeyDictionary()
+        self._equivalences = weakref.WeakKeyDictionary()
 
     def merge(self, other):
         for symbol, other_type in other._symbol_types.iteritems():
@@ -55,11 +54,27 @@ class TypeTable(object):
             unified_type = existing_type.unify(
                 new_type,
             )
+            if unified_type is not existing_type:
+                self._equivalences[existing_type] = unified_type
+            if unified_type is not new_type:
+                self._equivalences[new_type] = unified_type
+
             self._symbol_types[symbol] = unified_type
         else:
             self._symbol_types[symbol] = new_type
 
     def __getitem__(self, key):
+        if key not in self._symbol_types:
+            new = TypeConstructor().instantiate()
+            self._symbol_types[key] = new
+
+        # Take this opportunity to flatten the equivalences for the
+        # given symbol.
+        ret_type = self._symbol_types[key]
+        while ret_type in self._equivalences:
+            ret_type = self._equivalences[ret_type]
+        self._symbol_types[key] = ret_type
+
         return self._symbol_types[key]
 
     def __eq__(self, other):
