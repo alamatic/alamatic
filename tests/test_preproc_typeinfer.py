@@ -8,11 +8,19 @@ from alamatic.preprocessor.typeinfer import (
 )
 
 
+def make_mock_type(name, *type_args):
+    ret = mock.Mock(name=name)
+    ret.type_args = tuple(type_args)
+    ret.value_args = tuple()
+    ret.cons.impls = ()
+    return ret
+
+
 class TestTypeTable(unittest.TestCase):
 
     def test_add_new(self):
         table = TypeTable()
-        mock_type = mock.Mock(name="type")
+        mock_type = make_mock_type("type")
         mock_symbol = mock.Mock(name="symbol")
         table.add(mock_symbol, mock_type)
         self.assertEqual(
@@ -29,9 +37,9 @@ class TestTypeTable(unittest.TestCase):
     def test_add_unified_new(self):
         table = TypeTable()
         mock_symbol = mock.Mock(name="symbol")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
-        mock_type_3 = mock.Mock(name="type_3")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
+        mock_type_3 = make_mock_type(name="type_3")
         mock_type_1.unify = lambda x: mock_type_3
         table.add(mock_symbol, mock_type_1)
         table.add(mock_symbol, mock_type_2)
@@ -52,8 +60,8 @@ class TestTypeTable(unittest.TestCase):
     def test_add_unified_first(self):
         table = TypeTable()
         mock_symbol = mock.Mock(name="symbol")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
         mock_type_1.unify = lambda x: mock_type_1
         table.add(mock_symbol, mock_type_1)
         table.add(mock_symbol, mock_type_2)
@@ -73,8 +81,8 @@ class TestTypeTable(unittest.TestCase):
     def test_add_unified_second(self):
         table = TypeTable()
         mock_symbol = mock.Mock(name="symbol")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
         mock_type_1.unify = lambda x: mock_type_2
         table.add(mock_symbol, mock_type_1)
         table.add(mock_symbol, mock_type_2)
@@ -95,8 +103,8 @@ class TestTypeTable(unittest.TestCase):
         table = TypeTable()
         mock_symbol_1 = mock.Mock(name="symbol_1")
         mock_symbol_2 = mock.Mock(name="symbol_2")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
         mock_type_1.unify = lambda x: mock_type_1
         table.add(mock_symbol_1, mock_type_2)
         table.add(mock_symbol_2, mock_type_1)
@@ -130,6 +138,19 @@ class TestTypeTable(unittest.TestCase):
             }
         )
 
+    def test_recursive_equivalent_flattening(self):
+        table = TypeTable()
+        mock_symbol_1 = mock.Mock(name="symbol_1")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
+        mock_outer_type = make_mock_type("outer_type", mock_type_1)
+        table.add(mock_symbol_1, mock_outer_type)
+        table._equivalences[mock_type_1] = mock_type_2
+        self.assertEqual(
+            table[mock_symbol_1].type_args,
+            (mock_type_2,),
+        )
+
     def test_unknown_symbol(self):
         table = TypeTable()
         mock_symbol = mock.Mock(name="symbol")
@@ -150,7 +171,7 @@ class TestTypeTable(unittest.TestCase):
         table_1 = TypeTable()
         table_2 = TypeTable()
         mock_symbol = mock.Mock(name="symbol")
-        mock_type = mock.Mock(name="type")
+        mock_type = make_mock_type(name="type")
         table_1.add(mock_symbol, mock_type)
         table_2.add(mock_symbol, mock_type)
 
@@ -166,9 +187,9 @@ class TestTypeTable(unittest.TestCase):
         mock_symbol_1 = mock.Mock(name="symbol_1")
         mock_symbol_2 = mock.Mock(name="symbol_2")
         mock_symbol_3 = mock.Mock(name="symbol_3")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
-        mock_type_3 = mock.Mock(name="type_3")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
+        mock_type_3 = make_mock_type(name="type_3")
 
         mock_type_1.unify.return_value = mock_type_1
 
@@ -202,9 +223,9 @@ class TestTypeTable(unittest.TestCase):
         mock_symbol_1 = mock.Mock(name="symbol_1")
         mock_symbol_2 = mock.Mock(name="symbol_2")
         mock_symbol_3 = mock.Mock(name="symbol_3")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
-        mock_type_3 = mock.Mock(name="type_3")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
+        mock_type_3 = make_mock_type(name="type_3")
 
         table.add(mock_symbol_1, mock_type_1)
         table.add(mock_symbol_2, mock_type_2)
@@ -261,7 +282,7 @@ class TestTypeInferer(unittest.TestCase):
         mock_symbol = mock.Mock(name="symbol")
         mock_instruction = mock.Mock(name="instruction")
         mock_operation = mock.Mock(name="operation")
-        mock_type = mock.Mock(name="type")
+        mock_type = make_mock_type(name="type")
 
         mock_block.operation_instructions = [mock_instruction]
         mock_block.predecessors = []
@@ -300,8 +321,8 @@ class TestTypeInferer(unittest.TestCase):
 
         mock_symbol_1 = mock.Mock(name="symbol_1")
         mock_symbol_2 = mock.Mock(name="symbol_2")
-        mock_type_1 = mock.Mock(name="type_1")
-        mock_type_2 = mock.Mock(name="type_2")
+        mock_type_1 = make_mock_type(name="type_1")
+        mock_type_2 = make_mock_type(name="type_2")
 
         pred_table_1.add(mock_symbol_1, mock_type_1)
         pred_table_2.add(mock_symbol_2, mock_type_2)
