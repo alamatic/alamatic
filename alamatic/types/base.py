@@ -158,13 +158,14 @@ def get_type_display_names(types):
             # Easy case
             return cons_name(type.cons)
         else:
-            arg_parts = (
+            base_name = cons_name(type.cons)
+            arg_parts = tuple(
                 name(t) for t in type.type_args
-            ) + (
+            ) + tuple(
                 value_as_str(v) for v in type.value_args
             )
             return "%s<%s>" % (
-                cons_name(type.cons),
+                base_name,
                 ", ".join(arg_parts),
             )
 
