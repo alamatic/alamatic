@@ -82,6 +82,9 @@ class Type(object):
         return self._hash
 
     def __eq__(self, other):
+        if not isinstance(other, Type):
+            return False
+
         return (
             self.cons == other.cons and
             self.type_args == other.type_args and
