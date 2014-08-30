@@ -68,6 +68,12 @@ class Type(object):
     def display_name(self):
         return get_type_display_names([self])[self]
 
+    def __repr__(self):
+        return "<alamatic.types.Type %s at 0x%x>" % (
+            self.display_name,
+            id(self),
+        )
+
     @property
     def is_variable(self):
         return self.cons.is_variable
