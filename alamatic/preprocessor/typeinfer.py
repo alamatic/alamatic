@@ -148,6 +148,9 @@ class TypeTable(object):
     def __ne__(self, other):
         return not self == other
 
+    def __repr__(self):
+        return "<alamatic.types.TypeTable %r>" % dict(self._symbol_types)
+
 
 class TypeContext(object):
 
