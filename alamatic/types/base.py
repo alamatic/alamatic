@@ -30,6 +30,12 @@ class TypeConstructor(object):
 
         self._instances = weakref.WeakValueDictionary()
 
+    @classmethod
+    def conflict(cls, impls):
+        self = cls()
+        self.impls = list(impls)
+        return self
+
     def instantiate(self, type_args=(), value_args=()):
         type_args = tuple(type_args)
         value_args = tuple(value_args)
@@ -49,6 +55,10 @@ class TypeConstructor(object):
     @property
     def is_variable(self):
         return len(self.impls) == 0
+
+    @property
+    def is_conflicted(self):
+        return len(self.impls) > 1
 
     @property
     def impl(self):
@@ -72,9 +82,44 @@ class Type(object):
             )
         )
 
+    @classmethod
+    def conflict(self, types):
+        impls = []
+        for conflict_type in types:
+            impls.extend(conflict_type.cons.impls)
+        cons = TypeConstructor.conflict(impls)
+        return Type(cons, (), ())
+
     @property
     def display_name(self):
         return get_type_display_names([self])[self]
+
+    def unify(self, other):
+
+        # If either type is in conflict then we'll just keep
+        # growing the conflict each time a new implementation shows up.
+        if self.is_conflicted or other.is_conflicted:
+            return Type.conflict((self, other))
+
+        # Arrange the types so that the non-variables are first,
+        # so that the rest of this logic will work regardless of
+        # which order the types are passed.
+        types = tuple(sorted(
+            (self, other),
+            key=lambda x: x.is_variable
+        ))
+
+        # If the second type is not a variable then we have two
+        # non-variable types, which is a conflict unless they
+        # are the same type.
+        if not types[1].is_variable and types[0] != types[1]:
+            return Type.conflict((self, other))
+
+        # Otherwise the first type always wins.
+        # If it's not a variable then it obviously wins.
+        # If it is a variable then it's arbitrary which one we keep,
+        # so we'll just keep the first.
+        return types[0]
 
     def __repr__(self):
         return "<alamatic.types.Type %s at 0x%x>" % (
@@ -85,6 +130,10 @@ class Type(object):
     @property
     def is_variable(self):
         return self.cons.is_variable
+
+    @property
+    def is_conflicted(self):
+        return self.cons.is_conflicted
 
     @property
     def impl(self):
