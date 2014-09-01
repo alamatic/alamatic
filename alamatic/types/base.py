@@ -6,6 +6,7 @@ __all__ = [
     "TypeConstructor",
     "Type",
     "TypeImplementation",
+    "OperationImplementation",
     "get_fresh_type_variable",
     "get_type_display_names",
 ]
@@ -125,6 +126,22 @@ class TypeImplementation(object):
         """
         return TypeConstructor(self).instantiate()
 
+
+class OperationImplementation(object):
+
+    def get_result_type(self, *args):
+        raise Exception(
+            "result_type not implemented for %r" % self
+        )
+
+    def get_constant_result(self, *args):
+        from alamatic.intermediate import Unknown
+        return Unknown
+
+    def build_llvm_value(self, builder, *args):
+        raise Exception(
+            "build_llvm_value not implemented for %r" % self
+        )
 
 
 def get_fresh_type_variable():
