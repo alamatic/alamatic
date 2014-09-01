@@ -46,6 +46,10 @@ class TypeConstructor(object):
     def is_variable(self):
         return len(self.impls) == 0
 
+    @property
+    def impl(self):
+        return None if self.is_variable else self.impls[0]
+
 
 class Type(object):
 
@@ -77,6 +81,10 @@ class Type(object):
     @property
     def is_variable(self):
         return self.cons.is_variable
+
+    @property
+    def impl(self):
+        return self.cons.impl
 
     def __hash__(self):
         return self._hash
