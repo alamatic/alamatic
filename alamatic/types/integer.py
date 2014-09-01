@@ -17,18 +17,8 @@ __all__ = [
 ]
 
 
-class IntegerImpl(TypeImplementation):
 
-    def __init__(self, bits, signed):
-        self.bits = bits
-        self.signed = signed
 
-    @property
-    def display_name(self):
-        return "%sInt%i" % (
-            "" if self.signed else "U",
-            self.bits,
-        )
 
 
 class UnknownSizeIntegerImpl(TypeImplementation):
@@ -51,11 +41,23 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     use an integer literal without first converting it to a real integer type.
     """
 
-    @property
-    def display_name(self):
-        # This type is an implementation detail and so it doesn't have a name
-        # since the end-user should never see it.
-        return None
+    def __init__(self):
+        TypeImplementation.__init__(self, None)
+
+
+class IntegerImpl(TypeImplementation):
+
+    def __init__(self, bits, signed):
+        self.bits = bits
+        self.signed = signed
+        display_name = "%sInt%i" % (
+            "" if self.signed else "U",
+            self.bits,
+        )
+        super(
+            IntegerImpl,
+            self,
+        ).__init__(display_name)
 
 
 Int64 = IntegerImpl(64, True).make_no_arg_type()
