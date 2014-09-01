@@ -1,5 +1,10 @@
 
-from alamatic.types import TypeImplementation
+import weakref
+
+from alamatic.types import (
+    TypeImplementation,
+    OperationImplementation,
+)
 
 
 # We only export the type instances by default, since the implementations are
@@ -17,8 +22,31 @@ __all__ = [
 ]
 
 
+class BinaryOperationImpl(OperationImplementation):
 
+    def __init__(self, name, build_impl, const_impl):
+        self.name = name
+        self.build_impl = build_impl
+        self.const_impl = const_impl
 
+    def get_result_type(self, lhs, rhs, source_range=None):
+        # TODO: Verify the result type
+        return lhs.type
+
+    def get_constant_result(self, lhs, rhs):
+        if not self.const_impl:
+            from alamatic.intermediate import Unknown
+            return Unknown
+
+        # TODO: Handle overflow by wrapping
+        return self.const_impl(lhs.value, rhs.value)
+
+    def build_llvm_value(self, builder, lhs, rhs):
+        # TODO: insert conversion for rhs if it's an UnknownSizeInteger
+        return self.const_impl(builder, lhs.value, rhs.value)
+
+    def __repr__(self):
+        return "<IntegerImpl.%s>" % self.name
 
 
 class UnknownSizeIntegerImpl(TypeImplementation):
@@ -45,6 +73,20 @@ class UnknownSizeIntegerImpl(TypeImplementation):
         TypeImplementation.__init__(self, None)
 
 
+operation_impls = [
+    BinaryOperationImpl(
+        "add",
+        lambda b, lhs, rhs: b.add(lhs, rhs),
+        lambda lhs, rhs: lhs + rhs,
+    ),
+    BinaryOperationImpl(
+        "sub",
+        lambda b, lhs, rhs: r.sub(lhs, rhs),
+        lambda lhs, rhs: lhs - rhs,
+    ),
+]
+
+
 class IntegerImpl(TypeImplementation):
 
     def __init__(self, bits, signed):
@@ -58,6 +100,11 @@ class IntegerImpl(TypeImplementation):
             IntegerImpl,
             self,
         ).__init__(display_name)
+
+    def __metaclass__(name, bases, dict):
+        for operation in operation_impls:
+            dict[operation.name] = operation
+        return type(name, bases, dict)
 
 
 Int64 = IntegerImpl(64, True).make_no_arg_type()
