@@ -120,7 +120,33 @@ class TypeTable(object):
             yield symbol, self[symbol]
 
     def __eq__(self, other):
-        return self._symbol_types == other._symbol_types
+        if type(other) is not TypeTable:
+            return False
+
+        if (
+            set(self._symbol_types.iterkeys())
+            != set(other._symbol_types.iterkeys())
+        ):
+            return False
+
+        for k, self_type in self.iteritems():
+            other_type = other[k]
+
+            # For the sake of our equality test, all variable types
+            # compare equal because otherwise no two runs would ever match,
+            # and it's changes in non-variable types that matter most.
+            if self_type.is_variable != other_type.is_variable:
+                return False
+
+            if not self_type.is_variable:
+                if self_type != other_type:
+                    return False
+
+        # If we fall out of the loop then there are no differences.
+        return True
+
+    def __ne__(self, other):
+        return not self == other
 
 
 class TypeContext(object):
