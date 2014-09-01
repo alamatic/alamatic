@@ -70,7 +70,7 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     """
 
     def __init__(self):
-        TypeImplementation.__init__(self, None)
+        TypeImplementation.__init__(self, "UnknownSizeInteger")
 
 
 operation_impls = [
