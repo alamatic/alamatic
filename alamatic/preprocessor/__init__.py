@@ -36,6 +36,12 @@ def _preprocess_cfg(graph, preprocessors):
 
     queue = deque(graph.blocks)
 
+    # Assume a worst-case runtime of O(n^2) where n is the number
+    # of blocks. If we don't terminate by then we'll generate
+    # a warning assuming that there's a bug preventing termination.
+    warning_threshold = len(queue) * len(queue)
+    iterations = 0
+
     while len(queue) > 0:
         current_block = queue.popleft()
 
@@ -48,6 +54,14 @@ def _preprocess_cfg(graph, preprocessors):
                 if changed:
                     run_again = True
                     queue_successors = True
+
+            iterations += 1
+            if iterations == warning_threshold:
+                # FIXME: Best do this some way other than printing in here.
+                print "Warning: Preprocessor has done %i iterations on %r" % (
+                    iterations,
+                    graph,
+                )
 
         if queue_successors:
             # FIXME: This might put the same block in the queue
