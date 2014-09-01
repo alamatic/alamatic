@@ -102,6 +102,9 @@ class Type(object):
 
 class TypeImplementation(object):
 
+    def __init__(self, display_name, *components):
+        self.display_name = display_name
+
     def make_no_arg_type(self):
         """
         Build a type constructor for this implementation and instantiate
@@ -122,9 +125,6 @@ class TypeImplementation(object):
         """
         return TypeConstructor(self).instantiate()
 
-    @property
-    def display_name(self):
-        raise Exception("No display_name for %r" % type(self))
 
 
 def get_fresh_type_variable():
