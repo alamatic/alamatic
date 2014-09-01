@@ -1,4 +1,8 @@
 
+from alamatic.util import QuickObject
+from alamatic.intermediate import Unknown
+
+
 class Operation(object):
 
     def __repr__(self):
@@ -53,6 +57,44 @@ class BinaryOperation(Operation):
     def replace_operands(self, replace):
         self.lhs = replace(self.lhs)
         self.rhs = replace(self.rhs)
+
+    def _get_implementation(self, lhs_type, rhs_type):
+
+        # TODO: Implement reverse-fallback behavior, allowing an
+        # inverse operation to be used if rhs implements it.
+        return getattr(lhs_type.impl, self.operator, None)
+
+    def get_result_type(self, context):
+        lhs_type = context.operand_type(self.lhs)
+        rhs_type = context.operand_type(self.rhs)
+
+        if lhs_type.is_variable or rhs_type.is_variable:
+            return context.unknown()
+
+        impl = self._get_implementation(lhs_type, rhs_type)
+
+        if impl is None:
+            # TODO: Signal an error in this case, since the operator
+            # is not supported.
+            return context.unknown()
+
+        lhs = QuickObject(
+            type=lhs_type,
+            source_range=self.lhs.source_range,
+        )
+        rhs = QuickObject(
+            type=rhs_type,
+            source_range=self.rhs.source_range,
+        )
+
+        # FIXME: Should pass in the source range for error reporting,
+        # but currently operations don't have access to it.
+        result_type = impl.get_result_type(lhs, rhs)
+
+        if result_type is Unknown:
+            result_type = context.unknown()
+
+        return result_type
 
 
 class CallOperation(Operation):
