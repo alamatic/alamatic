@@ -1,4 +1,11 @@
 
+class UnknownType(object):
+    pass
+
+
+Unknown = UnknownType()
+
+
 from alamatic.compilelogging import CompilerError, range_link
 from alamatic.intermediate.symbols import *
 from alamatic.intermediate.instructions import *
@@ -113,13 +120,6 @@ class SymbolTable(object):
             # context, such as the body of a function declaration.
             self.children.append(child)
         return child
-
-
-class UnknownType(object):
-    pass
-
-
-Unknown = UnknownType()
 
 
 class IncompatibleTypesError(CompilerError):
