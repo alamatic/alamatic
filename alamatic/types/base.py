@@ -1,12 +1,15 @@
 
 import weakref
 
+from alamatic.compilelogging import CompilerError
+
 
 __all__ = [
     "TypeConstructor",
     "Type",
     "TypeImplementation",
     "OperationImplementation",
+    "OperationNotSupportedError",
     "get_fresh_type_variable",
     "get_type_display_names",
 ]
@@ -142,6 +145,10 @@ class OperationImplementation(object):
         raise Exception(
             "build_llvm_value not implemented for %r" % self
         )
+
+
+class OperationNotSupportedError(CompilerError):
+    pass
 
 
 def get_fresh_type_variable():
