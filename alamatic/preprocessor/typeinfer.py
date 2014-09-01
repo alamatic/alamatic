@@ -15,7 +15,7 @@ class TypeInferer(object):
         self._block_inferences = weakref.WeakKeyDictionary()
 
     def infer_types_for_block(self, block):
-        old_inferences = self._block_inferences.get(block)
+        old_inferences = self.get_inferences_for_block(block)
         inferences = TypeTable()
         for pred_block in block.predecessors:
             if pred_block in self._block_inferences:
