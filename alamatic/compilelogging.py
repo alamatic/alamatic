@@ -18,6 +18,17 @@ class LogLine(object):
 
     @property
     def as_string(self):
+        types_linked = [t.type for t in self.parts if type(t) is type_link]
+        if len(types_linked) > 0:
+            from alamatic.types import get_type_display_names
+            type_names = get_type_display_names(types_linked)
+
+        def expand(part):
+            if type(part) is type_link:
+                return type_names[part.type]
+            else:
+                return unicode(s)
+
         return "".join((unicode(s) for s in self.parts))
 
     @property
@@ -94,6 +105,14 @@ class range_link(object):
 
     def __unicode__(self):
         return self.text
+
+
+class type_link(object):
+    def __init__(self, type):
+        self.type = type
+
+    def __unicode__(self):
+        return self.type.display_name
 
 
 class CompilerError(Exception):
