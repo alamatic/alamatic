@@ -68,9 +68,9 @@ class NamedSymbol(Symbol):
         return self.decl_name
 
     def __str__(self):
-        return '%s from %r' % (
+        return '%s from %s' % (
             self.decl_name,
-            self.decl_source_range,
+            self.decl_source_range.start,
         )
 
 
