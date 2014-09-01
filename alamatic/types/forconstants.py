@@ -12,6 +12,7 @@ __all__ = [
 primitive_type_map = {
     int: IntUnknownSize,
     long: IntUnknownSize,
+    bool: Bool,
 }
 
 
