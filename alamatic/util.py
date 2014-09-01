@@ -1,5 +1,15 @@
 
 
+class QuickObject(object):
+
+    def __init__(self, **kwargs):
+        for k in self.__dict__.keys():
+            del self.__dict__[k]
+
+        for k, v in kwargs.iteritems():
+            self.__dict__[k] = v
+
+
 class LinkedListSlot(object):
     def __init__(self, container, item, prev_slot=None, next_slot=None):
         self.container = container
