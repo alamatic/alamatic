@@ -29,10 +29,6 @@ class BinaryOperationImpl(OperationImplementation):
         self.build_impl = build_impl
         self.const_impl = const_impl
 
-    def get_result_type(self, lhs, rhs, source_range=None):
-        # TODO: Verify the result type
-        return lhs.type
-
     def get_constant_result(self, lhs, rhs):
         if not self.const_impl:
             from alamatic.intermediate import Unknown
@@ -47,6 +43,20 @@ class BinaryOperationImpl(OperationImplementation):
 
     def __repr__(self):
         return "<IntegerImpl.%s>" % self.name
+
+
+class BinaryArithmeticOperationImpl(BinaryOperationImpl):
+
+    def get_result_type(self, lhs, rhs, source_range=None):
+        # TODO: Verify the result type
+        return lhs.type
+
+
+class BinaryTestOperationImpl(BinaryOperationImpl):
+
+    def get_result_type(self, lhs, rhs, source_range=None):
+        from alamatic.types import Bool
+        return Bool
 
 
 class UnknownSizeIntegerImpl(TypeImplementation):
@@ -72,14 +82,26 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     def __init__(self):
         TypeImplementation.__init__(self, "UnknownSizeInteger")
 
+    add = BinaryArithmeticOperationImpl(
+        "add",
+        lambda b, lhs, rhs: b.add(lhs, rhs),
+        lambda lhs, rhs: lhs + rhs,
+    )
+
+    is_less_than = BinaryTestOperationImpl(
+        "is_less_than",
+        None,
+        lambda lhs, rhs: lhs < rhs,
+    )
+
 
 operation_impls = [
-    BinaryOperationImpl(
+    BinaryArithmeticOperationImpl(
         "add",
         lambda b, lhs, rhs: b.add(lhs, rhs),
         lambda lhs, rhs: lhs + rhs,
     ),
-    BinaryOperationImpl(
+    BinaryArithmeticOperationImpl(
         "sub",
         lambda b, lhs, rhs: r.sub(lhs, rhs),
         lambda lhs, rhs: lhs - rhs,
