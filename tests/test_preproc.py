@@ -1,6 +1,7 @@
 
 import unittest
 import mock
+import contextlib
 from collections import defaultdict
 from alamatic.preprocessor import (
     _preprocess_cfg,
@@ -43,12 +44,17 @@ class TestPreprocess(unittest.TestCase):
 
         logger = Logger()
 
+        @contextlib.contextmanager
+        def make_context(block):
+            yield
+
         _preprocess_cfg(
             graph,
             [
                 logger.stream('a'),
                 logger.stream('b'),
-            ]
+            ],
+            make_context,
         )
 
         self.assertEqual(

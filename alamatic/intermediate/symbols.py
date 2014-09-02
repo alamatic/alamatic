@@ -8,7 +8,6 @@ class Symbol(object):
     ):
         self.decl_table = decl_table
         self.decl_source_range = decl_source_range
-        self.type = None
         self.init_source_range = None
 
     def make_operand(self, source_range=None):
@@ -21,6 +20,15 @@ class Symbol(object):
     @property
     def assignable(self):
         return False
+
+    @property
+    def is_temporary(self):
+        return False
+
+    @property
+    def type(self):
+        from alamatic.context import context
+        return context.symbol_types[self]
 
     def __repr__(self):
         return '<alamatic.intermediate.%s %s>' % (
@@ -101,3 +109,7 @@ class TemporarySymbol(Symbol):
         return 'temp(%x)' % (
             id(self),
         )
+
+    @property
+    def is_temporary(self):
+        return True

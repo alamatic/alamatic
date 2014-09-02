@@ -2,6 +2,8 @@
 import weakref
 import collections
 from alamatic.types import *
+from alamatic.context import new_context
+from alamatic.intermediate import Unknown
 
 
 __all__ = [
@@ -29,16 +31,19 @@ class TypeInferer(object):
                 # produce a result and then we'll get re-queued.
                 return False
 
-        context = TypeContext(inferences)
+        with new_context(symbol_types=inferences):
+            for instruction in block.operation_instructions:
+                operation = instruction.operation
+                target = instruction.target
 
-        for instruction in block.operation_instructions:
-            operation = instruction.operation
-            target = instruction.target
-            if hasattr(target, "symbol"):  # looks like a SymbolOperand
-                inferences.add(
-                    target.symbol,
-                    operation.get_result_type(context),
-                )
+                if hasattr(target, "symbol"):  # looks like a SymbolOperand
+                    result_type = operation.result_type
+                    if result_type is Unknown:
+                        result_type = get_fresh_type_variable()
+                    inferences.add(
+                        target.symbol,
+                        result_type,
+                    )
 
         self._block_inferences[block] = inferences
         return inferences != old_inferences
@@ -150,15 +155,3 @@ class TypeTable(object):
 
     def __repr__(self):
         return "<alamatic.types.TypeTable %r>" % dict(self._symbol_types)
-
-
-class TypeContext(object):
-
-    def __init__(self, type_table):
-        self.type_table = type_table
-
-    def operand_type(self, operand):
-        return operand.get_type(self.type_table)
-
-    def unknown(self):
-        return get_fresh_type_variable()

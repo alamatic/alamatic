@@ -6,6 +6,8 @@ from alamatic.types import (
     OperationImplementation,
 )
 
+from llvm.core import ICMP_SLT
+
 
 # We only export the type instances by default, since the implementations are
 # not intended to be re-used.
@@ -38,8 +40,11 @@ class BinaryOperationImpl(OperationImplementation):
         return self.const_impl(lhs.value, rhs.value)
 
     def build_llvm_value(self, builder, lhs, rhs):
+        lhs_value = lhs.build_llvm_value(builder)
+        rhs_value = rhs.build_llvm_value(builder)
+
         # TODO: insert conversion for rhs if it's an UnknownSizeInteger
-        return self.const_impl(builder, lhs.value, rhs.value)
+        return self.build_impl(builder, lhs_value, rhs_value)
 
     def __repr__(self):
         return "<IntegerImpl.%s>" % self.name
@@ -82,6 +87,23 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     def __init__(self):
         TypeImplementation.__init__(self, "UnknownSizeInteger")
 
+    def get_llvm_type(self):
+        # This type should never appear in generated code, but
+        # we return a placeholder just to complete the interface.
+        # TODO: Eventually, make this an error.
+        from llvm.core import Type
+        return Type.int(32)
+
+    def get_llvm_constant(self, value):
+        # TODO: This should actually be an error, since this type has no
+        # business being in generated code. But we'll support it for now
+        # because it makes debugging codegen easier.
+        # No module using a constant of this type can ever be valid though,
+        # since our constant type (i32) doesn't agree with our declared
+        # value type (opaque)
+        from llvm.core import Constant, Type
+        return Constant.int(Type.int(32), value)
+
     add = BinaryArithmeticOperationImpl(
         "add",
         lambda b, lhs, rhs: b.add(lhs, rhs),
@@ -90,7 +112,7 @@ class UnknownSizeIntegerImpl(TypeImplementation):
 
     is_less_than = BinaryTestOperationImpl(
         "is_less_than",
-        None,
+        lambda b, lhs, rhs: b.icmp(ICMP_SLT, lhs, rhs),
         lambda lhs, rhs: lhs < rhs,
     )
 
@@ -122,6 +144,9 @@ class IntegerImpl(TypeImplementation):
             IntegerImpl,
             self,
         ).__init__(display_name)
+
+    def get_llvm_type(self, Type):
+        return Type.int(self.bits)
 
     def __metaclass__(name, bases, dict):
         for operation in operation_impls:

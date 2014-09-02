@@ -4,7 +4,6 @@ import mock
 from alamatic.preprocessor.typeinfer import (
     TypeInferer,
     TypeTable,
-    TypeContext,
 )
 
 
@@ -289,7 +288,7 @@ class TestTypeInferer(unittest.TestCase):
         mock_instruction.target = mock_operand
         mock_instruction.operation = mock_operation
         mock_operand.symbol = mock_symbol
-        mock_operation.get_result_type.return_value = mock_type
+        mock_operation.result_type = mock_type
 
         changed = inferer.infer_types_for_block(mock_block)
 

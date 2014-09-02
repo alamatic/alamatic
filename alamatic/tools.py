@@ -9,6 +9,7 @@ def alac():
     from alamatic.compiler import CompileState
     from alamatic.compilelogging import TerminalCompileLogHandler
     from alamatic.preprocessor import preprocess_cfg
+    from alamatic.codegen import module_for_unit
     fn = sys.argv[1]
 
     log_handler = TerminalCompileLogHandler(
@@ -31,9 +32,14 @@ def alac():
     unit = module.get_intermediate_form()
     graph = unit.graph
 
-    preprocess_cfg(graph)
+    preprocessor_result = preprocess_cfg(graph)
 
-    print_graph(graph)
+    with preprocessor_result.context():
+        module = module_for_unit(unit)
+
+    print str(module)
+
+    #print_graph(graph)
 
 
 def print_graph(graph):

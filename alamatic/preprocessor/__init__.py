@@ -1,7 +1,10 @@
 
 from collections import deque
+import contextlib
+
 from alamatic.preprocessor.deadcode import *
 from alamatic.preprocessor.typeinfer import *
+from alamatic.context import new_context
 
 
 def preprocess_cfg(graph):
@@ -16,10 +19,25 @@ def preprocess_cfg(graph):
     ## Type Inference Phase
     preprocessors.append(type_inferer.infer_types_for_block)
 
-    _preprocess_cfg(graph, preprocessors)
+    @contextlib.contextmanager
+    def make_context(block):
+        with new_context(
+            symbol_types=type_inferer.get_inferences_for_block(
+                block,
+            ),
+            symbol_constant_values={},
+        ):
+            yield
+
+    _preprocess_cfg(graph, preprocessors, make_context)
+    return PreprocessorResult(
+        graph=graph,
+        symbol_types=type_inferer.get_inferences_for_block(graph.exit_block),
+        symbol_constant_values={},
+    )
 
 
-def _preprocess_cfg(graph, preprocessors):
+def _preprocess_cfg(graph, preprocessors, make_context):
     # This is really just a straightforward forward analysis driver,
     # visiting each basic block at least once and possibly visiting
     # some more than once if loops are present.
@@ -39,7 +57,7 @@ def _preprocess_cfg(graph, preprocessors):
     # Assume a worst-case runtime of O(n^2) where n is the number
     # of blocks. If we don't terminate by then we'll generate
     # a warning assuming that there's a bug preventing termination.
-    warning_threshold = len(queue) * len(queue)
+    warning_threshold = len(queue) * len(queue) * len(preprocessors)
     iterations = 0
 
     while len(queue) > 0:
@@ -50,7 +68,8 @@ def _preprocess_cfg(graph, preprocessors):
         while run_again:
             run_again = False
             for preprocessor in preprocessors:
-                changed = preprocessor(current_block)
+                with make_context(current_block):
+                    changed = preprocessor(current_block)
                 if changed:
                     run_again = True
                     queue_successors = True
@@ -68,3 +87,25 @@ def _preprocess_cfg(graph, preprocessors):
             # twice, if there's a cycle or diamond on the graph,
             # causing a redundant visit in some cases.
             queue.extend(current_block.successors)
+
+
+class PreprocessorResult(object):
+
+    def __init__(
+        self,
+        graph,
+        symbol_types,
+        symbol_constant_values,
+    ):
+        self.graph = graph
+        self.symbol_types = symbol_types
+        self.symbol_constant_values = symbol_constant_values
+
+    @contextlib.contextmanager
+    def context(self):
+        from alamatic.context import new_context
+        with new_context(
+            symbol_types=self.symbol_types,
+            symbol_constant_values=self.symbol_constant_values,
+        ):
+            yield

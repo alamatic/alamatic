@@ -9,10 +9,11 @@ class Operation(object):
         params = tuple(self.params)
         return "<alamatic.intermediate.%s%r>" % (type(self).__name__, params)
 
-    def get_result_type(self, context):
-        # FIXME: Once the others are all implemented, it should be a
-        # fatal error not to have a get_result_type implementation.
-        return context.unknown()
+    @property
+    def result_type(self):
+        raise Exception(
+            "result_type not implemented for %r" % self
+        )
 
 
 class CopyOperation(Operation):
@@ -27,8 +28,12 @@ class CopyOperation(Operation):
     def replace_operands(self, replace):
         self.operand = replace(self.operand)
 
-    def get_result_type(self, context):
-        return context.operand_type(self.operand)
+    @property
+    def result_type(self):
+        return self.operand.type
+
+    def build_llvm_value(self, builder):
+        return self.operand.build_llvm_value(builder)
 
 
 class UnaryOperation(Operation):
@@ -58,43 +63,31 @@ class BinaryOperation(Operation):
         self.lhs = replace(self.lhs)
         self.rhs = replace(self.rhs)
 
-    def _get_implementation(self, lhs_type, rhs_type):
-
+    def _get_implementation(self):
         # TODO: Implement reverse-fallback behavior, allowing an
         # inverse operation to be used if rhs implements it.
-        return getattr(lhs_type.impl, self.operator, None)
+        return getattr(self.lhs.type.impl, self.operator, None)
 
-    def get_result_type(self, context):
-        lhs_type = context.operand_type(self.lhs)
-        rhs_type = context.operand_type(self.rhs)
+    @property
+    def result_type(self):
+        if self.lhs.type.is_variable or self.rhs.type.is_variable:
+            return Unknown
 
-        if lhs_type.is_variable or rhs_type.is_variable:
-            return context.unknown()
-
-        impl = self._get_implementation(lhs_type, rhs_type)
+        impl = self._get_implementation()
 
         if impl is None:
             # TODO: Signal an error in this case, since the operator
             # is not supported.
-            return context.unknown()
-
-        lhs = QuickObject(
-            type=lhs_type,
-            source_range=self.lhs.source_range,
-        )
-        rhs = QuickObject(
-            type=rhs_type,
-            source_range=self.rhs.source_range,
-        )
+            return self.lhs.type
 
         # FIXME: Should pass in the source range for error reporting,
         # but currently operations don't have access to it.
-        result_type = impl.get_result_type(lhs, rhs)
+        return impl.get_result_type(self.lhs, self.rhs)
 
-        if result_type is Unknown:
-            result_type = context.unknown()
+    def build_llvm_value(self, builder):
+        impl = self._get_implementation()
 
-        return result_type
+        return impl.build_llvm_value(builder, self.lhs, self.rhs)
 
 
 class CallOperation(Operation):

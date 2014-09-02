@@ -14,6 +14,9 @@ class BoolImpl(TypeImplementation):
     def __init__(self):
         super(BoolImpl, self).__init__("Bool")
 
+    def get_llvm_type(self, Type):
+        return Type.int(1)
+
 
 # Singleton implementation
 impl = BoolImpl()

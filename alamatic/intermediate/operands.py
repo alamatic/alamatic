@@ -1,4 +1,7 @@
 
+from alamatic.context import context
+
+
 class Operand(object):
     source_range = None
 
@@ -37,9 +40,13 @@ class ConstantOperand(Operand):
     def constant_value(self):
         return self.value
 
-    def get_type(self, symbol_types):
+    @property
+    def type(self):
         from alamatic.types import get_type_for_constant
         return get_type_for_constant(self.value)
+
+    def build_llvm_value(self, builder):
+        return self.type.impl.get_llvm_constant(self.value)
 
 
 class SymbolOperand(Operand):
@@ -52,8 +59,35 @@ class SymbolOperand(Operand):
     def params(self):
         yield self.symbol
 
-    def get_type(self, symbol_types):
-        return symbol_types[self.symbol]
+    @property
+    def constant_value(self):
+        if self.symbol in context.symbol_constant_values:
+            return context.symbol_constant_values[self.symbol]
+        else:
+            from alamatic.intermediate import Unknown
+            return Unknown
+
+    @property
+    def type(self):
+        return self.symbol.type
+
+    def build_llvm_value(self, builder):
+        if self.symbol.is_temporary:
+            # Easy! We can just return its value directly, since it's
+            # already a register.
+            return context.symbol_llvm_values[self.symbol]
+        else:
+            # Otherwise what we have is actually a pointer to memory,
+            # so we need to load it first.
+            return builder.load(
+                context.symbol_llvm_values[self.symbol],
+            )
+
+    def build_llvm_store_ptr(self, builder):
+        if self.symbol.is_temporary:
+            return None
+        else:
+            return context.symbol_llvm_values[self.symbol]
 
 
 class IndexOperand(Operand):
