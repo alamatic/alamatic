@@ -15,7 +15,7 @@ class Operand(object):
     def __str__(self):
         return type(self).__name__ + "(" + (', '.join(
             (str(x) for x in self.params)
-        )) + " : " + repr(self.source_range) + ")"
+        )) + " : " + str(self.source_range.start) + ")"
 
     def __repr__(self):
         return "<alamatic.intermediate.%s>" % self.__str__()
