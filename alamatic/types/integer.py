@@ -36,8 +36,8 @@ class BinaryOperationImpl(OperationImplementation):
             from alamatic.intermediate import Unknown
             return Unknown
 
-        # TODO: Handle overflow by wrapping
-        return self.const_impl(lhs.value, rhs.value)
+        result = self.const_impl(lhs.constant_value, rhs.constant_value)
+        return self.get_result_type(lhs, rhs).impl.constrain_value(result)
 
     def build_llvm_value(self, builder, lhs, rhs):
         lhs_value = lhs.build_llvm_value(builder)
@@ -145,7 +145,34 @@ class IntegerImpl(TypeImplementation):
             self,
         ).__init__(display_name)
 
-    def get_llvm_type(self, Type):
+    @property
+    def limits(self):
+        value_bits = self.bits - 1 if self.signed else self.bits
+        num_values = 2 ** value_bits
+        if self.signed:
+            return (-num_values, num_values - 1)
+        else:
+            return (0, num_values - 1)
+
+    @property
+    def min_value(self):
+        return self.limits[0]
+
+    @property
+    def max_value(self):
+        return self.limits[1]
+
+    def constrain_value(self, num):
+        value_mask = (2 ** self.bits) - 1
+        sign_mask = (2 ** (self.bits - 1))
+        ret = num & value_mask
+        if self.signed and (ret & sign_mask):
+            value_mask = (2 ** (self.bits - 1)) - 1
+            ret = self.min_value + (ret & value_mask)
+        return ret
+
+    def get_llvm_type(self):
+        from llvm.core import Type
         return Type.int(self.bits)
 
     def __metaclass__(name, bases, dict):
