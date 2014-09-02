@@ -49,6 +49,9 @@ class JumpInstruction(Instruction):
     def jump_targets(self):
         return set([self.label])
 
+    def build_llvm_terminator(self, builder, ft_block, label_blocks):
+        return builder.branch(label_blocks[self.label])
+
 
 class JumpIfFalseInstruction(JumpInstruction):
     def __init__(self, cond, label, source_range=None):
@@ -83,6 +86,14 @@ class JumpIfFalseInstruction(JumpInstruction):
     def jump_targets(self):
         return set([self.label])
 
+    def build_llvm_terminator(self, builder, ft_block, label_blocks):
+        cond_value = self.cond.build_llvm_value(builder)
+        return builder.cbranch(
+            cond_value,
+            ft_block,
+            label_blocks[self.label],
+        )
+
 
 # This is not a "real" operation that should show up during code generation,
 # but is used by the code analyzer to ensure that all basic blocks have
@@ -103,6 +114,9 @@ class JumpNeverInstruction(JumpInstruction):
     @property
     def jump_targets(self):
         return set()
+
+    def build_llvm_terminator(self, builder, ft_block, label_blocks):
+        return builder.branch(ft_block)
 
 
 # This is not a "real" operation that should show up during code generation,
