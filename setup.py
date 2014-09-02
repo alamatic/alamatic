@@ -6,7 +6,7 @@ setup(
     version="0.0.1",
     description="Programming language for embedded applications",
     packages=['alamatic','alamatic.ast'],
-    requires=['plex(==2.0.0)', 'datafork(>=0.0.5)'],
+    requires=['plex(==2.0.0)', 'datafork(>=0.0.5)', 'llvmpy(>=0.12.7)'],
     entry_points = {
         'console_scripts': [
             'alac = alamatic.tools:alac',

@@ -2,11 +2,13 @@ language: python
 python:
   - "2.7"
 install:
+  - "sudo apt-get install llvm-3.3 llvm-3.3-dev"
   - "pip install -U pip"
   - "pip install -e . --use-mirrors"
   # FIXME: It'd be better not to duplicate the dependencies in here,
   # since they're already in setup.py. :(
   - "pip install --pre --use-mirrors plex==2.0.0dev datafork>=0.0.5"
+  - "LLVM_CONFIG_PATH=/usr/bin/llvm-config-3.3 pip install --pre --use-mirrors llvmpy>=0.12.7"
   # Testing dependencies
   - "pip install --use-mirrors -U -r requirements-dev.txt"
   - "pip install coveralls"
