@@ -79,7 +79,7 @@ class SymbolOperand(Operand):
         else:
             # Otherwise what we have is actually a pointer to memory,
             # so we need to load it first.
-            return builder.load(
+            return builder.instrs.load(
                 context.symbol_llvm_values[self.symbol],
             )
 

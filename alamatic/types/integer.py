@@ -6,8 +6,6 @@ from alamatic.types import (
     OperationImplementation,
 )
 
-from llvm.core import ICMP_SLT
-
 
 # We only export the type instances by default, since the implementations are
 # not intended to be re-used.
@@ -87,12 +85,11 @@ class UnknownSizeIntegerImpl(TypeImplementation):
     def __init__(self):
         TypeImplementation.__init__(self, "UnknownSizeInteger")
 
-    def get_llvm_type(self):
-        # This type should never appear in generated code, but
-        # we return a placeholder just to complete the interface.
-        # TODO: Eventually, make this an error.
-        from llvm.core import Type
-        return Type.int(32)
+    def get_llvm_type(self, types):
+        # TODO: This should actually get handled as a PyObject*
+        # since its implementation will exist entirely in Python during
+        # compile time, but we don't support that yet.
+        return types.int(32)
 
     def get_llvm_constant(self, value):
         # TODO: This should actually be an error, since this type has no
@@ -106,13 +103,13 @@ class UnknownSizeIntegerImpl(TypeImplementation):
 
     add = BinaryArithmeticOperationImpl(
         "add",
-        lambda b, lhs, rhs: b.add(lhs, rhs),
+        lambda b, lhs, rhs: b.instrs.add(lhs, rhs),
         lambda lhs, rhs: lhs + rhs,
     )
 
     is_less_than = BinaryTestOperationImpl(
         "is_less_than",
-        lambda b, lhs, rhs: b.icmp(ICMP_SLT, lhs, rhs),
+        lambda b, lhs, rhs: b.instrs.icmp(b.icmps.SLT, lhs, rhs),
         lambda lhs, rhs: lhs < rhs,
     )
 
@@ -120,12 +117,12 @@ class UnknownSizeIntegerImpl(TypeImplementation):
 operation_impls = [
     BinaryArithmeticOperationImpl(
         "add",
-        lambda b, lhs, rhs: b.add(lhs, rhs),
+        lambda b, lhs, rhs: b.instrs.add(lhs, rhs),
         lambda lhs, rhs: lhs + rhs,
     ),
     BinaryArithmeticOperationImpl(
         "sub",
-        lambda b, lhs, rhs: r.sub(lhs, rhs),
+        lambda b, lhs, rhs: b.instrs.sub(lhs, rhs),
         lambda lhs, rhs: lhs - rhs,
     ),
 ]
@@ -171,9 +168,8 @@ class IntegerImpl(TypeImplementation):
             ret = self.min_value + (ret & value_mask)
         return ret
 
-    def get_llvm_type(self):
-        from llvm.core import Type
-        return Type.int(self.bits)
+    def get_llvm_type(self, types):
+        return types.int(self.bits)
 
     def __metaclass__(name, bases, dict):
         for operation in operation_impls:

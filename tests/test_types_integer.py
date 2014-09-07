@@ -114,11 +114,11 @@ class TestTypeImpl(unittest.TestCase):
         # the body of the function. So not gonna bother testing every
         # permutation.
         self.assertEqual(
-            Int8.impl.get_llvm_type(),
+            Int8.impl.get_llvm_type(Type),
             Type.int(8),
         )
         self.assertEqual(
-            UInt8.impl.get_llvm_type(),
+            UInt8.impl.get_llvm_type(Type),
             Type.int(8),
         )
 
