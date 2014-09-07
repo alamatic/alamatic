@@ -5,6 +5,16 @@ from alamatic.compilelogging import pos_link, CompilerError
 
 
 def parse_module(state, stream, name, filename):
+    source_range, block, doc = p_toplevel(state, stream, filename)
+    return Module(source_range, name, block, doc=doc)
+
+
+def parse_entry_file(state, stream, filename):
+    source_range, block, doc = p_toplevel(state, stream, filename)
+    return EntryFile(source_range, block, doc=doc)
+
+
+def p_toplevel(state, stream, filename):
     scanner = Scanner(state, stream, filename)
 
     full_range = scanner.begin_range()
@@ -28,7 +38,7 @@ def parse_module(state, stream, name, filename):
     stmts = p_statements(state, scanner, lambda s: s.next_is_eof())
     block = StatementBlock(stmts)
 
-    return Module(full_range.end(), name, block, doc=doc)
+    return full_range.end(), block, doc
 
 
 def parse_expression(state, stream, filename, allow_assign=False):

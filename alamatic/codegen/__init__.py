@@ -17,11 +17,11 @@ __all__ = [
 ]
 
 
-# Temporary interface; will change once we have an abstraction around raw
-# control flow graphs, produced by the preprocessor.
-def module_for_unit(unit):
-    graph = unit.graph
-    symbols = unit.symbols
+def module_for_program(program):
+    # FIXME: For no this only generates the code for the entry task
+    entry_task = program.entry_task
+    graph = entry_task.graph
+    symbols = entry_task.symbols
     module = LLVMModule.new("tmp")
 
     func_type = LLVMType.function(LLVMType.void(), [])

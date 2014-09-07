@@ -5,11 +5,11 @@ import sys
 def alac():
     # For now this is acting as a parse tree vizualization tool, but of
     # course eventually it will be the main compiler frontend.
-    from alamatic.parser import parse_module
+    from alamatic.parser import parse_entry_file
     from alamatic.compiler import CompileState
+    from alamatic.compiler import prepare_program
     from alamatic.compilelogging import TerminalCompileLogHandler
-    from alamatic.preprocessor import preprocess_cfg
-    from alamatic.codegen import module_for_unit
+    from alamatic.codegen import module_for_program
     fn = sys.argv[1]
 
     log_handler = TerminalCompileLogHandler(
@@ -19,23 +19,14 @@ def alac():
 
     state = CompileState(log_handler=log_handler)
 
-    module = parse_module(
-        state,
-        file(fn),
-        None,
-        fn,
-    )
+    program = prepare_program(state, file(fn), fn)
+
     log_handler.close()
     if state.error_count > 0:
         return 1
 
-    unit = module.get_intermediate_form()
-    graph = unit.graph
-
-    preprocessor_result = preprocess_cfg(graph)
-
-    with preprocessor_result.context():
-        module = module_for_unit(unit)
+    with program.context():
+        module = module_for_program(program)
 
     print str(module)
 

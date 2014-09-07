@@ -133,19 +133,43 @@ class Module(AstNode):
     def get_intermediate_form(self):
         from alamatic.intermediate import (
             SymbolTable,
-            Unit,
+            Module as IntermediateModule,
         )
         from alamatic.intermediate import build_control_flow_graph
         symbols = SymbolTable()
         elems = []
         self.block.make_intermediate_form(elems, symbols)
         graph = build_control_flow_graph(elems)
-        return Unit(
+        return IntermediateModule(
             graph=graph,
             symbols=symbols,
-            # FIXME: Need to figure out what sort of thing this parameter
-            # list will be. Modules don't need it but functions will later.
-            params=[],
+        )
+
+
+class EntryFile(AstNode):
+
+    def __init__(self, source_range, block, doc=None):
+        self.block = block
+        self.source_range = source_range
+        self.doc = doc
+
+    @property
+    def child_nodes(self):
+        yield self.block
+
+    def get_intermediate_form(self):
+        from alamatic.intermediate import (
+            SymbolTable,
+            Task,
+        )
+        from alamatic.intermediate import build_control_flow_graph
+        symbols = SymbolTable()
+        elems = []
+        self.block.make_intermediate_form(elems, symbols)
+        graph = build_control_flow_graph(elems)
+        return Task(
+            graph=graph,
+            symbols=symbols,
         )
 
 

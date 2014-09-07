@@ -1,5 +1,4 @@
 
-from alamatic.parser import parse_module
 from alamatic.compilelogging import (
     CompilerError,
     LogLine,
@@ -9,10 +8,26 @@ from alamatic.compilelogging import (
     CompileLogHandler,
 )
 
+from alamatic.parser import parse_entry_file
+from alamatic.intermediate import Program
+from alamatic.preprocessor import preprocess_cfg
+
 
 __all__ = [
     "CompileState",
 ]
+
+
+def prepare_program(state, stream, filename):
+    entry_file = parse_entry_file(state, stream, filename)
+
+    entry_task = entry_file.get_intermediate_form()
+    preprocessor_result = preprocess_cfg(entry_task.graph)
+
+    return Program(
+        entry_task,
+        preprocessor_result,
+    )
 
 
 class CompileState(object):
