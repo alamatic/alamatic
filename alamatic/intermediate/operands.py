@@ -46,7 +46,7 @@ class ConstantOperand(Operand):
         return get_type_for_constant(self.value)
 
     def build_llvm_value(self, builder):
-        return self.type.impl.get_llvm_constant(self.value)
+        return self.type.impl.get_llvm_constant(builder, self.value)
 
 
 class SymbolOperand(Operand):

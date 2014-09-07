@@ -91,15 +91,14 @@ class UnknownSizeIntegerImpl(TypeImplementation):
         # compile time, but we don't support that yet.
         return types.int(32)
 
-    def get_llvm_constant(self, value):
+    def get_llvm_constant(self, builder, value):
         # TODO: This should actually be an error, since this type has no
         # business being in generated code. But we'll support it for now
         # because it makes debugging codegen easier.
         # No module using a constant of this type can ever be valid though,
         # since our constant type (i32) doesn't agree with our declared
         # value type (opaque)
-        from llvm.core import Constant, Type
-        return Constant.int(Type.int(32), value)
+        return builder.consts.int(builder.types.int(32), value)
 
     add = BinaryArithmeticOperationImpl(
         "add",
