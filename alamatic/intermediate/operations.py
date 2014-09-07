@@ -109,6 +109,29 @@ class CallOperation(Operation):
         for k, arg in self.kwargs.iteritems():
             self.kwargs[k] = replace(self.kwargs[k])
 
+    def _get_implementation(self):
+        return getattr(self.callee.type.impl, "call", None)
+
+    @property
+    def result_type(self):
+        if self.callee.type.is_variable:
+            return Unknown
+
+        impl = self._get_implementation()
+
+        if impl is None:
+            # TODO: Signal a "not callable" error in this case.
+            return Unknown
+
+        return impl.get_result_type(self.callee, self.args, self.kwargs)
+
+    def build_llvm_value(self, builder):
+        impl = self._get_implementation()
+
+        return impl.build_llvm_value(
+            builder, self.callee, self.args, self.kwargs,
+        )
+
 
 class AttributeLookupOperation(Operation):
     def __init__(self, operand, name):

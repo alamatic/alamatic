@@ -1,5 +1,6 @@
 
 from alamatic.types import *
+import alamatic.intermediate as intermediate
 
 
 __all__ = [
@@ -22,6 +23,11 @@ def get_type_for_constant(value):
     except KeyError:
         pass
 
-    # FIXME: Implement a complete set of mappings for complex types, after
-    # which point it will be an implementation error to reach this point.
-    return get_fresh_type_variable()
+    if isinstance(value, intermediate.FunctionTemplate):
+        return FunctionTemplate
+
+    # Should never happen, since we should have an appropriate mapping
+    # for every kind of constant our intermediate code generator can produce.
+    raise Exception(
+        "Don't what type to use for %r" % value
+    )
