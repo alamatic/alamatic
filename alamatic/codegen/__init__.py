@@ -37,6 +37,12 @@ def llvm_module_for_program(program):
 
     for symbol in symbols.all_symbols:
         if not symbol.is_temporary:
+            if symbol.type.is_variable:
+                # Should never happen since the checker should've been
+                # run before we got in here.
+                raise Exception(
+                    "Symbol %s has unknown type" % symbol,
+                )
             symbol_values[symbol] = preamble_builder.alloca(
                 symbol.type.impl.get_llvm_type(LLVMType)
             )
