@@ -26,9 +26,44 @@ def alac():
         return 1
 
     with program.context():
-        module = llvm_module_for_program(program)
+        llvm_module = llvm_module_for_program(program)
 
-    print str(module)
+    llvm_module.verify()
+
+    from llvm.ee import ExecutionEngine
+    from llvm.passes import PassManager
+
+    llvm_pass_manager = PassManager.new()
+    llvm_ee = ExecutionEngine.new(llvm_module)
+
+    llvm_pass_manager.add('scalarrepl')
+    llvm_pass_manager.add('mem2reg')
+    llvm_pass_manager.add('inline')
+    llvm_pass_manager.add('ipconstprop')
+    llvm_pass_manager.add('loop-simplify')
+    llvm_pass_manager.add('lcssa')
+    llvm_pass_manager.add('loops')
+    llvm_pass_manager.add('basicaa')
+    llvm_pass_manager.add('licm')
+    llvm_pass_manager.add('loop-reduce')
+    llvm_pass_manager.add('instcombine')
+    llvm_pass_manager.add('gvn')
+    llvm_pass_manager.add('die')
+    llvm_pass_manager.add('adce')
+    llvm_pass_manager.add('globalopt')
+    llvm_pass_manager.add('globaldce')
+    llvm_pass_manager.add('simplifycfg')
+    llvm_pass_manager.add('sink')
+    llvm_pass_manager.add('tailcallelim')
+    llvm_pass_manager.add('mergefunc')
+    llvm_pass_manager.add('codegenprepare')
+
+    llvm_pass_manager.run(llvm_module)
+
+    output_file = open('out.o', 'w')
+    llvm_module.to_native_object(output_file)
+
+    print str(llvm_module)
 
     #print_graph(graph)
 
