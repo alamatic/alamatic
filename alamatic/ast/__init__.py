@@ -148,51 +148,6 @@ class Module(AstNode):
             params=[],
         )
 
-    def execute(self):
-        """
-        Execute the module and generate a
-        :py:class:`alamatic.interpreter.RuntimeFunction` object representing
-        its main body.
-
-        Along the way the other items that this module uses will be written
-        to the currently-active data state. Therefore in order to produce
-        a complete :py:class:`alamatic.codegen.RuntimeProgram` these
-        additional objects must also be included by the caller.
-        """
-        from alamatic.interpreter import (
-            interpreter,
-            RuntimeFunction,
-            RuntimeFunctionArgs,
-            SymbolTable,
-        )
-        from alamatic.types import (
-            Void,
-        )
-
-        # Modules don't take any parameters, but a RuntimeFunction uses
-        # a scope to describe its arguments so we need to create an empty
-        # one in this case.
-        param_symbols = interpreter.child_symbol_table()
-
-        with param_symbols:
-            runtime_block = self.block.execute()
-
-        interpreter.register_top_level_scope(runtime_block.symbols)
-
-        args_type = RuntimeFunctionArgs.make_args_type([])
-
-        function = RuntimeFunction(
-            self.source_range,
-            runtime_block,
-            args_type,
-            # Modules never return anything.
-            Void,
-        )
-
-        interpreter.register_runtime_function(function)
-
-        return function
-
 
 # These imports depend on the above symbols, so they must appear after
 # them in this file.
