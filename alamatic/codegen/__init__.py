@@ -22,7 +22,7 @@ def llvm_module_for_program(program):
     entry_task = program.entry_task
     graph = entry_task.graph
     symbols = entry_task.symbols
-    module = LLVMModule.new("tmp")
+    module = LLVMModule.new("tmpprog")
 
     func_type = LLVMType.function(LLVMType.void(), [])
     func = module.add_function(func_type, 'tmp')
