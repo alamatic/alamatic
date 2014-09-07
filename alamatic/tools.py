@@ -9,7 +9,7 @@ def alac():
     from alamatic.compiler import CompileState
     from alamatic.compiler import prepare_program
     from alamatic.compilelogging import TerminalCompileLogHandler
-    from alamatic.codegen import module_for_program
+    from alamatic.codegen import llvm_module_for_program
     fn = sys.argv[1]
 
     log_handler = TerminalCompileLogHandler(
@@ -26,7 +26,7 @@ def alac():
         return 1
 
     with program.context():
-        module = module_for_program(program)
+        module = llvm_module_for_program(program)
 
     print str(module)
 

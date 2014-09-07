@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-def module_for_program(program):
+def llvm_module_for_program(program):
     # FIXME: For no this only generates the code for the entry task
     entry_task = program.entry_task
     graph = entry_task.graph
