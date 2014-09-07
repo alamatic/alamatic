@@ -33,6 +33,8 @@ def alac():
     from llvm.ee import ExecutionEngine
     from llvm.passes import PassManager
 
+    print str(llvm_module)
+
     llvm_pass_manager = PassManager.new()
     llvm_ee = ExecutionEngine.new(llvm_module)
 
@@ -62,8 +64,6 @@ def alac():
 
     output_file = open('out.o', 'w')
     llvm_module.to_native_object(output_file)
-
-    print str(llvm_module)
 
     #print_graph(graph)
 
