@@ -9,7 +9,7 @@ class TestParse(LanguageTestCase):
 
     def test_simple_parse(self):
         self.assertStmtParseTree(
-            'func doot(a, b as foo):\n'
+            'func doot(a, b when foo):\n'
             '    pass',
             [
                 ('FuncDeclStmt', (), [
@@ -17,6 +17,80 @@ class TestParse(LanguageTestCase):
                         ('ParamDeclClause', ('a',), []),
                         ('ParamDeclClause', ('b',), [
                             ('SymbolNameExpr', ('foo',), []),
+                        ]),
+                    ]),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+
+    def test_named_params(self):
+        self.assertStmtParseTree(
+            'func doot(a, named b):\n'
+            '    pass',
+            [
+                ('FuncDeclStmt', (), [
+                    ('FuncDeclClause', ('doot',), [
+                        ('ParamDeclClause', ('a',), []),
+                        ('ParamDeclClause', ('b', 'named'), []),
+                    ]),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+
+    def test_const_params(self):
+        self.assertStmtParseTree(
+            'func doot(a, const b):\n'
+            '    pass',
+            [
+                ('FuncDeclStmt', (), [
+                    ('FuncDeclClause', ('doot',), [
+                        ('ParamDeclClause', ('a',), []),
+                        ('ParamDeclClause', ('b', 'const'), []),
+                    ]),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+
+    def test_collector_params(self):
+        self.assertStmtParseTree(
+            'func doot(a..., named b...):\n'
+            '    pass',
+            [
+                ('FuncDeclStmt', (), [
+                    ('FuncDeclClause', ('doot',), [
+                        ('ParamDeclClause', ('a', '...'), []),
+                        ('ParamDeclClause', ('b', 'named', '...'), []),
+                    ]),
+                    ('StatementBlock', (), [
+                        ('PassStmt', (), []),
+                    ]),
+                ]),
+            ]
+        )
+
+    def test_combination_1(self):
+        self.assertStmtParseTree(
+            'func doot(a, const named b, named c=2, named d when baz):\n'
+            '    pass',
+            [
+                ('FuncDeclStmt', (), [
+                    ('FuncDeclClause', ('doot',), [
+                        ('ParamDeclClause', ('a',), []),
+                        ('ParamDeclClause', ('b', 'const', 'named'), []),
+                        ('ParamDeclClause', ('c', 'named', 'optional'), [
+                            ('LiteralExpr', (2,), []),
+                        ]),
+                        ('ParamDeclClause', ('d', 'named'), [
+                            ('SymbolNameExpr', ('baz',), []),
                         ]),
                     ]),
                     ('StatementBlock', (), [

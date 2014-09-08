@@ -632,14 +632,57 @@ def p_func_decl(state, scanner):
                     scanner.token_display_name(scanner.peek()),
                     " at ", pos_link(scanner.position()),
                 )
-            arg_range = scanner.begin_range()
-            arg_name = scanner.read()[1]
-            arg_type_expr = None
-            if scanner.next_is_keyword("as"):
+            param_range = scanner.begin_range()
+            param_const = False
+            param_named = False
+            param_collector = False
+            param_default_expr = None
+            param_type_constraint_expr = None
+
+            if scanner.next_is_keyword("const"):
                 scanner.read()
-                arg_type_expr = p_expression(state, scanner)
+                param_const = True
+
+            if scanner.next_is_keyword("named"):
+                scanner.read()
+                param_named = True
+
+            if scanner.next_is_keyword("const"):
+                if param_named:
+                    raise CompilerError(
+                        "'const' qualifier must appear before 'named',",
+                        " not at ", pos_link(scanner.position()),
+                    )
+                else:
+                    raise CompilerError(
+                        "Parameter must not be called 'const' at ",
+                        pos_link(scanner.position()),
+                    )
+
+            param_name = scanner.read()[1]
+
+            if scanner.next_is_punct("="):
+                scanner.read()
+                param_default_expr = p_expression(state, scanner)
+
+            if scanner.next_is_keyword("when"):
+                scanner.read()
+                param_type_constraint_expr = p_expression(state, scanner)
+
+            if scanner.next_is_punct("..."):
+                scanner.read()
+                param_collector = True
+
             params.append(
-                ParamDeclClause(arg_range.end(), arg_name, arg_type_expr)
+                ParamDeclClause(
+                    param_range.end(),
+                    param_name,
+                    const_required=param_const,
+                    named=param_named,
+                    default_expr=param_default_expr,
+                    collector=param_collector,
+                    type_constraint_expr=param_type_constraint_expr,
+                )
             )
 
             if scanner.next_is_punct(")"):
