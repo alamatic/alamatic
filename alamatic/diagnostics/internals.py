@@ -6,7 +6,8 @@ import re
 __all__ = [
     "ERROR",
     "WARNING",
-    "register_diagnostic"
+    "register_diagnostic",
+    "Diagnostic",
 ]
 
 

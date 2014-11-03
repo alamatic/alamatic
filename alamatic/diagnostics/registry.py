@@ -11,7 +11,7 @@ def register(name, level, format_string):
 
 
 # This will get filled out by calls to register()
-__all__ = []
+__all__ = ['Diagnostic']
 
 # The rest of this file is the registry itself, with one register() call
 # per diagnostic type.

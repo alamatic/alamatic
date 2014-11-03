@@ -36,11 +36,9 @@ class AstNode(object):
 
 
 class StatementBlock(AstNode):
-    def __init__(self, stmts, symbols=None):
+    def __init__(self, stmts, source_range=None):
         self.stmts = stmts
-        # symbols is only populated in a code generation tree; it's
-        # always None in a parse tree.
-        self.symbols = symbols
+        self.source_range = source_range
 
     @property
     def child_nodes(self):
