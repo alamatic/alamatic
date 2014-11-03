@@ -14,11 +14,10 @@ from plex import (
     IGNORE,
 )
 from plex.errors import UnrecognizedInput
+import alamatic.diagnostics as diag
 
-from alamatic.compilelogging import CompilerError, pos_link, range_link
 
-
-class Scanner(plex.Scanner):
+class RawScanner(plex.Scanner):
 
     def handle_newline(self, text):
         if self.bracket_count == 0:
@@ -172,126 +171,186 @@ class Scanner(plex.Scanner):
         self.min_bracket_count = self.bracket_count
         if not expression_only:
             self.begin('indent')
+
+
+class Token(object):
+    def __init__(self, type, value, source_range=None):
+        self.type = type
+        self.value = value
+        self.source_range = source_range
+
+    @property
+    def display_name(self):
+        token_type = self.type
+
+        if token_type == "NEWLINE":
+            return "newline"
+        elif token_type == "INDENT":
+            return "indent"
+        elif token_type == "OUTDENT":
+            return "outdent"
+        elif token_type == "EOF":
+            return "end of file"
+        elif token_type == "DOCCOMMENT":
+            return "documentation comment"
+        else:
+            return token.value
+
+    def __eq__(self, other):
+        if type(other) is tuple:
+            return (self.type, self.value) == other
+        elif type(other) is type(self):
+            return (self.type, self.value) == (other.type, other.value)
+        else:
+            return False
+
+    def __getitem__(self, key):
+        # Legacy support for callers expecting plex's raw token tuples
+        if key == 0:
+            return self.type
+        elif key == 1:
+            return self.value
+        else:
+            raise IndexError(key)
+
+    def __repr__(self):
+        return '<Token %s %r>' % (self.type, self.value)
+
+
+class Scanner(object):
+
+    def __init__(self, stream, name=None, expression_only=False):
+        self.raw_scanner = RawScanner(stream, name, expression_only)
         self.peeked = None
         self.peeking = False
-        # Last token position starts of referring to the beginning of the
+        # Last token position starts off referring to the beginning of the
         # file, so we'll still get a sensible result if we never read any
         # tokens.
-        self._last_token_start_position = (name, 1, 0)
-        self._last_token_end_position = (name, 1, 0)
+        self.last_token = Token(
+            type='BEGIN',
+            value=None,
+            source_range=SourceRange(
+                SourceLocation(
+                    filename=name,
+                    line=1,
+                    column=1,
+                ),
+                SourceLocation(
+                    filename=name,
+                    line=1,
+                    column=1,
+                ),
+            )
+        )
+        self.force_eof = False
 
     def read(self):
         result = self.peek()
-        start_position = self.position()
-        # Compute the end of the token we read by assuming it's all
-        # on one line and is the same length as what's in result[1].
-        # We ignore NEWLINE, INDENT and OUTDENT tokens though, since they
-        # are synthetic and thus don't have real bounds to report.
-        if result[0] not in ('NEWLINE', 'INDENT', 'OUTDENT'):
-            self._last_token_start_position = (
-                start_position[0],
-                start_position[1],
-                start_position[2],
-            )
-            self._last_token_end_position = (
-                start_position[0],
-                start_position[1],
-                start_position[2] + len(result[1]),
-            )
         self.peeked = None
+        self.last_token = result
         return result
 
     def peek(self):
         if self.peeked is None:
             self.peeking = True
+
+            if self.force_eof:
+                self.peeked = Token(
+                    "EOF", None, self.last_token.source_range,
+                )
+                return self.peeked
+
             try:
-                self.peeked = plex.Scanner.read(self)
+                raw_peeked = self.raw_scanner.read()
                 # Skip Plex's generated "EOF" token (where the type is None)
                 # since we have our own explicit EOF token.
-                if self.peeked[0] is None:
-                    self.peeked = plex.Scanner.read(self)
+                if raw_peeked[0] is None:
+                    raw_peeked = self.raw_scanner.read()
+
+                raw_position = self.raw_scanner.position()
+
+                # We compute the end of the token we read by assuming it's
+                # all on one line and is the same length as what's in
+                # result[1], ignoring the NEWLINE, INDENT and OUTDENT tokens
+                # since they don't really have any bounds to report.
+                if raw_peeked[0] in ('NEWLINE', 'INDENT', 'OUTDENT'):
+                    token_length = 0
+                else:
+                    token_length = len(raw_peeked[1])
+
+                source_range = SourceRange(
+                    SourceLocation(
+                        filename=raw_position[0],
+                        line=raw_position[1],
+                        column=raw_position[2] + 1,
+                    ),
+                    SourceLocation(
+                        filename=raw_position[0],
+                        line=raw_position[1],
+                        column=raw_position[2] + token_length + 1
+                    ),
+                )
+
+                self.peeked = Token(
+                    type=raw_peeked[0],
+                    value=raw_peeked[1],
+                    source_range=source_range,
+                )
             except UnrecognizedInput, ex:
-                position = self.position()
-                raise UnexpectedTokenError(
-                    range_link(
-                        SourceRange(
-                            SourceLocation(
-                                filename=position[0],
-                                line=position[1],
-                                column=position[2],
-                            ),
-                            SourceLocation(
-                                filename=position[0],
-                                line=position[1],
-                                column=position[2] + 1,
-                            ),
-                        ),
-                        text="Invalid token",
+                raw_position = self.raw_position
+                self.peeked = Token(
+                    type="ERROR",
+                    value=diag.InvalidCharacter(
+                        location=SourceLocation(
+                            filename=raw_position[0],
+                            line=raw_position[1],
+                            column=raw_position[2] + 1,
+                        )
                     )
                 )
+                self.force_eof = True
+            except IndentationError, ex:
+                raw_position = ex.raw_position
+                self.peeked = Token(
+                    type="ERROR",
+                    value=diag.InvalidIndentation(
+                        location=SourceLocation(
+                            filename=raw_position[0],
+                            line=raw_position[1],
+                            column=raw_position[2] + 1,
+                        )
+                    )
+                )
+                self.force_eof = True
             finally:
                 self.peeking = False
         return self.peeked
 
-    def position(self):
+    @property
+    def raw_position(self):
         if not self.peeking:
             self.peek()
-        return plex.Scanner.position(self)
+        return self.raw_scanner.position()
 
     @property
     def location(self):
-        position = self.position()
+        position = self.raw_position
         return SourceLocation(
             position[0],
             position[1],
-            position[2],
-        )
-
-    @property
-    def last_token_end_location(self):
-        position = self._last_token_end_position
-        return SourceLocation(
-            position[0],
-            position[1],
-            position[2],
-        )
-
-    @property
-    def last_token_range(self):
-        start_position = self._last_token_start_position
-        end_position = self._last_token_end_position
-        return SourceRange(
-            SourceLocation(
-                filename=start_position[0],
-                line=start_position[1],
-                column=start_position[2],
-            ),
-            SourceLocation(
-                filename=end_position[0],
-                line=end_position[1],
-                column=end_position[2],
-            ),
-        )
-
-    @property
-    def next_token_range(self):
-        token = self.peek()
-        start_position = plex.Scanner.position(self)
-        return SourceRange(
-            SourceLocation(
-                filename=start_position[0],
-                line=start_position[1],
-                column=start_position[2],
-            ),
-            SourceLocation(
-                filename=start_position[0],
-                line=start_position[1],
-                column=start_position[2] + len(token[1]),
-            ),
+            position[2] + 1,
         )
 
     def begin_range(self):
         return SourceRangeBuilder(self)
+
+    @property
+    def next_token_range(self):
+        return self.peek().source_range
+
+    @property
+    def last_token_range(self):
+        return self.last_token.source_range
 
     def next_is_punct(self, symbol):
         token = self.peek()
@@ -313,71 +372,64 @@ class Scanner(plex.Scanner):
     def next_is_eof(self):
         return (self.peek()[0] == "EOF")
 
+    def next_is_error(self):
+        return (self.peek().type == "ERROR")
+
+    def raise_if_next_is_error(self):
+        if self.next_is_error():
+            raise self.peek().value
+
     def require_punct(self, symbol):
         if not self.next_is_punct(symbol):
-            raise UnexpectedTokenError(
-                "Expected ", symbol,
-                " but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("PUNCT", symbol),
+                got_token=self.peek(),
             )
         return self.read()
 
     def require_keyword(self, name):
         if not self.next_is_keyword(name):
-            raise UnexpectedTokenError(
-                "Expected ", name,
-                " but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("IDENT", name),
+                got_token=self.peek(),
             )
         return self.read()
 
     def require_indent(self):
         if not self.next_is_indent():
-            raise UnexpectedTokenError(
-                "Expected indent but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("INDENT", 4),
+                got_token=self.peek(),
             )
         return self.read()
 
     def require_outdent(self):
         if not self.next_is_outdent():
-            raise UnexpectedTokenError(
-                "Expected outdent but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("OUTDENT", 4),
+                got_token=self.peek(),
             )
         return self.read()
 
     def require_newline(self):
         if not self.next_is_newline():
-            raise UnexpectedTokenError(
-                "Expected newline but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("NEWLINE", "\n"),
+                got_token=self.peek(),
             )
         return self.read()
 
     def require_eof(self):
         if not self.next_is_eof():
-            raise UnexpectedTokenError(
-                "Expected end of file but got ",
-                range_link(
-                    self.next_token_range,
-                    text=self.token_display_name(self.peek()),
-                ),
+            self.raise_if_next_is_error()
+            raise diag.UnexpectedToken(
+                wanted_token=Token("EOF", None),
+                got_token=self.peek(),
             )
         return self.read()
 
@@ -431,20 +483,6 @@ class Scanner(plex.Scanner):
             # Probably shouldn't do this recursively but it'll only be
             # a problem for if statements with many, many elif clauses.
             self.skip_statement()
-
-    def token_display_name(self, token):
-        if token[0] == "NEWLINE":
-            return "newline"
-        elif token[0] == "INDENT":
-            return "indent"
-        elif token[0] == "OUTDENT":
-            return "outdent"
-        elif token[0] == "EOF":
-            return "end of file"
-        elif token[0] == "DOCCOMMENT":
-            return "documentation comment"
-        else:
-            return token[1]
 
 
 class SourceLocation(object):
@@ -503,20 +541,11 @@ class SourceRangeBuilder(object):
     def end(self):
         return SourceRange(
             self.start,
-            self.scanner.last_token_end_location,
+            self.scanner.last_token_range.end,
         )
 
 
-class IndentationError(CompilerError):
-    def __init__(self, position):
-        self.position = position
-        CompilerError.__init__(
-            self, "Inconsistent indentation at ", pos_link(
-                position,
-                "%s line %i" % (position[0], position[1]),
-            )
-        )
+class IndentationError(Exception):
 
-
-class UnexpectedTokenError(CompilerError):
-    pass
+    def __init__(self, raw_position):
+        self.raw_position = raw_position

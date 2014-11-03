@@ -4,10 +4,9 @@ from StringIO import StringIO
 from alamatic.scanner import (
     Scanner,
     SourceRange,
-    SourceLocation,
-    IndentationError,
-    UnexpectedTokenError,
+    SourceLocation
 )
+import alamatic.diagnostics as diag
 from plex.errors import UnrecognizedInput
 
 
@@ -36,11 +35,15 @@ def PUNCT(val):
     return (str(val), str(val))
 
 
+def ERROR(err):
+    return ('ERROR', err)
+
+
 class TestScanner(unittest.TestCase):
 
     def assertTokens(self, inp, expected_tokens, expression_only=False):
         stream = StringIO(inp)
-        scanner = Scanner(stream, expression_only=expression_only)
+        scanner = Scanner(stream, 'test.ala', expression_only=expression_only)
         got_tokens = []
         while True:
             got_token = scanner.read()
@@ -52,37 +55,6 @@ class TestScanner(unittest.TestCase):
             got_tokens,
             expected_tokens,
         )
-
-    def assertScanError(self, inp, errtype, line, char):
-        stream = StringIO(inp)
-        scanner = Scanner(stream)
-        try:
-            while True:
-                got_token = scanner.read()
-                if got_token[0] == "EOF":
-                    break
-        except errtype, ex:
-            if ex.position[1] != line or ex.position[2] != char:
-                self.fail(
-                    "Expected %s at line %i char %i, but got that error "
-                    "at line %i char %i" % (
-                        errtype.__name__, line, char,
-                        ex.position[1], ex.position[2],
-                    )
-                )
-            else:
-                return
-        self.fail(
-            "Expected %s at line %i char %i, but got no error at all" % (
-                errtype.__name__, line, char,
-            ),
-        )
-
-    def assertTokenError(self, inp, line, char):
-        self.assertScanError(inp, UnrecognizedInput, line, char)
-
-    def assertIndentError(self, inp, line, char):
-        self.assertScanError(inp, IndentationError, line, char)
 
     def test_indentation(self):
         self.assertTokens(
@@ -132,11 +104,19 @@ class TestScanner(unittest.TestCase):
             ]
         )
         # Inconsistent outdenting is an error
-        self.assertIndentError(
+        self.assertTokens(
             "    1\n"
             "  2",
-            2, 0,
+            [
+                INDENT,
+                NUMBER(1),
+                NEWLINE,
+                ERROR(diag.InvalidIndentation(
+                    location=SourceLocation('test.ala', 2, 1)
+                )),
+            ]
         )
+
         # Indentation and newlines are ignored inside brackets
         self.assertTokens(
             "(\n    1)\n[\n    1]\n{\n    1}\n    (",
@@ -588,15 +568,15 @@ class TestScanner(unittest.TestCase):
         self.assertFalse(scanner.next_is_punct("if"))
         self.assertEqual(scanner.require_keyword("if"), IDENT("if"))
         self.assertRaises(
-            UnexpectedTokenError,
+            diag.UnexpectedToken,
             lambda: scanner.require_newline(),
         )
         self.assertRaises(
-            UnexpectedTokenError,
+            diag.UnexpectedToken,
             lambda: scanner.require_indent(),
         )
         self.assertRaises(
-            UnexpectedTokenError,
+            diag.UnexpectedToken,
             lambda: scanner.require_outdent(),
         )
 
@@ -604,7 +584,7 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(scanner.peek(), IDENT("a"))
         self.assertEqual(scanner.read(), IDENT("a"))
         self.assertRaises(
-            UnexpectedTokenError,
+            diag.UnexpectedToken,
             lambda: scanner.require_keyword("if"),
         )
 
@@ -649,10 +629,10 @@ class TestScanner(unittest.TestCase):
         scanner = Scanner(stream, name="a")
 
         self.assertEqual(
-            scanner.last_token_range,
+            scanner.last_token.source_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
-                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 1),
             )
         )
 
@@ -660,16 +640,16 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             empty_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
-                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 1),
             )
         )
 
         self.assertEqual(
             scanner.next_token_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
                 SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 2),
             )
         )
 
@@ -686,8 +666,8 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             empty_range_2,
             SourceRange(
-                SourceLocation("a", 1, 0),
-                SourceLocation("a", 1, 0),
+                SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 1),
             )
         )
 
@@ -700,15 +680,15 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             scanner.last_token_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
                 SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 2),
             )
         )
         self.assertEqual(
             scanner.next_token_range,
             SourceRange(
-                SourceLocation("a", 1, 2),
-                SourceLocation("a", 1, 6),
+                SourceLocation("a", 1, 3),
+                SourceLocation("a", 1, 7),
             )
         )
 
@@ -716,8 +696,8 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             a_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
                 SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 2),
             )
         )
 
@@ -730,15 +710,15 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             b_range,
             SourceRange(
-                SourceLocation("a", 1, 2),
-                SourceLocation("a", 1, 6),
+                SourceLocation("a", 1, 3),
+                SourceLocation("a", 1, 7),
             )
         )
         self.assertEqual(
             ab_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
-                SourceLocation("a", 1, 6),
+                SourceLocation("a", 1, 1),
+                SourceLocation("a", 1, 7),
             )
         )
 
@@ -749,8 +729,8 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             b_range_2,
             SourceRange(
-                SourceLocation("a", 1, 2),
-                SourceLocation("a", 1, 6),
+                SourceLocation("a", 1, 3),
+                SourceLocation("a", 1, 7),
             )
         )
 
@@ -763,14 +743,14 @@ class TestScanner(unittest.TestCase):
         self.assertEqual(
             c_range,
             SourceRange(
-                SourceLocation("a", 2, 0),
-                SourceLocation("a", 2, 3),
+                SourceLocation("a", 2, 1),
+                SourceLocation("a", 2, 4),
             )
         )
         self.assertEqual(
             abc_range,
             SourceRange(
-                SourceLocation("a", 1, 0),
-                SourceLocation("a", 2, 3),
+                SourceLocation("a", 1, 1),
+                SourceLocation("a", 2, 4),
             )
         )
