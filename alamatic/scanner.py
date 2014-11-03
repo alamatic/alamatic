@@ -36,28 +36,6 @@ class Scanner(plex.Scanner):
         if new_level > current_level:
             self.indents.append(new_level)
             indent_change = new_level - current_level
-            if indent_change != 4:
-                position = self.position()
-                source_range = SourceRange(
-                    SourceLocation(
-                        filename=position[0],
-                        line=position[1],
-                        column=0,
-                    ),
-                    SourceLocation(
-                        filename=position[0],
-                        line=position[1],
-                        column=indent_change,
-                    ),
-                )
-                self.state.warn(
-                    range_link(
-                        source_range,
-                        text="Block should be indented by 4 spaces, not %r" % (
-                            indent_change
-                        )
-                    )
-                )
             self.produce('INDENT', indent_change)
         elif new_level < current_level:
             self.outdent_to(new_level)
@@ -180,10 +158,9 @@ class Scanner(plex.Scanner):
         ]),
     ])
 
-    def __init__(self, state, stream, name=None, expression_only=False):
+    def __init__(self, stream, name=None, expression_only=False):
         plex.Scanner.__init__(self, self.lexicon, stream=stream, name=name)
 
-        self.state = state
         self.seen_one_indent = False
         self.indents = [0]
         if expression_only:

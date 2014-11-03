@@ -1,21 +1,18 @@
 
 from alamatic.ast import *
-from alamatic.compilelogging import pos_link
 
 
 class Expression(AstNode):
     can_be_statement = False
 
-    def make_intermediate_form(self, elems, symbols):
-        raise Exception(
-            "make_intermediate_form is not implemented for %r" % self,
-        )
 
-    def get_lvalue_operand(self, elems, symbols):
-        from alamatic.intermediate import InvalidLValueError
-        raise InvalidLValueError(
-            "Expression at ", pos_link(self.source_range), " is not assignable"
-        )
+class ErroredExpression(Expression):
+    """
+    Not a real expression, but rather a placeholder for where a potential
+    statement was skipped due to an error.
+    """
+    def __init__(self, error):
+        self.error = error
 
 
 class SymbolNameExpr(Expression):
@@ -28,38 +25,6 @@ class SymbolNameExpr(Expression):
     def params(self):
         yield self.name
 
-    def make_intermediate_form(self, elems, symbols):
-        from alamatic.intermediate import (
-            OperationInstruction,
-            CopyOperation,
-            SymbolOperand,
-        )
-        target = symbols.create_temporary().make_operand(
-            source_range=self.source_range,
-        )
-        symbol = symbols.lookup(self.name, source_range=self.source_range)
-        elems.append(
-            OperationInstruction(
-                target,
-                CopyOperation(
-                    SymbolOperand(
-                        symbol,
-                        source_range=self.source_range,
-                    ),
-                ),
-                source_range=self.source_range,
-            )
-        )
-        return target
-
-    def get_lvalue_operand(self, elems, symbols):
-        from alamatic.intermediate import (
-            SymbolOperand,
-        )
-        return symbols.lookup(self.name, self.source_range).make_operand(
-            source_range=self.source_range,
-        )
-
 
 class LiteralExpr(Expression):
 
@@ -70,33 +35,6 @@ class LiteralExpr(Expression):
     @property
     def params(self):
         yield self.value
-
-    def make_intermediate_form(self, elems, symbols):
-        from alamatic.intermediate import (
-            OperationInstruction,
-            CopyOperation,
-            ConstantOperand,
-            SymbolOperand,
-        )
-        value = self.value
-
-        target = symbols.create_temporary().make_operand(
-            source_range=self.source_range,
-        )
-
-        elems.append(
-            OperationInstruction(
-                target,
-                CopyOperation(
-                    ConstantOperand(
-                        value,
-                        source_range=self.source_range,
-                    ),
-                ),
-                source_range=self.source_range,
-            )
-        )
-        return target
 
 
 class BinaryOpExpr(Expression):
@@ -115,32 +53,6 @@ class BinaryOpExpr(Expression):
     def child_nodes(self):
         yield self.lhs
         yield self.rhs
-
-    def make_intermediate_form(self, elems, symbols):
-        from alamatic.intermediate import (
-            OperationInstruction,
-            BinaryOperation,
-        )
-        target = symbols.create_temporary().make_operand(
-            source_range=self.source_range,
-        )
-
-        lhs_operand = self.lhs.make_intermediate_form(elems, symbols)
-        rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
-        operator_name = self.operator_name
-
-        elems.append(
-            OperationInstruction(
-                target,
-                BinaryOperation(
-                    lhs_operand,
-                    operator_name,
-                    rhs_operand,
-                ),
-                source_range=self.source_range,
-            )
-        )
-        return target
 
 
 class UnaryOpExpr(Expression):
@@ -161,30 +73,6 @@ class UnaryOpExpr(Expression):
 
 class AssignExpr(BinaryOpExpr):
     can_be_statement = True
-
-    def make_intermediate_form(self, elems, symbols):
-        # FIXME: This only supports the simple assign operation, but
-        # this node type also needs to support all of the shorthands
-        # like +=, -=, etc.
-        from alamatic.intermediate import (
-            OperationInstruction,
-            CopyOperation,
-        )
-
-        lhs_operand = self.lhs.get_lvalue_operand(elems, symbols)
-        rhs_operand = self.rhs.make_intermediate_form(elems, symbols)
-
-        elems.append(
-            OperationInstruction(
-                lhs_operand,
-                CopyOperation(
-                    rhs_operand,
-                ),
-                source_range=self.source_range,
-            )
-        )
-
-        return rhs_operand
 
 
 class LogicalOrExpr(BinaryOpExpr):
@@ -281,41 +169,6 @@ class CallExpr(Expression):
     def child_nodes(self):
         yield self.callee_expr
         yield self.args
-
-    def make_intermediate_form(self, elems, symbols):
-        from alamatic.intermediate import (
-            OperationInstruction,
-            CallOperation,
-        )
-
-        callee_operand = self.callee_expr.make_intermediate_form(
-            elems, symbols,
-        )
-        arg_operands = [
-            x.make_intermediate_form(elems, symbols)
-            for x in self.args.positional
-        ]
-        kwarg_operands = {
-            # we evaluate the kwargs in a sorted order to ensure that
-            # we'll evaluate them in some predictable (if arbitrary) order.
-            k: self.args.keyword[k].make_intermediate_form(elems, symbols)
-            for k in sorted(self.args.keyword)
-        }
-        target = symbols.create_temporary().make_operand(
-            source_range=self.source_range,
-        )
-        elems.append(
-            OperationInstruction(
-                target,
-                CallOperation(
-                    callee_operand,
-                    arg_operands,
-                    kwarg_operands,
-                    ),
-                source_range=self.source_range,
-            )
-        )
-        return target
 
 
 class SubscriptExpr(Expression):

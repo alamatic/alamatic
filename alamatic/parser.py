@@ -4,18 +4,18 @@ from alamatic.ast import *
 from alamatic.compilelogging import pos_link, CompilerError
 
 
-def parse_module(state, stream, name, filename):
-    source_range, block, doc = p_toplevel(state, stream, filename)
+def parse_module(stream, name, filename):
+    source_range, block, doc = p_toplevel(stream, filename)
     return Module(source_range, name, block, doc=doc)
 
 
-def parse_entry_file(state, stream, filename):
-    source_range, block, doc = p_toplevel(state, stream, filename)
+def parse_entry_file(stream, filename):
+    source_range, block, doc = p_toplevel(stream, filename)
     return EntryFile(source_range, block, doc=doc)
 
 
-def p_toplevel(state, stream, filename):
-    scanner = Scanner(state, stream, filename)
+def p_toplevel(stream, filename):
+    scanner = Scanner(stream, filename)
 
     full_range = scanner.begin_range()
 
@@ -24,18 +24,25 @@ def p_toplevel(state, stream, filename):
     doc = p_doc_comments(state, scanner)
 
     # To avoid ambiguity, a newline is required after a module docstring.
+    ambiguous_module_docstring = False
     if doc is not None:
         if not (scanner.next_is_newline() or scanner.next_is_eof()):
-            state.error(
-                "Include a blank line after the module doc comments, ",
-                "at ", pos_link(scanner.position()),
-                " (if this was supposed to be a doc comment for the following "
-                "statement instead, add a blank line before it.)"
-            )
-            # but we'll keep parsing anyway, in case there are some other
-            # errors we could report at the same time.
+            ambiguous_module_docstring = True
 
     stmts = p_statements(state, scanner, lambda s: s.next_is_eof())
+
+    if ambiguous_module_docstring:
+        # Treat the missing blank line as if it were an erroneous
+        # statement at the beginning of the statement list.
+        error = CompilerError(
+            "Insert a blank link after the module doc comments, at ",
+            pos_link(scanner.position()), ". If this was intended as a ",
+            "doc comment for the following statement instead, add a blank ",
+            "line before it."
+        )
+        error_stmt = ErroredStatement(error)
+        stmts.insert(0, error_stmt)
+
     block = StatementBlock(stmts)
 
     return full_range.end(), block, doc
@@ -48,7 +55,7 @@ def parse_expression(state, stream, filename, allow_assign=False):
         expr = p_expression(state, scanner, allow_assign=allow_assign)
         scanner.require_eof()
     except CompilerError, ex:
-        state.error(ex)
+        expr = ErroredExpression(ex)
     return expr
 
 
@@ -75,7 +82,7 @@ def p_statements(state, scanner, stop_test=lambda s: s.next_is_outdent()):
         try:
             stmt = p_statement(state, scanner)
         except CompilerError, ex:
-            state.error(ex)
+            stmt = ErroredStatement(ex)
             scanner.skip_statement()
         if stmt is not None:
             stmts.append(stmt)

@@ -50,11 +50,6 @@ class StatementBlock(AstNode):
     def is_empty(self):
         return len(self.stmts) == 0
 
-    def make_intermediate_form(self, elems, parent_symbols):
-        symbols = parent_symbols.create_child()
-        for stmt in self.stmts:
-            stmt.make_intermediate_form(elems, symbols)
-
 
 class Arguments(AstNode):
     def __init__(self, pos_exprs, kw_exprs):
@@ -130,21 +125,6 @@ class Module(AstNode):
     def child_nodes(self):
         yield self.block
 
-    def get_intermediate_form(self):
-        from alamatic.intermediate import (
-            SymbolTable,
-            Module as IntermediateModule,
-        )
-        from alamatic.intermediate import build_control_flow_graph
-        symbols = SymbolTable()
-        elems = []
-        self.block.make_intermediate_form(elems, symbols)
-        graph = build_control_flow_graph(elems)
-        return IntermediateModule(
-            graph=graph,
-            symbols=symbols,
-        )
-
 
 class EntryFile(AstNode):
 
@@ -156,21 +136,6 @@ class EntryFile(AstNode):
     @property
     def child_nodes(self):
         yield self.block
-
-    def get_intermediate_form(self):
-        from alamatic.intermediate import (
-            SymbolTable,
-            Task,
-        )
-        from alamatic.intermediate import build_control_flow_graph
-        symbols = SymbolTable()
-        elems = []
-        self.block.make_intermediate_form(elems, symbols)
-        graph = build_control_flow_graph(elems)
-        return Task(
-            graph=graph,
-            symbols=symbols,
-        )
 
 
 # These imports depend on the above symbols, so they must appear after

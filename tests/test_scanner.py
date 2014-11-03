@@ -1,7 +1,6 @@
 
 import unittest
 from StringIO import StringIO
-from alamatic.compiler import CompileState
 from alamatic.scanner import (
     Scanner,
     SourceRange,
@@ -40,9 +39,8 @@ def PUNCT(val):
 class TestScanner(unittest.TestCase):
 
     def assertTokens(self, inp, expected_tokens, expression_only=False):
-        state = CompileState()
         stream = StringIO(inp)
-        scanner = Scanner(state, stream, expression_only=expression_only)
+        scanner = Scanner(stream, expression_only=expression_only)
         got_tokens = []
         while True:
             got_token = scanner.read()
@@ -56,9 +54,8 @@ class TestScanner(unittest.TestCase):
         )
 
     def assertScanError(self, inp, errtype, line, char):
-        state = CompileState()
         stream = StringIO(inp)
-        scanner = Scanner(state, stream)
+        scanner = Scanner(stream)
         try:
             while True:
                 got_token = scanner.read()
@@ -577,8 +574,7 @@ class TestScanner(unittest.TestCase):
     def test_parser_interface(self):
         inp = "    if a == b"
         stream = StringIO(inp)
-        state = CompileState()
-        scanner = Scanner(state, stream)
+        scanner = Scanner(stream)
 
         # indent
         self.assertEqual(scanner.peek(), INDENT)
@@ -650,8 +646,7 @@ class TestScanner(unittest.TestCase):
     def test_range_building(self):
         inp = "a bbbb\nccc"
         stream = StringIO(inp)
-        state = CompileState()
-        scanner = Scanner(state, stream, name="a")
+        scanner = Scanner(stream, name="a")
 
         self.assertEqual(
             scanner.last_token_range,
