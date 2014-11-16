@@ -26,11 +26,6 @@ class AstNode(object):
             for row in g:
                 yield row
 
-    def find_assigned_symbols(self):
-        for child_node in self.child_nodes:
-            for symbol in child_node.find_assigned_symbols():
-                yield symbol
-
     def __repr__(self):
         return "<alamatic.ast.%s>" % str(self)
 
