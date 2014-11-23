@@ -89,4 +89,4 @@ class Symbol(object):
 
     @property
     def codegen_name(self):
-        raise Exception("codegen_name not implemented for %r" % builder)
+        raise Exception("codegen_name not implemented for %r" % self)
