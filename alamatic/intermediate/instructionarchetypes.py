@@ -164,4 +164,10 @@ class CallInstr(OperationInstr):
 
 
 class PoisonInstr(OperationInstr):
-    pass
+
+    def __init__(self, target):
+        self.target = target
+
+    @property
+    def args(self):
+        yield self.target
