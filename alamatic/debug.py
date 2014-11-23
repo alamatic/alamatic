@@ -54,7 +54,6 @@ class DebugPrinter(object):
             self.out_stream.write(" ")
             self.print_instruction_arg(arg)
 
-
     def print_basic_block(self, block, indent=0):
         for instr in block.body_instrs:
             self.out_stream.write("    " * indent)
@@ -121,7 +120,7 @@ class DebugPrinter(object):
         self.out_stream.write("}\n")
 
     def print_function(self, function):
-        self.out_stream.write("function:\n") # TODO: arguments
+        self.out_stream.write("function:\n")  # TODO: arguments
         for variable in function.local_variables:
             self.out_stream.write("    LOCAL %s ; for %s at %s\n" % (
                 variable.codegen_name,
