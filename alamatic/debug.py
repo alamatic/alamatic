@@ -3,6 +3,7 @@ from alamatic.util import overloadable
 from alamatic.intermediate import BasicBlock
 from alamatic.intermediate.operands import Temporary, LiteralValue
 from alamatic.intermediate.function import LocalVariable
+from alamatic.diagnostics import Diagnostic
 
 
 class DebugPrinter(object):
@@ -45,6 +46,10 @@ class DebugPrinter(object):
     @print_instruction_arg.overload(LocalVariable)
     def print_local_variable_arg(self, variable):
         self.out_stream.write(variable.codegen_name)
+
+    @print_instruction_arg.overload(Diagnostic)
+    def print_local_variable_arg(self, diagnostic):
+        self.out_stream.write(type(diagnostic).__name__)
 
     def print_instruction(self, instr):
         self.out_stream.write("%s" % (
