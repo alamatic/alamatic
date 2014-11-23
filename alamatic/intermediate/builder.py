@@ -1,6 +1,7 @@
 
 from alamatic.intermediate.instructions import instruction_types
 from alamatic.intermediate.controlflowgraph import ControlFlowGraph
+import alamatic.intermediate.operands as operands
 
 
 __all__ = ['Builder']
@@ -12,6 +13,7 @@ class BuilderBase(object):
         self.graph = ControlFlowGraph()
         self.entry_block = self.graph.entry_block
         self.exit_block = self.graph.exit_block
+        self.next_temporary_index = 0
 
         # First we terminate the exit block to ensure nothing
         # inadvertently gets added to it.
@@ -21,8 +23,16 @@ class BuilderBase(object):
         # Now callers will start by adding to the entry block.
         self.current_block = self.entry_block
 
-    def create_temporary(self):
-        pass
+    def create_literal(self, value, source_range=None):
+        return operands.LiteralValue(value, source_range=source_range)
+
+    def create_temporary(self, source_range=None):
+        index = self.next_temporary_index
+        self.next_temporary_index += 1
+        return operands.Temporary(index, source_range=source_range)
+
+    def create_named_constant(self, symbol, source_range=None):
+        return operands.NamedConstant(symbol)
 
     def set_current_block(self, block):
         self.current_block = block
