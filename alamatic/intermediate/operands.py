@@ -21,11 +21,9 @@ class LiteralValue(Operand):
         self.value = value
         self.source_range = source_range
 
-class GlobalConstant(Operand):
-    pass
 
 
-class TemplateConstant(Operand):
+class NamedConstant(Operand):
     pass
 
 
