@@ -24,10 +24,8 @@ class ControlFlowGraph(object):
         block_stack = []
 
         current_block = self.entry_block
-        while True:
-            if current_block not in blocks_emitted:
-                yield current_block
-
+        while current_block is not None:
+            yield current_block
             blocks_emitted.add(current_block)
 
             terminator = current_block.terminator
@@ -35,7 +33,11 @@ class ControlFlowGraph(object):
 
             block_stack.extend(reversed(list(terminator.successor_blocks)))
 
-            if len(block_stack) > 0:
-                current_block = block_stack.pop()
-            else:
-                break
+            while True:
+                if len(block_stack) > 0:
+                    current_block = block_stack.pop()
+                    if not current_block in blocks_emitted:
+                        break
+                else:
+                    current_block = None
+                    break
