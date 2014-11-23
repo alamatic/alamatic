@@ -22,7 +22,6 @@ class LiteralValue(Operand):
         self.source_range = source_range
 
 
-
 class NamedConstant(Operand):
     pass
 
