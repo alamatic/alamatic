@@ -6,7 +6,7 @@ instruction_types = [
     UnconditionalJumpInstr.concrete_type("jump"),
     ConditionalJumpInstr.concrete_type("jumpif"),
     SwitchInstr.concrete_type("switch"),
-    TerminatorInstr.concrete_type("isolate"),
+    TerminatorInstr.concrete_type("end"),
     MemoryInstr.concrete_type("load"),
     MemoryInstr.concrete_type("store"),
     StoreAttributeInstr.concrete_type("storeattr"),

@@ -16,7 +16,7 @@ class BuilderBase(object):
         # First we terminate the exit block to ensure nothing
         # inadvertently gets added to it.
         self.current_block = self.exit_block
-        self.isolate(None)
+        self.end(None)
 
         # Now callers will start by adding to the entry block.
         self.current_block = self.entry_block
