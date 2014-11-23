@@ -42,3 +42,13 @@ register(
     # FIXME: Need to include the reference's source range in here somehow.
     u'There is no variable or constant named {decl_name}',
 )
+register(
+    'ContinueOutsideLoop', ERROR,
+    # FIXME: Need to include the reference's source range in here somehow.
+    u'Cannot use "continue" outside of a loop',
+)
+register(
+    'BreakOutsideLoop', ERROR,
+    # FIXME: Need to include the reference's source range in here somehow.
+    u'Cannot use "break" outside of a loop',
+)
