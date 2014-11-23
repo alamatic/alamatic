@@ -29,6 +29,20 @@ def lower_expression_assignment(expr, value, scope, builder):
         )
 
 
+def lower_binary_op_expr(expr, operator_map, scope, builder):
+    assert expr.op in operator_map
+    operation = operator_map[expr.op]
+
+    lhs_value = lower_expression(expr.lhs, scope, builder)
+    rhs_value = lower_expression(expr.rhs, scope, builder)
+
+    return operation(
+        lhs=lhs_value,
+        rhs=rhs_value,
+        source_range=expr.source_range,
+    )
+
+
 @lower_expression.overload(LiteralExpr)
 def lower_literal_expr(expr, scope, builder):
     return builder.create_literal(
@@ -73,19 +87,18 @@ def lower_symbol_name_expr_assignment(expr, value, scope, builder):
 
 @lower_expression.overload(ComparisonExpr)
 def lower_comparison_expr(expr, scope, builder):
-    operator = expr.op
-    if operator == "<":
-        operation = builder.lt
-    elif operator == ">":
-        operation = builder.gt
-    else:
-        raise Exception("Unknown comparison operator %r" % operator)
+    operator_map = {
+        "<": builder.lt,
+        ">": builder.gt,
+        "==": builder.eq,
+    }
+    return lower_binary_op_expr(expr, operator_map, scope, builder)
 
-    lhs_value = lower_expression(expr.lhs, scope, builder)
-    rhs_value = lower_expression(expr.rhs, scope, builder)
 
-    return operation(
-        lhs=lhs_value,
-        rhs=rhs_value,
-        source_range=expr.source_range,
-    )
+@lower_expression.overload(SumExpr)
+def lower_sum_expr(expr, scope, builder):
+    operator_map = {
+        "+": builder.add,
+        "-": builder.subtract,
+    }
+    return lower_binary_op_expr(expr, operator_map, scope, builder)
