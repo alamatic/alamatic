@@ -84,8 +84,11 @@ class Symbol(object):
         self.decl_name = decl_name
         self.decl_range = decl_range
 
-    def as_ir_operand(self, builder):
-        raise Exception("as_ir_operand not implemented for %r" % builder)
+    def make_ir_load(self, builder, source_range=None):
+        raise Exception("make_ir_load not implemented for %r" % self)
+
+    def make_ir_store(self, builder, value, source_range=None):
+        raise Exception("make_ir_store not implemented for %r" % self)
 
     @property
     def codegen_name(self):
