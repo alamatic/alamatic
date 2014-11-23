@@ -9,7 +9,7 @@ class Expression(AstNode):
 class ErroredExpression(Expression):
     """
     Not a real expression, but rather a placeholder for where a potential
-    statement was skipped due to an error.
+    expression was skipped due to an error.
     """
     def __init__(self, error):
         self.error = error
