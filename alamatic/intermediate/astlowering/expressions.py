@@ -65,9 +65,10 @@ def lower_symbol_name_expr(expr, scope, builder):
         return symbol.make_ir_load(builder, expr.source_range)
     else:
         builder.error(
-            diag.UnknownSymbol(
+            diagnostic=diag.UnknownSymbol(
                 decl_name=expr.name,
-            )
+            ),
+            source_range=expr.source_range,
         )
         return builder.poison(source_range=expr.source_range)
 
