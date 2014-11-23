@@ -4,6 +4,7 @@ from alamatic.ast import *
 
 class Expression(AstNode):
     can_be_statement = False
+    can_be_lvalue = False
 
 
 class ErroredExpression(Expression):
@@ -16,6 +17,7 @@ class ErroredExpression(Expression):
 
 
 class SymbolNameExpr(Expression):
+    can_be_lvalue = True
 
     def __init__(self, source_range, name):
         self.source_range = source_range
@@ -172,6 +174,8 @@ class CallExpr(Expression):
 
 
 class SubscriptExpr(Expression):
+    can_be_lvalue = True
+
     def __init__(self, source_range, target_expr, args):
         self.source_range = source_range
         self.target_expr = target_expr
@@ -184,6 +188,8 @@ class SubscriptExpr(Expression):
 
 
 class AttributeExpr(Expression):
+    can_be_lvalue = True
+
     def __init__(self, source_range, target_expr, attr_name):
         self.source_range = source_range
         self.target_expr = target_expr
