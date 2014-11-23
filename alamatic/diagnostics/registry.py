@@ -31,3 +31,14 @@ register(
 )
 
 ### Parser Diagnostics
+
+### AST Lowering Diagnostics
+register(
+    'InvalidLValue', ERROR,
+    u'Cannot assign to {assignee_node}',
+)
+register(
+    'UnknownSymbol', ERROR,
+    # FIXME: Need to include the reference's source range in here somehow.
+    u'There is no variable or constant named {decl_name}',
+)
