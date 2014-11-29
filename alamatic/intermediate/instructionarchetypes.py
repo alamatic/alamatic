@@ -101,6 +101,19 @@ class SwitchInstr(TerminatorInstr):
     pass
 
 
+class LiteralLoadInstr(Instruction):
+    is_operation = True
+
+    def __init__(self, value, target):
+        self.value = value
+        self.target = target
+
+    @property
+    def args(self):
+        yield self.value
+        yield self.target
+
+
 class MemoryLoadInstr(Instruction):
     is_operation = True
 

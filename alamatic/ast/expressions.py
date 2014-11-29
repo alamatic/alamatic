@@ -39,6 +39,48 @@ class LiteralExpr(Expression):
         yield self.value
 
 
+class NumericLiteralExpr(Expression):
+
+    class ValueComponent(object):
+
+        def __init__(self, significand, exponent):
+            # TODO: Normalize the two parameters so that
+            # there aren't extra zeroes on the end of the
+            # significand.
+            self.significand = significand
+            self.exponent = exponent
+
+        def __repr__(self):
+            return "%ie%i" % (
+                self.significand, self.exponent,
+            )
+
+    class Value(object):
+
+        def __init__(self, significand, exponent, imaginary):
+            value_part = NumericLiteralExpr.ValueComponent(
+                significand, exponent,
+            )
+            zero_part = NumericLiteralExpr.ValueComponent(
+                0, 0,
+            )
+            if imaginary:
+                self.real = zero_part
+                self.imaginary = value_part
+            else:
+                self.real = value_part
+                self.imaginary = zero_part
+
+        def __repr__(self):
+            return "(%r+%rj)" % (
+                self.real, self.imaginary,
+            )
+
+    def __init__(self, source_range, significand, exponent, imaginary=False):
+        self.value = self.Value(significand, exponent, imaginary)
+        self.source_range = source_range
+
+
 class BinaryOpExpr(Expression):
 
     def __init__(self, source_range, lhs, op, rhs):

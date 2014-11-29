@@ -10,6 +10,7 @@ instruction_types = [
     ConditionalJumpInstr.concrete_type("jump_if"),
     SwitchInstr.concrete_type("switch"),
     TerminatorInstr.concrete_type("end"),
+    LiteralLoadInstr.concrete_type("load_literal"),
     MemoryLoadInstr.concrete_type("load_global"),
     MemoryStoreInstr.concrete_type("store_global"),
     MemoryLoadInstr.concrete_type("load_local"),

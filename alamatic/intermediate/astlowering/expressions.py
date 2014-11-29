@@ -43,11 +43,14 @@ def lower_binary_op_expr(expr, operator_map, scope, builder):
     )
 
 
-@lower_expression.overload(LiteralExpr)
-def lower_literal_expr(expr, scope, builder):
-    return builder.create_literal(
-        expr.value,
+@lower_expression.overload(NumericLiteralExpr)
+def lower_numeric_literal_expr(expr, scope, builder):
+    from alamatic.types import ConstNumber
+    value = ConstNumber(expr.value)
+
+    return builder.load_literal(
         source_range=expr.source_range,
+        value=value,
     )
 
 

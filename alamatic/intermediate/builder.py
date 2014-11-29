@@ -29,7 +29,7 @@ class BuilderBase(object):
     def create_temporary(self, source_range=None):
         index = self.next_temporary_index
         self.next_temporary_index += 1
-        return operands.Temporary(index, source_range=source_range)
+        return operands.Register(index, source_range=source_range)
 
     def create_named_constant(self, symbol, source_range=None):
         return operands.NamedConstant(symbol)

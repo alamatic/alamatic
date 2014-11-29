@@ -1,9 +1,10 @@
 
 from alamatic.util import overloadable
 from alamatic.intermediate import BasicBlock
-from alamatic.intermediate.operands import Temporary, LiteralValue
+from alamatic.intermediate.operands import Register
 from alamatic.intermediate.function import LocalVariable
 from alamatic.diagnostics import Diagnostic
+from alamatic.types import Value
 
 
 class DebugPrinter(object):
@@ -35,13 +36,13 @@ class DebugPrinter(object):
     def print_basic_block_arg(self, block):
         self.out_stream.write("block%02x" % self.get_basic_block_index(block))
 
-    @print_instruction_arg.overload(Temporary)
-    def print_temporary_arg(self, temporary):
-        self.out_stream.write("r%02x" % temporary.index)
+    @print_instruction_arg.overload(Register)
+    def print_register_arg(self, register):
+        self.out_stream.write("r%02x" % register.index)
 
-    @print_instruction_arg.overload(LiteralValue)
-    def print_literal_value_arg(self, value_desc):
-        self.out_stream.write(repr(value_desc.value))
+    @print_instruction_arg.overload(Value)
+    def print_literal_value_arg(self, value):
+        self.out_stream.write(repr(value))
 
     @print_instruction_arg.overload(LocalVariable)
     def print_local_variable_arg(self, variable):

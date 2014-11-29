@@ -532,9 +532,13 @@ class Parser(object):
 
         num_str = token[1]
 
+        imaginary = False
+        significand = None
+        exponent = 0
+
         if num_str.startswith("0x"):
             try:
-                value = int(num_str[2:], 16)
+                significand = int(num_str[2:], 16)
             except ValueError:
                 raise CompilerError(
                     num_str[2:], " is not a valid hexadecimal number, "
@@ -542,7 +546,7 @@ class Parser(object):
                 )
         elif num_str.startswith("0b"):
             try:
-                value = int(num_str[2:], 2)
+                significand = int(num_str[2:], 2)
             except ValueError:
                 raise CompilerError(
                     num_str[2:], " is not a valid binary number, "
@@ -560,23 +564,35 @@ class Parser(object):
             # Try to parse it as a base-10 int, and if that fails
             # try to parse as a float. If neither work, fail hard.
             try:
-                value = int(num_str, 10)
+                significand = int(num_str, 10)
             except ValueError:
                 try:
-                    value = float(num_str)
+                    whole, frac = num_str.split(".", 2)
+                    exponent = -len(frac)
+                    significand = whole + frac  # this is string concatenation
+                    significand = int(significand, 10)
                 except ValueError:
                     raise CompilerError(
                         num_str, " is not a valid number, "
                         " at ", pos_link(full_range.start),
                     )
 
-        if value is None:
+            if scanner.next_is_keyword("j"):
+                scanner.read()
+                imaginary = True
+
+        if significand is None:
             # Should never happen
             raise Exception(
                 "Failed to produce a value for number token " + num_str
             )
 
-        return LiteralExpr(full_range.end(), value)
+        return NumericLiteralExpr(
+            full_range.end(),
+            significand,
+            exponent,
+            imaginary,
+        )
 
     def p_data_decl(self):
         scanner = self.scanner
