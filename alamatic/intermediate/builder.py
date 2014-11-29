@@ -23,16 +23,10 @@ class BuilderBase(object):
         # Now callers will start by adding to the entry block.
         self.current_block = self.entry_block
 
-    def create_literal(self, value, source_range=None):
-        return operands.LiteralValue(value, source_range=source_range)
-
     def create_temporary(self, source_range=None):
         index = self.next_temporary_index
         self.next_temporary_index += 1
         return operands.Register(index, source_range=source_range)
-
-    def create_named_constant(self, symbol, source_range=None):
-        return operands.NamedConstant(symbol)
 
     def set_current_block(self, block):
         self.current_block = block
