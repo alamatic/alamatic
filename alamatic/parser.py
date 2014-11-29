@@ -552,12 +552,12 @@ class Parser(object):
                     num_str[2:], " is not a valid binary number, "
                     " at ", pos_link(full_range.start),
                 )
-        elif num_str.startswith("0") and len(num_str) > 1:
+        elif num_str.startswith("0o"):
             try:
-                value = int(num_str[1:], 8)
+                significand = int(num_str[2:], 8)
             except ValueError:
                 raise CompilerError(
-                    num_str[1:], " is not a valid octal number, "
+                    num_str[2:], " is not a valid octal number, "
                     " at ", pos_link(full_range.start),
                 )
         else:
