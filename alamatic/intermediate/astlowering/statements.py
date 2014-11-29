@@ -30,7 +30,7 @@ def lower_data_decl_stmt(stmt, scope, builder):
     expr = stmt.expr
     if expr is not None:
         value = lower_expression(expr, scope, builder)
-        symbol.make_ir_store(builder, value)
+        symbol.make_ir_store(builder, value, source_range=stmt.source_range)
 
 
 @lower_statement.overload(IfStmt)
