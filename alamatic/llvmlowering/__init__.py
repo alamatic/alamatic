@@ -3,6 +3,7 @@ from llvm.core import (
     Module as LLVMModule,
     Type as LLVMType,
     Constant as LLVMConstant,
+    Builder as LLVMBuilder,
 )
 from alamatic.llvmlowering.function import make_llvm_function
 
@@ -30,7 +31,11 @@ def make_llvm_module(program):
         # TODO: Generate constant initializer where possible
         var_ptr.initializer = LLVMConstant.null(var_type)
 
-    # TODO: Generate a stub 'main' function that initializes complex globals
-    # and calls into the entry function.
+    init_func_type = LLVMType.function(LLVMType.void(), [])
+    llvm_init_func = module.add_function(init_func_type, 'main')
+    init_block = llvm_init_func.append_basic_block("entry")
+    init_builder = LLVMBuilder.new(init_block)
+    init_builder.call(llvm_entry_func, [])
+    init_builder.ret_void()
 
     return module
