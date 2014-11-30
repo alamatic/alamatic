@@ -138,3 +138,18 @@ class DebugPrinter(object):
             self.out_stream.write("\n")
 
         self.print_control_flow_graph(function.graph, 1)
+
+    def print_program(self, program):
+        if len(program.global_variables) > 0:
+            for variable in program.global_variables:
+                self.out_stream.write("GLOBAL %s ; for %s at %s\n" % (
+                    variable.codegen_name,
+                    variable.decl_name,
+                    variable.decl_range.start,
+                ))
+            self.out_stream.write("\n")
+
+        # We can only actually print the entry function at this point
+        # because other functions only emerge during LLVM lowering when
+        # we instantiate the function templates.
+        self.print_function(program.entry_func)
