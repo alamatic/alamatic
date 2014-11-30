@@ -7,6 +7,7 @@ from alamatic.intermediate.astlowering.statements import (
 from alamatic.intermediate.scope import Scope
 from alamatic.intermediate.builder import Builder
 from alamatic.intermediate.function import Function
+from alamatic.intermediate.program import Program
 
 
 __all__ = [
@@ -18,12 +19,8 @@ __all__ = [
 def lower_entry_file(ef):
     builder = Builder()
     function = Function(builder.graph)
-    scope = Scope(
-        variable_cons=function.declare_variable,
-
-        # TODO: Need a constant constructor too.
-        constant_cons=None,
-    )
+    program = Program(function)
+    scope = program.root_scope.create_child()
 
     lower_stmt_block(ef.block, scope, builder)
     builder.jump(
@@ -32,7 +29,7 @@ def lower_entry_file(ef):
         # FIXME: What's a good source range to use here?
         source_range=ef.source_range,
     )
-    return function
+    return program
 
 
 def lower_function(function):
