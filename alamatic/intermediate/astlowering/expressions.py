@@ -46,7 +46,7 @@ def lower_binary_op_expr(expr, operator_map, scope, builder):
 @lower_expression.overload(NumericLiteralExpr)
 def lower_numeric_literal_expr(expr, scope, builder):
     from alamatic.types import ConstNumber
-    value = ConstNumber(expr.value)
+    value = ConstNumber(ConstNumber.make_constant_data(expr.value))
 
     return builder.load_literal(
         source_range=expr.source_range,
