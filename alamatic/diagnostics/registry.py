@@ -52,3 +52,9 @@ register(
     # FIXME: Need to include the reference's source range in here somehow.
     u'Cannot use "break" outside of a loop',
 )
+
+### Operation Diagnostics
+register(
+    'InvalidAddOperands', ERROR,
+    u'Cannot add {rhs_type} to {lhs_type} at {source_range}',
+)
