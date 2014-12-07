@@ -29,6 +29,7 @@ def lower_entry_file(ef):
         # FIXME: What's a good source range to use here?
         source_range=ef.source_range,
     )
+    function.register_count = builder.register_count
     return program
 
 

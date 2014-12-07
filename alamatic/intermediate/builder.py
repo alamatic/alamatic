@@ -13,7 +13,7 @@ class BuilderBase(object):
         self.graph = ControlFlowGraph()
         self.entry_block = self.graph.entry_block
         self.exit_block = self.graph.exit_block
-        self.next_temporary_index = 0
+        self.register_count = 0
 
         # First we terminate the exit block to ensure nothing
         # inadvertently gets added to it.
@@ -24,8 +24,8 @@ class BuilderBase(object):
         self.current_block = self.entry_block
 
     def create_temporary(self, source_range=None):
-        index = self.next_temporary_index
-        self.next_temporary_index += 1
+        index = self.register_count
+        self.register_count += 1
         return operands.Register(index, source_range=source_range)
 
     def set_current_block(self, block):

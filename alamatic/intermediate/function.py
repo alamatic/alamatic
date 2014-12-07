@@ -49,6 +49,7 @@ class Function(object):
 
     def __init__(self, graph):
         self.local_variables = []
+        self.register_count = 0
         self.graph = graph
 
     def declare_variable(self, decl_name, decl_range):
