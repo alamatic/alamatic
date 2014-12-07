@@ -36,7 +36,7 @@ class PoisonType(Type):
     def __init__(self):
         self.llvm_type = llvm_type
 
-    def repr_for_data(self):
+    def repr_for_data(self, data):
         return "Poison"
 
 
