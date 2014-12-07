@@ -6,8 +6,7 @@ class Type(object):
     #: set it to an instance of a subtype of :py:class:`llvm.core.Type`.
     llvm_type = None
 
-    def __call__(self, *args, **kwargs):
-        data = self.make_constant_data(*args, **kwargs)
+    def __call__(self, data):
         return TypedValue(self, data)
 
     def repr_for_data(self, data):
