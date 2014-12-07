@@ -2,6 +2,7 @@
 from alamatic.types.base import *
 from alamatic.types.integer import *
 from alamatic.types.constnumber import *
+from alamatic.types.poison import *
 
 
 __all__ = ["intrinsic_types"]
