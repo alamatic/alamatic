@@ -103,5 +103,5 @@ class AnalysisResult(object):
                 else:
                     self.global_inits[idx] = init
 
-    def add_diagnostic(self. diagnostic):
+    def add_diagnostic(self, diagnostic):
         self.diagnostics.append(diagnostic)
