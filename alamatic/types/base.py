@@ -20,7 +20,7 @@ class TypedValue(object):
     #: value.
     type = None
 
-    #: :py:class:`llvm.core.Constant` representing the raw data for this value.
+    #: :py:class:`llvm.core.Value` representing the raw data for this value.
     #: This data is considered opaque by all code except the class of
     #: :py:attr:`type`.
     data = None
@@ -31,3 +31,8 @@ class TypedValue(object):
 
     def __repr__(self):
         return self.type.repr_for_data(self.data)
+
+    @property
+    def is_constant(self):
+        from llvm.core import Constant
+        return isinstance(self.data, Constant)
