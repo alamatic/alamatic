@@ -4,7 +4,7 @@ from alamatic.intermediate import BasicBlock
 from alamatic.intermediate.operands import Register
 from alamatic.intermediate.function import LocalVariable
 from alamatic.diagnostics import Diagnostic
-from alamatic.types import Value
+from alamatic.types import TypedValue
 
 
 class DebugPrinter(object):
@@ -40,7 +40,7 @@ class DebugPrinter(object):
     def print_register_arg(self, register):
         self.out_stream.write("r%02x" % register.index)
 
-    @print_instruction_arg.overload(Value)
+    @print_instruction_arg.overload(TypedValue)
     def print_literal_value_arg(self, value):
         self.out_stream.write(repr(value))
 

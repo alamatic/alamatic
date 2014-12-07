@@ -8,13 +8,13 @@ class Type(object):
 
     def __call__(self, *args, **kwargs):
         data = self.make_constant_data(*args, **kwargs)
-        return Value(self, data)
+        return TypedValue(self, data)
 
     def repr_for_data(self, data):
         return str(data)
 
 
-class Value(object):
+class TypedValue(object):
 
     #: Instance of a :py:class:`Type` subclass representing the type of this
     #: value.
