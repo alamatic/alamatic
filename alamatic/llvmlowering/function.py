@@ -1,4 +1,6 @@
 
+from alamatic.llvmlowering.analyses import analyze_function, AnalysisResult
+
 from llvm.core import (
     Type as LLVMType,
     Builder as LLVMBuilder,
@@ -13,11 +15,17 @@ def make_llvm_function(module, function):
     func_name = "ALA_%08x" % id(function)
     llvm_function = module.add_function(func_type, func_name)
 
-    # TODO: Run the analysis passes to collect information about:
-    # - the types of all variables
-    # - the types and values of all constants
-    # - which blocks can never be reached as a result of constant conditionals
-    # - any semantic errors in the program
+    # FIXME: The interface here isn't quite right since we don't have
+    # any way to deal with the globals and constants being shared across
+    # the entire program. Need some refactoring here.
+    global_inits = []
+    constant_inits = []
+    analysis_result = AnalysisResult(
+        function,
+        global_inits=global_inits,
+        constant_inits=constant_inits,
+    )
+    analysis_result = analyze_function(function, analysis_result)
 
     setup_block = llvm_function.append_basic_block("setup")
     setup_builder = LLVMBuilder.new(setup_block)
