@@ -1,13 +1,13 @@
 package ir
 
 type loadVarInst struct {
-	mnemonic "load"
+	mnemonic "loadvar"
 
 	VarIndex int
 }
 
 type storeVarInst struct {
-	mnemonic "store"
+	mnemonic "storevar"
 
 	VarIndex int
 	Value    Value
