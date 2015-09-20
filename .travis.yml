@@ -6,15 +6,13 @@ go:
   - 1.4
   - tip
 
-addons:
-  apt:
-    packages:
-      - ragel
-
 install:
+  - wget --no-check-certificate https://www.colm.net/files/ragel/ragel-6.9.tar.gz
+  - tar zxvf ragel-6.9.tar.gz
+  - cd ragel-6.9 && ./configure --prefix=$HOME/ragel && make && make install
   - go get golang.org/x/tools/cmd/stringer
   - go install golang.org/x/tools/cmd/stringer
-  - go generate github.com/alamatic/alamatic/tokenizer
+  - PATH=$HOME/ragel/bin:$PATH go generate github.com/alamatic/alamatic/tokenizer
 
 script:
   - go test ./...
