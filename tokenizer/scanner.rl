@@ -1,12 +1,24 @@
 package tokenizer
 
 import (
-    //"fmt"
+    "github.com/alamatic/alamatic/diagnostics"
 )
 
 type RawToken struct {
     Kind TokenKind
     Bytes []byte
+    diagnostics.SourceLocation
+}
+
+func (t *RawToken) SourceRange() *diagnostics.SourceRange {
+     return &diagnostics.SourceRange{
+         t.SourceLocation,
+         diagnostics.SourceLocation{
+             t.Filename,
+             t.Line,
+             t.Column + len(t.Bytes),
+         },
+     }
 }
 
 // The goal of the scanner is to apply very simple classifications to
@@ -48,6 +60,11 @@ type RawToken struct {
 
     comment = "#" [^\n]*;
 
+    action inc_nl {
+        line++
+        lastNewline = p
+    }
+
     main := |*
          decimal_number => { tok(DecNumLit) };
          hex_number => { tok(HexNumLit) };
@@ -58,7 +75,7 @@ type RawToken struct {
          close_bracket => { tok(CloseBracket) };
          punctuation => { tok(Punct) };
          identifier => { tok(Ident) };
-         "\r"? "\n" => { tok(NewLine) };
+         "\r"? ("\n" @inc_nl) => { tok(NewLine) };
          [ \t]+ => { tok(Space) };
          comment => { tok(Comment) };
          any => { tok(Invalid) };
@@ -67,8 +84,9 @@ type RawToken struct {
 
 %% write data;
 
-func Scan(data []byte) chan RawToken {
+func Scan(data []byte, filename string) chan RawToken {
      cs, p, ts, te, act, pe, eof := 0, 0, 0, 0, 0, len(data), len(data)
+     line, lastNewline := 1, -1
      ret := make(chan RawToken)
 
      // Lame hack to bypass "declared but not used" in the code generated
@@ -77,7 +95,14 @@ func Scan(data []byte) chan RawToken {
      nothing(act)
 
      tok := func (kind TokenKind) {
-         ret <- RawToken{kind, data[ts:te]}
+         column := ts - lastNewline
+         ret <- RawToken{
+             kind,
+             data[ts:te],
+             diagnostics.SourceLocation{
+                 filename, line, column,
+             },
+         }
      }
 
      %% write init;
