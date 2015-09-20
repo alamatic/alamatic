@@ -59,7 +59,7 @@ import (
          punctuation => { tok(Punct) };
          identifier => { tok(Ident) };
          "\r"? ("\n" @inc_nl) => { tok(NewLine) };
-         [ \t]+ => { tok(Space) };
+         " "+ => { tok(Space) };
          comment => { tok(Comment) };
          any => { tok(Invalid) };
     *|;
