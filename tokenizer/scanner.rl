@@ -4,23 +4,6 @@ import (
     "github.com/alamatic/alamatic/diagnostics"
 )
 
-type RawToken struct {
-    Kind TokenKind
-    Bytes []byte
-    diagnostics.SourceLocation
-}
-
-func (t *RawToken) SourceRange() *diagnostics.SourceRange {
-     return &diagnostics.SourceRange{
-         t.SourceLocation,
-         diagnostics.SourceLocation{
-             t.Filename,
-             t.Line,
-             t.Column + len(t.Bytes),
-         },
-     }
-}
-
 // The goal of the scanner is to apply very simple classifications to
 // sequences of bytes in the input. The generated "raw" tokens cover all
 // of the bytes in the input, and then the tokenizer will interpret
@@ -84,10 +67,10 @@ func (t *RawToken) SourceRange() *diagnostics.SourceRange {
 
 %% write data;
 
-func Scan(data []byte, filename string) chan RawToken {
+func Scan(data []byte, filename string) chan Token {
      cs, p, ts, te, act, pe, eof := 0, 0, 0, 0, 0, len(data), len(data)
      line, lastNewline := 1, -1
-     ret := make(chan RawToken)
+     ret := make(chan Token)
 
      // Lame hack to bypass "declared but not used" in the code generated
      // by ragel.
@@ -96,7 +79,7 @@ func Scan(data []byte, filename string) chan RawToken {
 
      tok := func (kind TokenKind) {
          column := ts - lastNewline
-         ret <- RawToken{
+         ret <- Token{
              kind,
              data[ts:te],
              diagnostics.SourceLocation{
