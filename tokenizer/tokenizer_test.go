@@ -124,5 +124,35 @@ func TestIndentation(t *testing.T) {
 				Token{EOF, []byte{}, sloc(6, 0)},
 			},
 		},
+		testCase{
+			"foo\n    bar\n\n    boo",
+			[]Token{
+				Token{Ident, []byte("foo"), sloc(1, 1)},
+				Token{NewLine, []byte("\n"), sloc(2, 0)},
+				Token{Indent, []byte("    "), sloc(2, 1)},
+				Token{Ident, []byte("bar"), sloc(2, 5)},
+				Token{NewLine, []byte("\n"), sloc(3, 0)},
+				Token{NewLine, []byte("\n"), sloc(4, 0)},
+				Token{Ident, []byte("boo"), sloc(4, 5)},
+				Token{NewLine, []byte("\n"), sloc(5, 0)},
+				Token{Outdent, []byte(""), sloc(5, 0)},
+				Token{EOF, []byte{}, sloc(5, 0)},
+			},
+		},
+		testCase{
+			"foo\n    bar\n  \n    boo",
+			[]Token{
+				Token{Ident, []byte("foo"), sloc(1, 1)},
+				Token{NewLine, []byte("\n"), sloc(2, 0)},
+				Token{Indent, []byte("    "), sloc(2, 1)},
+				Token{Ident, []byte("bar"), sloc(2, 5)},
+				Token{NewLine, []byte("\n"), sloc(3, 0)},
+				Token{NewLine, []byte("\n"), sloc(4, 0)},
+				Token{Ident, []byte("boo"), sloc(4, 5)},
+				Token{NewLine, []byte("\n"), sloc(5, 0)},
+				Token{Outdent, []byte(""), sloc(5, 0)},
+				Token{EOF, []byte{}, sloc(5, 0)},
+			},
+		},
 	})
 }

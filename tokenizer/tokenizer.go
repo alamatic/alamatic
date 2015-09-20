@@ -23,6 +23,9 @@ func Tokenize(data []byte, filename string) <-chan Token {
 // logical tokens directly from source.
 func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 	logChan := make(chan Token)
+	peeker := &TokenPeeker{
+		c: rawChan,
+	}
 
 	go func() {
 		bracketCount := 0
@@ -74,7 +77,7 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 		}
 
 		for {
-			tok := <-rawChan
+			tok := peeker.Read()
 			if tok.Kind == EOF {
 				outdentTo(0, &tok.SourceLocation)
 
@@ -84,7 +87,7 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 					panic(fmt.Errorf("More tokens after EOF"))
 				}
 
-				logChan <- tok
+				logChan <- *tok
 				close(logChan)
 				return
 			}
@@ -111,15 +114,17 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 				if tok.Kind == Space || tok.Kind == NewLine {
 					continue
 				}
-			} else if startOfLine {
+			} else if startOfLine && tok.Kind != NewLine {
 				currentIndent := indents[len(indents)-1]
 				newIndent := 0
-				// TODO: Need to peek ahead and see if there is
-				// actually anything other than space on this line,
-				// since a blank line or a whitespace-only line should
-				// not be considered significant for block structure.
 				if tok.Kind == Space {
 					newIndent = len(tok.Bytes)
+					peeked := peeker.Peek()
+					if peeked.Kind == NewLine {
+						// Space on a line of its own is not considered
+						// to be indentation, so we'll skip it.
+						continue
+					}
 				}
 				if newIndent > currentIndent {
 					indents = append(indents, newIndent)
@@ -150,7 +155,7 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 				startOfLine = true
 			}
 
-			logChan <- tok
+			logChan <- *tok
 		}
 	}()
 
