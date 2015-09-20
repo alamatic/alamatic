@@ -7,6 +7,7 @@ const (
 	NewLine TokenKind = iota
 	Space   TokenKind = iota
 	Comment TokenKind = iota
+	EOF        TokenKind = iota
 
 	OpenBracket TokenKind = iota
 	CloseBracket TokenKind = iota

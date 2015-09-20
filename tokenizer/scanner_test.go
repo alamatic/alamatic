@@ -45,24 +45,32 @@ func TestNumLitLiterals(t *testing.T) {
 			"150",
 			[]Token{
 				Token{DecNumLit, []byte("150"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"0x123abcz123",
 			[]Token{
 				Token{HexNumLit, []byte("0x123abcz123"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"0b12345",
 			[]Token{
 				Token{BinNumLit, []byte("0b12345"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"0o12389",
 			[]Token{
 				Token{OctNumLit, []byte("0o12389"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})
@@ -74,18 +82,24 @@ func TestStringLiterals(t *testing.T) {
 			`"hello"`,
 			[]Token{
 				Token{StringLit, []byte(`"hello"`), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			`"woo \" woo"`,
 			[]Token{
 				Token{StringLit, []byte(`"woo \" woo"`), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			`"woo\nwoo"`,
 			[]Token{
 				Token{StringLit, []byte("\"woo\\nwoo\""), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 
@@ -94,18 +108,24 @@ func TestStringLiterals(t *testing.T) {
 			`"woo\"`,
 			[]Token{
 				Token{StringLit, []byte("\"woo\\\""), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			`"woo\"woo`,
 			[]Token{
 				Token{StringLit, []byte("\"woo\\\"woo"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			`"woo`,
 			[]Token{
 				Token{StringLit, []byte("\"woo"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})
@@ -117,54 +137,72 @@ func TestPunctuation(t *testing.T) {
 			"|",
 			[]Token{
 				Token{Punct, []byte{'|'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"|=",
 			[]Token{
 				Token{Punct, []byte{'|', '='}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"&",
 			[]Token{
 				Token{Punct, []byte{'&'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"&=",
 			[]Token{
 				Token{Punct, []byte{'&', '='}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"^",
 			[]Token{
 				Token{Punct, []byte{'^'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"^=",
 			[]Token{
 				Token{Punct, []byte{'^', '='}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"=",
 			[]Token{
 				Token{Punct, []byte{'='}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"=",
 			[]Token{
 				Token{Punct, []byte{'='}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"+",
 			[]Token{
 				Token{Punct, []byte{'+'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -173,6 +211,8 @@ func TestPunctuation(t *testing.T) {
 			"+-!",
 			[]Token{
 				Token{Punct, []byte{'+', '-', '!'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})
@@ -184,6 +224,8 @@ func TestBrackets(t *testing.T) {
 			"(",
 			[]Token{
 				Token{OpenBracket, []byte{'('}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -193,12 +235,16 @@ func TestBrackets(t *testing.T) {
 			[]Token{
 				Token{OpenBracket, []byte{'('}, sloc(1, 1)},
 				Token{OpenBracket, []byte{'('}, sloc(1, 2)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			")",
 			[]Token{
 				Token{CloseBracket, []byte{')'}, sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -206,6 +252,8 @@ func TestBrackets(t *testing.T) {
 			[]Token{
 				Token{CloseBracket, []byte{')'}, sloc(1, 1)},
 				Token{CloseBracket, []byte{')'}, sloc(1, 2)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -214,6 +262,8 @@ func TestBrackets(t *testing.T) {
 				Token{OpenBracket, []byte{'('}, sloc(1, 1)},
 				Token{OpenBracket, []byte{'['}, sloc(1, 2)},
 				Token{OpenBracket, []byte{'{'}, sloc(1, 3)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -225,6 +275,8 @@ func TestBrackets(t *testing.T) {
 				Token{CloseBracket, []byte{')'}, sloc(1, 4)},
 				Token{CloseBracket, []byte{']'}, sloc(1, 5)},
 				Token{CloseBracket, []byte{'}'}, sloc(1, 6)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})
@@ -236,24 +288,32 @@ func TestIdentifiers(t *testing.T) {
 			"hello",
 			[]Token{
 				Token{Ident, []byte("hello"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"hello_world",
 			[]Token{
 				Token{Ident, []byte("hello_world"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"_world",
 			[]Token{
 				Token{Ident, []byte("_world"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"world123",
 			[]Token{
 				Token{Ident, []byte("world123"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})
@@ -265,18 +325,24 @@ func TestSpaces(t *testing.T) {
 			"     ",
 			[]Token{
 				Token{Space, []byte("     "), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			" ",
 			[]Token{
 				Token{Space, []byte(" "), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"\n",
 			[]Token{
 				Token{NewLine, []byte("\n"), sloc(2, 0)},
+				Token{NewLine, []byte{'\n'}, sloc(3, 0)},
+				Token{EOF, []byte{}, sloc(3, 0)},
 			},
 		},
 		testCase{
@@ -288,6 +354,8 @@ func TestSpaces(t *testing.T) {
 				Token{NewLine, []byte("\n"), sloc(2, 0)},
 				Token{NewLine, []byte("\n"), sloc(3, 0)},
 				Token{NewLine, []byte("\n"), sloc(4, 0)},
+				Token{NewLine, []byte{'\n'}, sloc(5, 0)},
+				Token{EOF, []byte{}, sloc(5, 0)},
 			},
 		},
 		testCase{
@@ -300,24 +368,32 @@ func TestSpaces(t *testing.T) {
 				Token{NewLine, []byte("\r\n"), sloc(2, -1)},
 				Token{NewLine, []byte("\r\n"), sloc(3, -1)},
 				Token{NewLine, []byte("\r\n"), sloc(4, -1)},
+				Token{NewLine, []byte{'\n'}, sloc(5, 0)},
+				Token{EOF, []byte{}, sloc(5, 0)},
 			},
 		},
 		testCase{
 			"# hello",
 			[]Token{
 				Token{Comment, []byte("# hello"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"## hello",
 			[]Token{
 				Token{Comment, []byte("## hello"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
 			"#",
 			[]Token{
 				Token{Comment, []byte("#"), sloc(1, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -326,6 +402,8 @@ func TestSpaces(t *testing.T) {
 				Token{Comment, []byte("# hello"), sloc(1, 1)},
 				Token{NewLine, []byte("\n"), sloc(2, 0)},
 				Token{Comment, []byte("# hello"), sloc(2, 1)},
+				Token{NewLine, []byte{'\n'}, sloc(3, 0)},
+				Token{EOF, []byte{}, sloc(3, 0)},
 			},
 		},
 		testCase{
@@ -336,6 +414,8 @@ func TestSpaces(t *testing.T) {
 				Token{NewLine, []byte("\n"), sloc(2, 0)},
 				Token{Space, []byte("    "), sloc(2, 1)},
 				Token{Comment, []byte("# hello"), sloc(2, 5)},
+				Token{NewLine, []byte{'\n'}, sloc(3, 0)},
+				Token{EOF, []byte{}, sloc(3, 0)},
 			},
 		},
 	})
@@ -349,6 +429,8 @@ func TestCombinations(t *testing.T) {
 				Token{DecNumLit, []byte("12"), sloc(1, 1)},
 				Token{Punct, []byte("+"), sloc(1, 3)},
 				Token{DecNumLit, []byte("2"), sloc(1, 4)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -359,6 +441,8 @@ func TestCombinations(t *testing.T) {
 				Token{Punct, []byte("+"), sloc(1, 4)},
 				Token{Space, []byte(" "), sloc(1, 5)},
 				Token{DecNumLit, []byte("2"), sloc(1, 6)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -367,6 +451,8 @@ func TestCombinations(t *testing.T) {
 				Token{Ident, []byte("foo"), sloc(1, 1)},
 				Token{OpenBracket, []byte("("), sloc(1, 4)},
 				Token{CloseBracket, []byte(")"), sloc(1, 5)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -379,6 +465,8 @@ func TestCombinations(t *testing.T) {
 				Token{Punct, []byte("+"), sloc(1, 6)},
 				Token{Ident, []byte("foo"), sloc(1, 7)},
 				Token{CloseBracket, []byte(")"), sloc(1, 10)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 		testCase{
@@ -395,6 +483,8 @@ func TestCombinations(t *testing.T) {
 				Token{OpenBracket, []byte("["), sloc(1, 14)},
 				Token{StringLit, []byte(`"thing"`), sloc(1, 15)},
 				Token{CloseBracket, []byte("]"), sloc(1, 22)},
+				Token{NewLine, []byte{'\n'}, sloc(2, 0)},
+				Token{EOF, []byte{}, sloc(2, 0)},
 			},
 		},
 	})

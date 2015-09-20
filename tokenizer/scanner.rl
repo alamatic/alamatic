@@ -93,6 +93,26 @@ func Scan(data []byte, filename string) <-chan Token {
      go func() {
      %% write exec;
 
+         // Fake up a NewLine at the end, so we can assume that a statement
+         // will always end with a newline.
+         ret <- Token{
+             Kind: NewLine,
+             Bytes: []byte{'\n'},
+             SourceLocation: diagnostics.SourceLocation{
+                 filename, line+1, 0,
+             },
+         }
+
+         // Synthetic end-of-file token just gives the higher-level tokenizer
+         // a reasonable SourceLocation for the end of the file, so it can
+         // emit its own synthetic Outdent tokens before the stream ends.
+         ret <- Token{
+             Kind: EOF,
+             Bytes: []byte{},
+             SourceLocation: diagnostics.SourceLocation{
+                 filename, line+1, 0,
+             },
+         }
          close(ret)
      }()
 
