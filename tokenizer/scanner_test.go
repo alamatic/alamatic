@@ -12,7 +12,7 @@ type testCase struct {
 	Expected []Token
 }
 
-func runTests(t *testing.T, cases []testCase) {
+func runScanTests(t *testing.T, cases []testCase) {
 	for _, c := range cases {
 		ch := Scan([]byte(c.Input), "")
 		got := []Token{}
@@ -40,7 +40,7 @@ func sloc(line int, column int) diagnostics.SourceLocation {
 }
 
 func TestNumLitLiterals(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"150",
 			[]Token{
@@ -69,7 +69,7 @@ func TestNumLitLiterals(t *testing.T) {
 }
 
 func TestStringLiterals(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			`"hello"`,
 			[]Token{
@@ -112,7 +112,7 @@ func TestStringLiterals(t *testing.T) {
 }
 
 func TestPunctuation(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"|",
 			[]Token{
@@ -179,7 +179,7 @@ func TestPunctuation(t *testing.T) {
 }
 
 func TestBrackets(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"(",
 			[]Token{
@@ -231,7 +231,7 @@ func TestBrackets(t *testing.T) {
 }
 
 func TestIdentifiers(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"hello",
 			[]Token{
@@ -260,7 +260,7 @@ func TestIdentifiers(t *testing.T) {
 }
 
 func TestSpaces(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"     ",
 			[]Token{
@@ -342,7 +342,7 @@ func TestSpaces(t *testing.T) {
 }
 
 func TestCombinations(t *testing.T) {
-	runTests(t, []testCase{
+	runScanTests(t, []testCase{
 		testCase{
 			"12+2",
 			[]Token{
