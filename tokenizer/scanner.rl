@@ -67,7 +67,7 @@ import (
 
 %% write data;
 
-func Scan(data []byte, filename string) chan Token {
+func Scan(data []byte, filename string) <-chan Token {
      cs, p, ts, te, act, pe, eof := 0, 0, 0, 0, 0, len(data), len(data)
      line, lastNewline := 1, -1
      ret := make(chan Token)
