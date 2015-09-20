@@ -1,0 +1,17 @@
+sudo: false
+
+language: go
+
+go:
+  - 1.4
+  - tip
+
+install: go generate github.com/alamatic/alamatic/tokenizer
+
+script:
+  - go test ./...
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - go: tip
