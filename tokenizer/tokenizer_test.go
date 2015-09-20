@@ -104,5 +104,25 @@ func TestIndentation(t *testing.T) {
 				Token{EOF, []byte{}, sloc(3, 0)},
 			},
 		},
+		testCase{
+			"foo\n    bar\n    baz\n        boo\n    bur",
+			[]Token{
+				Token{Ident, []byte("foo"), sloc(1, 1)},
+				Token{NewLine, []byte("\n"), sloc(2, 0)},
+				Token{Indent, []byte("    "), sloc(2, 1)},
+				Token{Ident, []byte("bar"), sloc(2, 5)},
+				Token{NewLine, []byte("\n"), sloc(3, 0)},
+				Token{Ident, []byte("baz"), sloc(3, 5)},
+				Token{NewLine, []byte("\n"), sloc(4, 0)},
+				Token{Indent, []byte("        "), sloc(4, 1)},
+				Token{Ident, []byte("boo"), sloc(4, 9)},
+				Token{NewLine, []byte("\n"), sloc(5, 0)},
+				Token{Outdent, []byte(""), sloc(5, 1)},
+				Token{Ident, []byte("bur"), sloc(5, 5)},
+				Token{NewLine, []byte("\n"), sloc(6, 0)},
+				Token{Outdent, []byte(""), sloc(6, 0)},
+				Token{EOF, []byte{}, sloc(6, 0)},
+			},
+		},
 	})
 }

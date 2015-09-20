@@ -124,10 +124,10 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 				if newIndent > currentIndent {
 					indents = append(indents, newIndent)
 					// An indent's "Bytes" are a synthetic bunch of spaces
-					// indicating how much new indentation we just added.
-					// The parser uses this to emit a warning when indents
-					// are not four spaces in size.
-					indentBytes := make([]byte, newIndent-currentIndent)
+					// occupying the same source location space that the
+					// original space token would've, except that it's still
+					// present even if the indent is zero bytes in length.
+					indentBytes := make([]byte, newIndent)
 					for i, _ := range indentBytes {
 						indentBytes[i] = ' '
 					}
