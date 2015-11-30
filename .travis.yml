@@ -17,7 +17,7 @@ install:
   - PATH=$HOME/ragel/bin:$PATH go generate github.com/alamatic/alamatic/tokenizer
 
 script:
-  - go test github.com/alamatic/alamatic/diag github.com/alamatic/alamatic/tokenizer github.com/alamatic/alamatic/ir
+  - go test github.com/alamatic/alamatic/diag github.com/alamatic/alamatic/tokenizer github.com/alamatic/alamatic/ast github.com/alamatic/alamatic/ir
 
 matrix:
   fast_finish: true

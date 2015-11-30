@@ -5,6 +5,12 @@ type TokenPeeker struct {
 	peeked *Token
 }
 
+func NewPeeker(c <-chan Token) *TokenPeeker {
+	return &TokenPeeker{
+		c: c,
+	}
+}
+
 func (p *TokenPeeker) Peek() *Token {
 	if p.peeked == nil {
 		tok, _ := <-p.c
