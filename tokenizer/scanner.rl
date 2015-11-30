@@ -1,7 +1,7 @@
 package tokenizer
 
 import (
-    "github.com/alamatic/alamatic/diagnostics"
+    "github.com/alamatic/alamatic/diag"
 )
 
 // The goal of the scanner is to apply very simple classifications to
@@ -82,7 +82,7 @@ func Scan(data []byte, filename string) <-chan Token {
          ret <- Token{
              kind,
              data[ts:te],
-             diagnostics.SourceLocation{
+             diag.SourceLocation{
                  filename, line, column,
              },
          }
@@ -98,7 +98,7 @@ func Scan(data []byte, filename string) <-chan Token {
          ret <- Token{
              Kind: NewLine,
              Bytes: []byte{'\n'},
-             SourceLocation: diagnostics.SourceLocation{
+             SourceLocation: diag.SourceLocation{
                  filename, line+1, 0,
              },
          }
@@ -109,7 +109,7 @@ func Scan(data []byte, filename string) <-chan Token {
          ret <- Token{
              Kind: EOF,
              Bytes: []byte{},
-             SourceLocation: diagnostics.SourceLocation{
+             SourceLocation: diag.SourceLocation{
                  filename, line+1, 0,
              },
          }

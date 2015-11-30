@@ -1,19 +1,19 @@
 package tokenizer
 
 import (
-    "github.com/alamatic/alamatic/diagnostics"
+    "github.com/alamatic/alamatic/diag"
 )
 
 type Token struct {
     Kind TokenKind
     Bytes []byte
-    diagnostics.SourceLocation
+    diag.SourceLocation
 }
 
-func (t *Token) SourceRange() *diagnostics.SourceRange {
-     return &diagnostics.SourceRange{
+func (t *Token) SourceRange() *diag.SourceRange {
+     return &diag.SourceRange{
          t.SourceLocation,
-         diagnostics.SourceLocation{
+         diag.SourceLocation{
              t.Filename,
              t.Line,
              t.Column + len(t.Bytes),

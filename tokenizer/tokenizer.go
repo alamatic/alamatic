@@ -3,7 +3,7 @@ package tokenizer
 import (
 	"fmt"
 
-	"github.com/alamatic/alamatic/diagnostics"
+	"github.com/alamatic/alamatic/diag"
 )
 
 // Tokenize is the main entry point to the tokenizer.
@@ -34,7 +34,7 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 
 		indents = append(indents, 0)
 
-		outdentTo := func(newIndent int, loc *diagnostics.SourceLocation) {
+		outdentTo := func(newIndent int, loc *diag.SourceLocation) {
 			for {
 				currentIndent := indents[len(indents)-1]
 				if newIndent >= currentIndent {
@@ -63,7 +63,7 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 				logChan <- Token{
 					Kind:  BadOutdent,
 					Bytes: wrongBytes,
-					SourceLocation: diagnostics.SourceLocation{
+					SourceLocation: diag.SourceLocation{
 						Filename: loc.Filename,
 						Line:     loc.Line,
 						Column:   currentIndent,

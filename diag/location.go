@@ -1,4 +1,4 @@
-package diagnostics
+package diag
 
 type SourceLocation struct {
 	Filename string

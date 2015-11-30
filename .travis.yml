@@ -13,11 +13,11 @@ install:
   - go get golang.org/x/tools/cmd/stringer
   - go install golang.org/x/tools/cmd/stringer
   - go install ./...
-  - go install github.com/alamatic/alamatic/diagnostics
+  - go install github.com/alamatic/alamatic/diag
   - PATH=$HOME/ragel/bin:$PATH go generate github.com/alamatic/alamatic/tokenizer
 
 script:
-  - go test github.com/alamatic/alamatic/diagnostics github.com/alamatic/alamatic/tokenizer github.com/alamatic/alamatic/ir
+  - go test github.com/alamatic/alamatic/diag github.com/alamatic/alamatic/tokenizer github.com/alamatic/alamatic/ir
 
 matrix:
   fast_finish: true

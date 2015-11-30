@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alamatic/alamatic/diagnostics"
+	"github.com/alamatic/alamatic/diag"
 )
 
 type testCase struct {
@@ -35,8 +35,8 @@ func runScanTests(t *testing.T, cases []testCase) {
 	}
 }
 
-func sloc(line int, column int) diagnostics.SourceLocation {
-	return diagnostics.SourceLocation{"", line, column}
+func sloc(line int, column int) diag.SourceLocation {
+	return diag.SourceLocation{"", line, column}
 }
 
 func TestNumLitLiterals(t *testing.T) {
