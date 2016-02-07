@@ -7,10 +7,10 @@ import (
 )
 
 type Diagnostic struct {
-	Level        Level
-	Details      Details
-	Range        SourceRange
-	ContextRange SourceRange
+	Level              Level
+	Details            Details
+	SourceRange        *SourceRange
+	ContextSourceRange *SourceRange
 }
 
 func (d *Diagnostic) MessageHTML() string {
