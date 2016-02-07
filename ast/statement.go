@@ -1,5 +1,5 @@
 package ast
 
-type Statement interface{
+type Statement interface {
 	ASTNode
 }

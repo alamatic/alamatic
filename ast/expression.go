@@ -1,5 +1,5 @@
 package ast
 
-type Expression interface{
+type Expression interface {
 	ASTNode
 }
