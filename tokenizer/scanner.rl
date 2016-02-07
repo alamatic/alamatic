@@ -67,6 +67,14 @@ import (
 
 %% write data;
 
+// Scan takes a byte array containing Alamatic source and groups ranges of
+// sequential bytes into classified tokens.
+//
+// This is the raw, low level tokenization operation, whose result is suitable
+// for simple cases like syntax highlighting. For callers wanting a token
+// stream suitable for parsing, call Tokenize instead to obtain a stream with
+// insignificant whitespace and comments removed, and with block indentation
+// markers.
 func Scan(data []byte, filename string) <-chan Token {
      cs, p, ts, te, act, pe, eof := 0, 0, 0, 0, 0, len(data), len(data)
      line, lastNewline := 1, -1
