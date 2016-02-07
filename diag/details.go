@@ -11,7 +11,16 @@ import (
 // statically, by creating a struct containing whatever data is needed to
 // produce a diagnostic message, and then embedding the empty struct
 // Message with a field tag containing the template for rendering the message.
+//
+// At present the message tag is used directly to produce only English-language
+// diagnostic messages. It is intended that in future the details struct name
+// will be used as a key into a translation dictionary providing diagnostic
+// message templates for other languages.
 type Details interface {
+	// This method is required only so that we can enforce at compile time
+	// that all Details structs contain a Message.
+	//
+	// Message provides a method with this name, but it does nothing.
 	DummyMessageDetectingMethod_()
 }
 
@@ -34,4 +43,13 @@ var messageType = reflect.TypeOf(Message{})
 func (*Message) DummyMessageDetectingMethod_() {
 	// This does nothing and is here only so that structs embedding Message
 	// will implement the Details interface.
+}
+
+func ExampleDetails() {
+	type TypeMismatch struct {
+		Message `Expression is of type <code>{{ .GotType }}</code>, but <code>{{ .ExpectedType }}</code> is expected`
+
+		GotType      string
+		ExpectedType string
+	}
 }
