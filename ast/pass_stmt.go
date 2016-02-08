@@ -5,5 +5,7 @@ import (
 )
 
 type PassStmt struct {
-	SourceRange diag.SourceRange
+	baseASTNode
+
+	SourceRange *diag.SourceRange
 }
