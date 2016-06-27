@@ -10,6 +10,7 @@ type BinaryOpCode string
 
 const AddOp = BinaryOpCode("add")
 const AndOp = BinaryOpCode("and")
+const ConcatOp = BinaryOpCode("concat")
 const DivideOp = BinaryOpCode("divide")
 const EqualsOp = BinaryOpCode("equals")
 const ExclusiveOrOp = BinaryOpCode("xor")

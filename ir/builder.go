@@ -78,6 +78,14 @@ func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value 
 	})
 }
 
+func (b *Builder) Concat(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: ConcatOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
 func (b *Builder) Divide(lhs, rhs Value) Value {
 	return b.append(&BinaryOp{
 		OpCode: DivideOp,
