@@ -26,3 +26,15 @@ func (b *BasicBlock) Successors() []*BasicBlock {
 		return []*BasicBlock{}
 	}
 }
+
+// AllLoops returns the full set of loops that this basic block belongs to,
+// innermost first.
+func (b *BasicBlock) AllLoops() []*Loop {
+	loops := []*Loop{}
+	current := b.Loop
+	for current != nil {
+		loops = append(loops, current)
+		current = current.Parent
+	}
+	return loops
+}

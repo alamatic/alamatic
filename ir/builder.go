@@ -21,11 +21,11 @@ func (b *Builder) append(instr Instruction) Value {
 	return instr
 }
 
-// NewBasicBlock creates and returns a new, empty BasicBlock that belongs
-// to the same routine as this builder's own basic block. If our basic block
-// belongs to a loop then the new block will belong to the same loop as
-// part of its body.
-func (b *Builder) NewBasicBlock() *BasicBlock {
+// NewBasicBlock creates a new, empty BasicBlock that belongs
+// to the same routine as this builder's own basic block, and returns
+// a builder for it. If our basic block belongs to a loop then the new
+// block will belong to the same loop as part of its body.
+func (b *Builder) NewBasicBlock() *Builder {
 	newBlock := b.Block.Routine.NewBasicBlock()
 
 	if b.Block.Loop != nil {
@@ -33,25 +33,25 @@ func (b *Builder) NewBasicBlock() *BasicBlock {
 		b.Block.Loop.Body[newBlock] = true
 	}
 
-	return newBlock
+	return newBlock.NewBuilder()
 }
 
 // NewLoop creates a new Loop belonging to the same routine as this builder's
-// basic block and then returns the new loop's header block. If our
-// basic block itself belongs to a loop then that loop will be the new
+// basic block and then returns a builder for the new loop's header block. If
+// our basic block itself belongs to a loop then that loop will be the new
 // loop's parent.
 //
 // This is similar to NewBasicBlock except it also creates a new loop
 // context. This should be used when lowering loops from the source language
 // so that the loop tree can be produced along with the control flow graph.
-func (b *Builder) NewLoop() *BasicBlock {
+func (b *Builder) NewLoop() *Builder {
 	var loop *Loop
 	if b.Block.Loop != nil {
 		loop = b.Block.Loop.NewChild()
 	} else {
 		loop = b.Block.Routine.NewLoop()
 	}
-	return loop.Header
+	return loop.Header.NewBuilder()
 }
 
 func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value {
@@ -74,6 +74,12 @@ func (b *Builder) Jump(target *BasicBlock) Value {
 	return b.append(&Jump{target})
 }
 
+func (b *Builder) Load(location Value) Value {
+	return b.append(&LoadOp{
+		Location: location,
+	})
+}
+
 func (b *Builder) Not(operand Value) Value {
 	return b.append(&UnaryOp{
 		OpCode:  NotOp,
@@ -83,4 +89,11 @@ func (b *Builder) Not(operand Value) Value {
 
 func (b *Builder) Return(result Value) Value {
 	return b.append(&Return{result})
+}
+
+func (b *Builder) Store(value, location Value) Value {
+	return b.append(&StoreOp{
+		Value:    value,
+		Location: location,
+	})
 }
