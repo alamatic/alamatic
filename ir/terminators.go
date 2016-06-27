@@ -6,22 +6,6 @@ type Terminator interface {
 	Successors() []*BasicBlock
 }
 
-type Jump struct {
-	Target *BasicBlock
-}
-
-func (i *Jump) Mnemonic() string {
-	return "jump"
-}
-
-func (i *Jump) Arguments() []Value {
-	return []Value{i.Target}
-}
-
-func (i *Jump) Successors() []*BasicBlock {
-	return []*BasicBlock{i.Target}
-}
-
 type Branch struct {
 	Cond        Value
 	TrueTarget  *BasicBlock
@@ -38,6 +22,22 @@ func (i *Branch) Arguments() []Value {
 
 func (i *Branch) Successors() []*BasicBlock {
 	return []*BasicBlock{i.TrueTarget, i.FalseTarget}
+}
+
+type Jump struct {
+	Target *BasicBlock
+}
+
+func (i *Jump) Mnemonic() string {
+	return "jump"
+}
+
+func (i *Jump) Arguments() []Value {
+	return []Value{i.Target}
+}
+
+func (i *Jump) Successors() []*BasicBlock {
+	return []*BasicBlock{i.Target}
 }
 
 type Return struct {
