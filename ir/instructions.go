@@ -38,6 +38,32 @@ func (i *BinaryOp) Arguments() []Value {
 	return []Value{i.LHS, i.RHS}
 }
 
+type GetAttrOp struct {
+	Container Value
+	Name      Value
+}
+
+func (i *GetAttrOp) Mnemonic() string {
+	return "getattr"
+}
+
+func (i *GetAttrOp) Arguments() []Value {
+	return []Value{i.Container, i.Name}
+}
+
+type GetIndexOp struct {
+	Container Value
+	Index     Value
+}
+
+func (i *GetIndexOp) Mnemonic() string {
+	return "getindex"
+}
+
+func (i *GetIndexOp) Arguments() []Value {
+	return []Value{i.Container, i.Index}
+}
+
 type LoadOp struct {
 	Location Value
 }

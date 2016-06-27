@@ -110,6 +110,20 @@ func (b *Builder) ExclusiveOr(lhs, rhs Value) Value {
 	})
 }
 
+func (b *Builder) GetAttr(container, name Value) Value {
+	return b.append(&GetAttrOp{
+		Container: container,
+		Name:      name,
+	})
+}
+
+func (b *Builder) GetIndex(container, index Value) Value {
+	return b.append(&GetIndexOp{
+		Container: container,
+		Index:     index,
+	})
+}
+
 func (b *Builder) GreaterThanEqual(lhs, rhs Value) Value {
 	return b.append(&BinaryOp{
 		OpCode: GreaterThanEqualOp,
