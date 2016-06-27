@@ -1,24 +1,57 @@
 package ir
 
-type TerminatorInstruction interface {
+type Terminator interface {
 	Instruction
+
+	Successors() []*BasicBlock
 }
 
-type retInst struct {
-	mnemonic "ret"
-
-	Value Value
+type Jump struct {
+	Target *BasicBlock
 }
 
-type gotoInst struct {
-	mnemonic "goto"
-
-	Target BasicBlock
+func (i *Jump) Mnemonic() string {
+	return "jump"
 }
 
-type branchInst struct {
-	mnemonic "branch"
+func (i *Jump) Arguments() []Value {
+	return []Value{i.Target}
+}
 
-	gotoInst
-	Condition Value
+func (i *Jump) Successors() []*BasicBlock {
+	return []*BasicBlock{i.Target}
+}
+
+type Branch struct {
+	Cond        Value
+	TrueTarget  *BasicBlock
+	FalseTarget *BasicBlock
+}
+
+func (i *Branch) Mnemonic() string {
+	return "branch"
+}
+
+func (i *Branch) Arguments() []Value {
+	return []Value{i.Cond, i.TrueTarget, i.FalseTarget}
+}
+
+func (i *Branch) Successors() []*BasicBlock {
+	return []*BasicBlock{i.TrueTarget, i.FalseTarget}
+}
+
+type Return struct {
+	Result Value
+}
+
+func (i *Return) Mnemonic() string {
+	return "return"
+}
+
+func (i *Return) Arguments() []Value {
+	return []Value{i.Result}
+}
+
+func (i *Return) Successors() []*BasicBlock {
+	return []*BasicBlock{}
 }

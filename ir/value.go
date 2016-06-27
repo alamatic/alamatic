@@ -1,5 +1,13 @@
 package ir
 
 type Value interface {
-	Operand
+}
+
+type Argumenter interface {
+	Arguments() []Value
+}
+
+type TypedValue struct {
+	Type *Type
+	//Value *llvm.Value
 }
