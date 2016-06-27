@@ -8,7 +8,20 @@ type Instruction interface {
 
 type BinaryOpCode string
 
+const AddOp = BinaryOpCode("add")
+const AndOp = BinaryOpCode("and")
+const DivideOp = BinaryOpCode("divide")
 const EqualsOp = BinaryOpCode("equals")
+const ExclusiveOrOp = BinaryOpCode("xor")
+const GreaterThanEqualOp = BinaryOpCode("gte")
+const GreaterThanOp = BinaryOpCode("gt")
+const LessThanEqualOp = BinaryOpCode("lte")
+const LessThanOp = BinaryOpCode("lt")
+const ModuloOp = BinaryOpCode("modulo")
+const MultiplyOp = BinaryOpCode("multiply")
+const OrOp = BinaryOpCode("or")
+const ShiftOp = BinaryOpCode("shift")
+const SubtractOp = BinaryOpCode("subtract")
 
 type BinaryOp struct {
 	OpCode BinaryOpCode

@@ -54,6 +54,22 @@ func (b *Builder) NewLoop() *Builder {
 	return loop.Header.NewBuilder()
 }
 
+func (b *Builder) Add(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: AddOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) And(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: AndOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
 func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value {
 	return b.append(&Branch{
 		Cond:        cond,
@@ -62,9 +78,41 @@ func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value 
 	})
 }
 
-func (b *Builder) Equals(lhs Value, rhs Value) Value {
+func (b *Builder) Divide(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: DivideOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) Equals(lhs, rhs Value) Value {
 	return b.append(&BinaryOp{
 		OpCode: EqualsOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) ExclusiveOr(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: ExclusiveOrOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) GreaterThanEqual(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: GreaterThanEqualOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) GreaterThan(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: GreaterThanOp,
 		LHS:    lhs,
 		RHS:    rhs,
 	})
@@ -74,9 +122,41 @@ func (b *Builder) Jump(target *BasicBlock) Value {
 	return b.append(&Jump{target})
 }
 
+func (b *Builder) LessThanEqual(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: LessThanEqualOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) LessThan(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: LessThanOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
 func (b *Builder) Load(location Value) Value {
 	return b.append(&LoadOp{
 		Location: location,
+	})
+}
+
+func (b *Builder) Modulo(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: ModuloOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
+func (b *Builder) Multiply(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: MultiplyOp,
+		LHS:    lhs,
+		RHS:    rhs,
 	})
 }
 
@@ -87,13 +167,37 @@ func (b *Builder) Not(operand Value) Value {
 	})
 }
 
+func (b *Builder) Or(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: OrOp,
+		LHS:    lhs,
+		RHS:    rhs,
+	})
+}
+
 func (b *Builder) Return(result Value) Value {
 	return b.append(&Return{result})
+}
+
+func (b *Builder) Shift(val, shiftAmount Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: ShiftOp,
+		LHS:    val,
+		RHS:    shiftAmount,
+	})
 }
 
 func (b *Builder) Store(value, location Value) Value {
 	return b.append(&StoreOp{
 		Value:    value,
 		Location: location,
+	})
+}
+
+func (b *Builder) Subtract(lhs, rhs Value) Value {
+	return b.append(&BinaryOp{
+		OpCode: SubtractOp,
+		LHS:    lhs,
+		RHS:    rhs,
 	})
 }
