@@ -48,6 +48,17 @@ func (r *Routine) NewBasicBlock() *BasicBlock {
 	}
 }
 
+func (r *Routine) NewLoop() *Loop {
+	loop := &Loop{}
+
+	loop.Header = r.NewBasicBlock()
+	loop.Header.Loop = loop
+
+	loop.Body = map[*BasicBlock]bool{}
+
+	return loop
+}
+
 // BasicBlocks returns a slice of all of the basic blocks in this routine
 // in a predictable order where predecessors appear before their successors
 // unless a loop is present, and where a loop is present the result is

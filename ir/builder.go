@@ -22,9 +22,36 @@ func (b *Builder) append(instr Instruction) Value {
 }
 
 // NewBasicBlock creates and returns a new, empty BasicBlock that belongs
-// to the same routine as this builder's own basic block.
+// to the same routine as this builder's own basic block. If our basic block
+// belongs to a loop then the new block will belong to the same loop as
+// part of its body.
 func (b *Builder) NewBasicBlock() *BasicBlock {
-	return b.Block.Routine.NewBasicBlock()
+	newBlock := b.Block.Routine.NewBasicBlock()
+
+	if b.Block.Loop != nil {
+		newBlock.Loop = b.Block.Loop
+		b.Block.Loop.Body[newBlock] = true
+	}
+
+	return newBlock
+}
+
+// NewLoop creates a new Loop belonging to the same routine as this builder's
+// basic block and then returns the new loop's header block. If our
+// basic block itself belongs to a loop then that loop will be the new
+// loop's parent.
+//
+// This is similar to NewBasicBlock except it also creates a new loop
+// context. This should be used when lowering loops from the source language
+// so that the loop tree can be produced along with the control flow graph.
+func (b *Builder) NewLoop() *BasicBlock {
+	var loop *Loop
+	if b.Block.Loop != nil {
+		loop = b.Block.Loop.NewChild()
+	} else {
+		loop = b.Block.Routine.NewLoop()
+	}
+	return loop.Header
 }
 
 func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value {

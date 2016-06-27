@@ -4,6 +4,10 @@ type BasicBlock struct {
 	Routine      *Routine
 	Instructions []Instruction
 	Terminator   Terminator
+
+	// If this block belongs to at least one loop, Loop points to the
+	// "deepest" applicable loop in the loop tree.
+	Loop *Loop
 }
 
 func (b *BasicBlock) NewBuilder() *Builder {
