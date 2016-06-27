@@ -24,6 +24,18 @@ func (i *BinaryOp) Arguments() []Value {
 	return []Value{i.LHS, i.RHS}
 }
 
+type LoadOp struct {
+	Location Value
+}
+
+func (i *LoadOp) Mnemonic() string {
+	return "load"
+}
+
+func (i *LoadOp) Arguments() []Value {
+	return []Value{i.Location}
+}
+
 type UnaryOpCode string
 
 const NotOp = UnaryOpCode("not")
@@ -39,4 +51,17 @@ func (i *UnaryOp) Mnemonic() string {
 
 func (i *UnaryOp) Arguments() []Value {
 	return []Value{i.Operand}
+}
+
+type StoreOp struct {
+	Value    Value
+	Location Value
+}
+
+func (i *StoreOp) Mnemonic() string {
+	return "store"
+}
+
+func (i *StoreOp) Arguments() []Value {
+	return []Value{i.Value, i.Location}
 }
