@@ -38,6 +38,28 @@ func (i *BinaryOp) Arguments() []Value {
 	return []Value{i.LHS, i.RHS}
 }
 
+type CallOp struct {
+	Callee Value
+	PosArgs []Value
+	NamedArgs map[string]Value
+	PosExpanderArg Value
+	NamedExpanderArg Value
+}
+
+func (i *CallOp) Mnemonic() string {
+	return "call"
+}
+
+func (i *CallOp) Arguments() []Value {
+	return []Value{
+		i.Callee,
+		i.PosArgs,
+		i.NamedArgs,
+		i.PosExpanderArg,
+		i.NamedExpanderArg,
+	}
+}
+
 type ConvertOp struct {
 	Value Value
 	Type  Value

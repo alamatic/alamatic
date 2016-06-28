@@ -78,6 +78,22 @@ func (b *Builder) Branch(cond Value, trueTarget, falseTarget *BasicBlock) Value 
 	})
 }
 
+func (b *Builder) Call(
+	callee Value,
+	posArgs []Value,
+	namedArgs map[string]Value,
+	posExpanderArg Value,
+	namedExpanderArg Value,
+) Value {
+	return b.append(&CallOp{
+		Callee:           callee,
+		PosArgs:          posArgs,
+		NamedArgs:        namedArgs,
+		PosExpanderArg:   posExpanderArg,
+		NamedExpanderArg: namedExpanderArg,
+	})
+}
+
 func (b *Builder) Concat(lhs, rhs Value) Value {
 	return b.append(&BinaryOp{
 		OpCode: ConcatOp,
