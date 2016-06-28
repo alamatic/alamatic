@@ -86,6 +86,13 @@ func (b *Builder) Concat(lhs, rhs Value) Value {
 	})
 }
 
+func (b *Builder) Convert(value, targetType Value) Value {
+	return b.append(&ConvertOp{
+		Value: value,
+		Type:  targetType,
+	})
+}
+
 func (b *Builder) Divide(lhs, rhs Value) Value {
 	return b.append(&BinaryOp{
 		OpCode: DivideOp,

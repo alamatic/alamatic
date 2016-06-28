@@ -38,6 +38,19 @@ func (i *BinaryOp) Arguments() []Value {
 	return []Value{i.LHS, i.RHS}
 }
 
+type ConvertOp struct {
+	Value Value
+	Type  Value
+}
+
+func (i *ConvertOp) Mnemonic() string {
+	return "convert"
+}
+
+func (i *ConvertOp) Arguments() []Value {
+	return []Value{i.Value, i.Type}
+}
+
 type GetAttrOp struct {
 	Container Value
 	Name      Value
