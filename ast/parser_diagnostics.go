@@ -11,3 +11,7 @@ type InconsistentIndentation struct {
 type NewlineExpected struct {
 	diag.Message `End of line expected`
 }
+
+type IndentedBlockExpected struct {
+	diag.Message `Expected an indented block`
+}

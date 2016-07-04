@@ -2,6 +2,8 @@ package ir
 
 import (
 	"fmt"
+
+	"github.com/alamatic/alamatic/diag"
 )
 
 type Builder struct {
@@ -34,6 +36,16 @@ func (b *Builder) NewBasicBlock() *Builder {
 	}
 
 	return newBlock.NewBuilder()
+}
+
+// SwitchBasicBlock changes this builder to append to a different basic
+// block.
+//
+// This should be used when lowering branching AST nodes such as loops
+// to IR, so that once that node has been lowered additional lowering will
+// append to the block that follows the branch(es).
+func (b *Builder) SwitchBasicBlock(newBlock *BasicBlock) {
+	b.Block = newBlock
 }
 
 // NewLoop creates a new Loop belonging to the same routine as this builder's
@@ -106,6 +118,12 @@ func (b *Builder) Convert(value, targetType Value) Value {
 	return b.append(&ConvertOp{
 		Value: value,
 		Type:  targetType,
+	})
+}
+
+func (b *Builder) Diagnostics(diags []*diag.Diagnostic) Value {
+	return b.append(&DiagnosticOp{
+		Diagnostics: diags,
 	})
 }
 

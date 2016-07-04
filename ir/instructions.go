@@ -39,10 +39,10 @@ func (i *BinaryOp) Arguments() []Value {
 }
 
 type CallOp struct {
-	Callee Value
-	PosArgs []Value
-	NamedArgs map[string]Value
-	PosExpanderArg Value
+	Callee           Value
+	PosArgs          []Value
+	NamedArgs        map[string]Value
+	PosExpanderArg   Value
 	NamedExpanderArg Value
 }
 

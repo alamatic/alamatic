@@ -1,8 +1,11 @@
 package ast
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/alamatic/alamatic/tokenizer"
 )
 
 // Some helper structs to describe desired tree structures in tests.
@@ -98,5 +101,19 @@ func TestMakeNodeSpec(t *testing.T) {
 	got := makeNodeSpec(input)
 	if !reflect.DeepEqual(expected, got) {
 		t.Errorf("Constructed node spec does not match.\n\t got: %#v\n\twant: %#v", got, expected)
+	}
+}
+
+func testParseSource(src string) *nodeSpec {
+	tokens := tokenizer.Tokenize([]byte(src), "test.ala")
+	m := ParseModule(tokens)
+	return makeNodeSpec(m.Block)
+}
+
+func assertNodeSpecEqual(t *testing.T, got *nodeSpec, want *nodeSpec) {
+	if !reflect.DeepEqual(got, want) {
+		gotFmt, _ := json.MarshalIndent(got, "", "  ")
+		wantFmt, _ := json.MarshalIndent(want, "", "  ")
+		t.Fatalf("incorrect AST\ngot: %s\nwant: %s", string(gotFmt), string(wantFmt))
 	}
 }
