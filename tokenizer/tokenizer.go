@@ -13,7 +13,19 @@ import (
 // tokens found in the stream.
 func Tokenize(data []byte, filename string) <-chan Token {
 	rawChan := Scan(data, filename)
-	return RaiseRawTokens(rawChan)
+	return RaiseRawTokens(rawChan, 0)
+}
+
+// TokenizeExpr is an alternative entry point that produces a
+// token stream for a single, isolated expression, rather than for
+// an entire module.
+//
+// The key difference is that expressions can never contain newline,
+// indent or outdent tokens. The resulting token stream is not suitable
+// for parsing an entire module.
+func TokenizeExpr(data []byte, filename string) <-chan Token {
+	rawChan := Scan(data, filename)
+	return RaiseRawTokens(rawChan, 1)
 }
 
 // RaiseRawTokens takes a channel of raw tokens and produces a new channel
@@ -21,14 +33,14 @@ func Tokenize(data []byte, filename string) <-chan Token {
 //
 // Most callers should use Tokenize, which wraps this function to produce
 // logical tokens directly from source.
-func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
+func RaiseRawTokens(rawChan <-chan Token, minBracketCount int) <-chan Token {
 	logChan := make(chan Token)
 	peeker := &TokenPeeker{
 		c: rawChan,
 	}
 
 	go func() {
-		bracketCount := 0
+		bracketCount := minBracketCount
 		indents := make([]int, 0, 20)
 		startOfLine := true
 
@@ -97,9 +109,9 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 				bracketCount++
 			case CloseBracket:
 				bracketCount--
-				if bracketCount < 0 {
+				if bracketCount < minBracketCount {
 					tok.Kind = MismatchBracket
-					bracketCount = 0
+					bracketCount = minBracketCount
 				}
 			case Comment:
 				// TODO: Special handling for doc comments, which

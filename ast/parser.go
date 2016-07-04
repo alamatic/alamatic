@@ -23,6 +23,22 @@ func ParseModule(c <-chan tokenizer.Token) *Module {
 	}
 }
 
+func ParseExpr(c <-chan tokenizer.Token) Expression {
+	peeker := tokenizer.NewPeeker(c)
+	parser := &parser{peeker}
+	expr := parser.ParseExpression(false)
+	return expr
+}
+
+func ParseExprStmt(c <-chan tokenizer.Token) *ExprStmt {
+	peeker := tokenizer.NewPeeker(c)
+	parser := &parser{peeker}
+	expr := parser.ParseExpression(true)
+	return &ExprStmt{
+		Expression: expr,
+	}
+}
+
 func (p *parser) ParseTopLevel() (*StatementBlock, DocString) {
 	peeker := p.peeker
 
@@ -602,6 +618,12 @@ func (pp *factorExprParser) Parse(p *parser, remain []expressionParser) Expressi
 	case next.String() == "null":
 		peeker.Read()
 		expr = &LiteralNullExpr{
+			SourceRange: fullRange(),
+		}
+	case next.Kind == tokenizer.Ident:
+		identToken := peeker.Read()
+		expr = &SymbolExpr{
+			Name:        identToken.String(),
 			SourceRange: fullRange(),
 		}
 	default:

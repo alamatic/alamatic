@@ -113,10 +113,22 @@ func testParseSource(src string) *nodeSpec {
 	return makeNodeSpec(m.Block)
 }
 
+func testParseSourceExpr(src string) *nodeSpec {
+	tokens := tokenizer.TokenizeExpr([]byte(src), "test.ala")
+	expr := ParseExpr(tokens)
+	return makeNodeSpec(expr)
+}
+
 func assertNodeSpecEqual(t *testing.T, got *nodeSpec, want *nodeSpec) {
-	if !reflect.DeepEqual(got, want) {
-		gotFmt, _ := json.MarshalIndent(got, "", "  ")
-		wantFmt, _ := json.MarshalIndent(want, "", "  ")
-		t.Fatalf("incorrect AST\ngot: %s\nwant: %s", string(gotFmt), string(wantFmt))
+	gotFmtBytes, _ := json.MarshalIndent(got, "", "  ")
+	wantFmtBytes, _ := json.MarshalIndent(want, "", "  ")
+	gotFmt := string(gotFmtBytes)
+	wantFmt := string(wantFmtBytes)
+	// We consider things "equal enough" if they JSON-serialize to the
+	// same slice of bytes. This is particularly important for numeric
+	// literals where the value is a big.Float and is equal enough as
+	// long as the string serialization is identical.
+	if gotFmt != wantFmt {
+		t.Errorf("incorrect AST\ngot: %s\nwant: %s", gotFmt, wantFmt)
 	}
 }

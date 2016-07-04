@@ -8,6 +8,8 @@ import (
 )
 
 type LiteralNumberExpr struct {
+	// FIXME: Should use something similar to Go's constant
+	// implementation in go/constant.
 	Value       *big.Float
 	SourceRange *diag.SourceRange
 }
