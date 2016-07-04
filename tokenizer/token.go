@@ -18,6 +18,7 @@ type Token struct {
 	Kind  TokenKind
 	Bytes []byte
 	diag.SourceLocation
+	str string
 }
 
 // SourceRange returns the range of characters in the source file that are
@@ -39,4 +40,15 @@ func (t *Token) SourceRange() *diag.SourceRange {
 			t.Column + len(t.Bytes),
 		},
 	}
+}
+
+// String returns the content of the token as a string.
+//
+// This differs from string(token.Bytes) only in that it caches the resulting
+// string to avoid creating garbage from repeated conversions.
+func (t *Token) String() string {
+	if len(t.str) != len(t.Bytes) {
+		t.str = string(t.Bytes)
+	}
+	return t.str
 }

@@ -308,7 +308,27 @@ func (p *parser) ParseFuncDecl() Statement {
 }
 
 func (p *parser) ParseExpression(allowAssign bool) Expression {
-	panic("expressions not yet implemented")
+	if allowAssign {
+		return p.ParseExprAssign()
+	} else {
+		return p.ParseExprLogicalOr()
+	}
+}
+
+func (p *parser) ParseExprAssign() Expression {
+	return &DiagnosticExpr{
+		Diagnostics: []*diag.Diagnostic{
+			{},
+		},
+	}
+}
+
+func (p *parser) ParseExprLogicalOr() Expression {
+	return &DiagnosticExpr{
+		Diagnostics: []*diag.Diagnostic{
+			{},
+		},
+	}
 }
 
 func (p *parser) requireStatementEOL(s Statement) Statement {
@@ -328,4 +348,90 @@ func (p *parser) requireStatementEOL(s Statement) Statement {
 	}
 
 	return s
+}
+
+type expressionParser interface {
+	Parse(*parser, []expressionParser) Expression
+}
+
+type binaryOpParser struct {
+	Operators    []BinaryOpType
+	ChainAllowed bool
+}
+
+func (pp *binaryOpParser) Parse(p *parser, remain []expressionParser) Expression {
+	peeker := p.peeker
+	fullRange := peeker.RangeBuilder()
+
+	// Must always have at least one remaining parser because
+	// a binary operator can't be a terminal expression.
+	nextParser := remain[0]
+
+	lhs := nextParser.Parse(p, remain[1:])
+
+	next := peeker.Peek()
+	opType := BinaryOpType(next.String())
+	match := false
+	for _, allowedOpType := range pp.Operators {
+		if opType == allowedOpType {
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		return lhs
+	}
+
+	makeOperatorRange := peeker.RangeBuilder()
+
+	// Eat the operator token, since we've already dealt with it.
+	peeker.Read()
+
+	if opType == IsOp {
+		// As a special case for the weird two-token "is not" operator,
+		// we'll try to eat a "not" right after our "is".
+		// NOTE: This assumes that "is not" is always valid in a
+		// parser where "is" is valid, which is true for now.
+		next := peeker.Peek()
+		if next.String() == "not" {
+			opType = IsNotOp
+			peeker.Read()
+		}
+	}
+
+	operatorRange := makeOperatorRange()
+
+	var rhs Expression
+	if pp.ChainAllowed {
+		// Recursively call back into this same parser, so that the
+		// same operator can be chained multiple times.
+		rhs = pp.Parse(p, remain)
+	} else {
+		rhs = nextParser.Parse(p, remain[1:])
+	}
+
+	return &BinaryOpExpr{
+		LHS:      lhs,
+		RHS:      rhs,
+		Operator: opType,
+
+		SourceRange:         fullRange(),
+		OperatorSourceRange: operatorRange,
+	}
+}
+
+type unaryOpParser struct {
+	Operators []UnaryOpType
+}
+
+func (pp *unaryOpParser) Parse(p *parser, remain []expressionParser) Expression {
+	panic("unary op parser not implemented")
+}
+
+type factorExprParser struct {
+}
+
+func (pp *factorExprParser) Parse(p *parser, remain []expressionParser) Expression {
+	panic("factor op parser not implemented")
 }
