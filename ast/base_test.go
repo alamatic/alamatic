@@ -29,6 +29,9 @@ type nodeSpec struct {
 }
 
 func makeNodeSpec(node ASTNode) *nodeSpec {
+	if node == nil {
+		return nil
+	}
 	nodeType := reflect.TypeOf(node).Elem()
 	childNodes := node.ChildNodes()
 	ret := &nodeSpec{

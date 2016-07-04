@@ -1,6 +1,9 @@
 package ast
 
 import (
+	"fmt"
+	"math/big"
+
 	"github.com/alamatic/alamatic/diag"
 	"github.com/alamatic/alamatic/tokenizer"
 )
@@ -118,7 +121,14 @@ func (p *parser) ParseIndentedBlock() *StatementBlock {
 	fullRange := peeker.RangeBuilder()
 
 	parseErr := func() *StatementBlock {
-		tokenRange := peeker.Peek().SourceRange()
+		token := peeker.Read()
+		tokenRange := token.SourceRange()
+
+		// FIXME: Emit a diagnostic statement and then seek on to the next
+		// statement and try to keep parsing.
+		// For now, we just panic.
+		panic("invalid indented block at " + token.String())
+
 		return &StatementBlock{
 			Statements: []Statement{
 				&DiagnosticStmt{
@@ -136,19 +146,22 @@ func (p *parser) ParseIndentedBlock() *StatementBlock {
 	}
 
 	next := peeker.Peek()
-	if next.Kind != tokenizer.Punct || len(next.Bytes) != 1 || next.Bytes[0] != ':' {
+	if next.String() != ":" {
 		return parseErr()
 	}
+	peeker.Read()
 
 	next = peeker.Peek()
 	if next.Kind != tokenizer.NewLine {
 		return parseErr()
 	}
+	peeker.Read()
 
 	next = peeker.Peek()
 	if next.Kind != tokenizer.Indent {
 		return parseErr()
 	}
+	peeker.Read()
 
 	stmts := p.ParseStatements(func(next *tokenizer.Token) bool {
 		return next.Kind == tokenizer.Outdent
@@ -308,27 +321,15 @@ func (p *parser) ParseFuncDecl() Statement {
 }
 
 func (p *parser) ParseExpression(allowAssign bool) Expression {
+	var parsers []expressionParser
 	if allowAssign {
-		return p.ParseExprAssign()
+		parsers = expressionParsers
 	} else {
-		return p.ParseExprLogicalOr()
+		// Skip the first element, which is the assignment operators
+		parsers = expressionParsers[1:]
 	}
-}
 
-func (p *parser) ParseExprAssign() Expression {
-	return &DiagnosticExpr{
-		Diagnostics: []*diag.Diagnostic{
-			{},
-		},
-	}
-}
-
-func (p *parser) ParseExprLogicalOr() Expression {
-	return &DiagnosticExpr{
-		Diagnostics: []*diag.Diagnostic{
-			{},
-		},
-	}
+	return parsers[0].Parse(p, parsers[1:])
 }
 
 func (p *parser) requireStatementEOL(s Statement) Statement {
@@ -336,6 +337,7 @@ func (p *parser) requireStatementEOL(s Statement) Statement {
 	if next.Kind != tokenizer.NewLine {
 		// TODO: Try to seek to the beginning of the next statement
 		// so we can attempt to parse the rest of the file.
+		p.peeker.Read()
 		return &DiagnosticStmt{
 			Diagnostics: []*diag.Diagnostic{
 				&diag.Diagnostic{
@@ -348,6 +350,82 @@ func (p *parser) requireStatementEOL(s Statement) Statement {
 	}
 
 	return s
+}
+
+var expressionParsers = []expressionParser{
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			AssignOp,
+			AddAssignOp,
+			SubtractAssignOp,
+			MultiplyAssignOp,
+			DivideAssignOp,
+			UnionAssignOp,
+			IntersectionAssignOp,
+		},
+		ChainAllowed: false,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			OrOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			AndOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			IsOp, // implies IsNotOp due to a special case in binaryOpParser
+			LessThanOp,
+			LessThanEqualOp,
+			GreaterThanOp,
+			GreaterThanEqualOp,
+			NotEqualOp,
+			EqualOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			UnionOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			IntersectionOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			ShiftLeftOp,
+			ShiftRightOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			AddOp,
+			SubtractOp,
+		},
+		ChainAllowed: true,
+	},
+	&binaryOpParser{
+		Operators: []BinaryOpType{
+			MultiplyOp,
+			DivideOp,
+			ModuloOp,
+		},
+		ChainAllowed: true,
+	},
+
+	// factorExprParser expects to be the last item in this list
+	&factorExprParser{},
 }
 
 type expressionParser interface {
@@ -426,12 +504,123 @@ type unaryOpParser struct {
 }
 
 func (pp *unaryOpParser) Parse(p *parser, remain []expressionParser) Expression {
-	panic("unary op parser not implemented")
+	peeker := p.peeker
+	fullRange := peeker.RangeBuilder()
+	makeOperatorRange := peeker.RangeBuilder()
+
+	// Must always have at least one remaining parser because
+	// a unary operator can't be a terminal expression.
+	nextParser := remain[0]
+
+	next := peeker.Peek()
+	opType := UnaryOpType(next.String())
+	match := false
+	for _, allowedOpType := range pp.Operators {
+		if opType == allowedOpType {
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		return nextParser.Parse(p, remain[1:])
+	}
+
+	peeker.Read()
+	operatorRange := makeOperatorRange()
+
+	// We call ourselves recursively here so we can chain,
+	// like "not not a". Even though this isn't super useful,
+	// it ought to work for consistency's sake.
+	operand := pp.Parse(p, remain)
+
+	return &UnaryOpExpr{
+		Operand:             operand,
+		Operator:            opType,
+		SourceRange:         fullRange(),
+		OperatorSourceRange: operatorRange,
+	}
 }
 
 type factorExprParser struct {
 }
 
 func (pp *factorExprParser) Parse(p *parser, remain []expressionParser) Expression {
-	panic("factor op parser not implemented")
+	peeker := p.peeker
+	fullRange := peeker.RangeBuilder()
+
+	if len(remain) != 0 {
+		// Should never happen, because factor expressions must be
+		// last in the expression parser list.
+		panic("factorExprParser must be terminal")
+	}
+
+	next := peeker.Peek()
+
+	var expr Expression
+
+	switch {
+	case next.String() == "(":
+		peeker.Read()
+		expr = p.ParseExpression(false)
+		close := peeker.Read()
+		if close.String() != ")" {
+			// FIXME: Should generate a diagnostic node instead
+			panic("invalid expression close")
+		}
+	case next.Kind == tokenizer.DecNumLit || next.Kind == tokenizer.HexNumLit || next.Kind == tokenizer.BinNumLit || next.Kind == tokenizer.OctNumLit:
+		token := peeker.Read()
+		// FIXME: This can't actually parse octal literals
+		val, _, err := big.ParseFloat(token.String(), 0, 0, big.ToZero)
+
+		// FIXME: We should handle this by returning a diagnostic node,
+		// since the tokenizer doesn't actually validate that the numbers
+		// are valid. (We want to handle it here in the parser because we
+		// can generate a better error message in here.)
+		if err != nil {
+			panic("invalid number token")
+		}
+
+		expr = &LiteralNumberExpr{
+			Value:       val,
+			SourceRange: fullRange(),
+		}
+	case next.Kind == tokenizer.StringLit:
+		panic("string literal parsing not yet implemented")
+	case next.String() == "true":
+		peeker.Read()
+		expr = &LiteralBoolExpr{
+			Value:       true,
+			SourceRange: fullRange(),
+		}
+	case next.String() == "false":
+		peeker.Read()
+		expr = &LiteralBoolExpr{
+			Value:       false,
+			SourceRange: fullRange(),
+		}
+	case next.String() == "null":
+		peeker.Read()
+		expr = &LiteralNullExpr{
+			SourceRange: fullRange(),
+		}
+	default:
+		// FIXME: Should generate a diagnostic node instead
+		panic(fmt.Sprintf("invalid factor %#v %#v", next.String(), next.SourceRange()))
+	}
+
+	// Calls, subscripts and attribute access can be chained to
+	// expressions indefinitely.
+	/*for {
+			next := peeker.Peek()
+
+			switch next.String() {
+			case "(":
+				peeker.Read()
+				args := p.ParseArguments(")")
+			}
+	        // etc
+		}*/
+
+	return expr
 }

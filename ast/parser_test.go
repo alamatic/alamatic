@@ -4,17 +4,103 @@ import (
 	"testing"
 )
 
-/*func TestParseIfStmt(t *testing.T) {
-	got := testParseSource(`
-if true:
-    return 1
-elif false:
-    return 2
+func TestParseIfStmt(t *testing.T) {
+	type testCase struct {
+		input    string
+		expected *nodeSpec
+	}
+
+	cases := []testCase{
+		{
+			`
+if null:
+    pass
+elif null:
+    pass
 else:
-    return 3
-`)
-	t.Logf("%#v\n", got)
-}*/
+    pass
+`,
+			&nodeSpec{
+				TypeName: "StatementBlock",
+				Params:   []interface{}{},
+				ChildNodes: []*nodeSpec{
+					{
+						TypeName: "IfStmt",
+						Params:   []interface{}{},
+						ChildNodes: []*nodeSpec{
+							{
+								TypeName: "IfClause",
+								Params:   []interface{}{},
+								ChildNodes: []*nodeSpec{
+									{
+										TypeName:   "LiteralNullExpr",
+										Params:     []interface{}{},
+										ChildNodes: []*nodeSpec{},
+									},
+									{
+										TypeName: "StatementBlock",
+										Params:   []interface{}{},
+										ChildNodes: []*nodeSpec{
+											{
+												TypeName:   "PassStmt",
+												Params:     []interface{}{},
+												ChildNodes: []*nodeSpec{},
+											},
+										},
+									},
+								},
+							},
+							{
+								TypeName: "IfClause",
+								Params:   []interface{}{},
+								ChildNodes: []*nodeSpec{
+									{
+										TypeName:   "LiteralNullExpr",
+										Params:     []interface{}{},
+										ChildNodes: []*nodeSpec{},
+									},
+									{
+										TypeName: "StatementBlock",
+										Params:   []interface{}{},
+										ChildNodes: []*nodeSpec{
+											{
+												TypeName:   "PassStmt",
+												Params:     []interface{}{},
+												ChildNodes: []*nodeSpec{},
+											},
+										},
+									},
+								},
+							},
+							{
+								TypeName: "IfClause",
+								Params:   []interface{}{},
+								ChildNodes: []*nodeSpec{
+									{
+										TypeName: "StatementBlock",
+										Params:   []interface{}{},
+										ChildNodes: []*nodeSpec{
+											{
+												TypeName:   "PassStmt",
+												Params:     []interface{}{},
+												ChildNodes: []*nodeSpec{},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		got := testParseSource(testCase.input)
+		assertNodeSpecEqual(t, got, testCase.expected)
+	}
+}
 
 func TestParseLoopCtrlStmts(t *testing.T) {
 	type testCase struct {

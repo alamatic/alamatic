@@ -61,5 +61,9 @@ func (s *IfClause) Params() []interface{} {
 }
 
 func (s *IfClause) ChildNodes() []ASTNode {
-	return []ASTNode{s.CondExpr, s.Block}
+	if s.CondExpr != nil {
+		return []ASTNode{s.CondExpr, s.Block}
+	} else {
+		return []ASTNode{s.Block}
+	}
 }

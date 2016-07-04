@@ -7,7 +7,7 @@ import (
 
 type UnaryOpType string
 
-const LogicalNotOp UnaryOpType = "not"
+const NotOp UnaryOpType = "not"
 const NegateOp UnaryOpType = "-"
 const ComplementOp UnaryOpType = "~"
 

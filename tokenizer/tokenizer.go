@@ -153,6 +153,9 @@ func RaiseRawTokens(rawChan <-chan Token) <-chan Token {
 			} else if tok.Kind == NewLine {
 				// On the next iteration we'll process indentation.
 				startOfLine = true
+			} else if tok.Kind == Space {
+				// Ignore spaces everywhere except start of line
+				continue
 			}
 
 			logChan <- *tok
