@@ -5,6 +5,8 @@ import (
 )
 
 type Module struct {
+	baseASTNode
+
 	Block       *StatementBlock
 	SourceRange *diag.SourceRange
 	Doc         DocString

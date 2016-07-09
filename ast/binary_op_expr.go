@@ -49,3 +49,11 @@ func (s *BinaryOpExpr) BuildIR(scope *Scope, b *ir.Builder) ir.Value {
 	// TODO: Implement
 	return nil
 }
+
+func (s *BinaryOpExpr) Params() []interface{} {
+	return []interface{}{s.Operator}
+}
+
+func (s *BinaryOpExpr) ChildNodes() []ASTNode {
+	return []ASTNode{s.LHS, s.RHS}
+}
