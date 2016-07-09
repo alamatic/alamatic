@@ -11,8 +11,8 @@ only implemented partially. The language design itself is also in flux.
 Dev Environment Setup
 ---------------------
 
-The compiler is written in Go, targeting Go 1.4. The following instructions
-assume you already have a working Go 1.4 development environment.
+The compiler is written in Go, targeting Go 1.6. The following instructions
+assume you already have a working Go 1.6 development environment.
 
 You can install the compiler as you might expect:
 
