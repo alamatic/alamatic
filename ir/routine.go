@@ -1,96 +1,34 @@
 package ir
 
+import "github.com/alamatic/alamatic/diag"
+
+// Routine represents the code of a function or process.
 type Routine struct {
-	// Entry is the first basic block that will execute when the
-	// routine begins.
-	//
-	// This block serves as the "root" of the control flow graph,
-	// with the rest of the graph described by the terminator of this
-	// and other blocks in the graph.
-	Entry *BasicBlock
+	declRange *diag.SourceRange
 
-	// PosParams contains the subset of parameters that can be passed
-	// values positionally, indexed by their position.
-	PosParams []*Parameter
-
-	// NamedParams contains the subset of parameters that can be passed
-	// values by name, indexed by that name.
-	// Some parameters may appear both in PosParams and NamedParams, but
-	// it is illegal for a single call to use both methods to fill the
-	// same parameter.
-	NamedParams map[string]*Parameter
-
-	// PosCollectorParam is a special parameter that "collects" all remaining
-	// positional parameters that do not correspond to parameters in PosParams,
-	// as a tuple that can be indexed by constant integers.
-	PosCollectorParam *Parameter
-
-	// NamedCollectorParam is a special parameter that "collects" all
-	// remaining named parameters that do not correspond to parameters in
-	// NamedParams, as a mapping that can be indexed by constant strings.
-	NamedCollectorParam *Parameter
+	blocks []*BasicBlock
 }
 
-type Parameter struct {
+// DeclRange returns a source code range that defines the signature
+// of this routine, excluding the routine's body.
+func (r *Routine) DeclRange() *diag.SourceRange {
+	return r.declRange
 }
 
-func NewRoutine() *Routine {
-	r := &Routine{}
-	r.Entry = r.NewBasicBlock()
-	return r
+// Blocks returns a slice of the basic blocks for the routine. The order
+// is not significant except that the zeroth element is guaranteed to be
+// the entry block.
+func (r *Routine) Blocks() []*BasicBlock {
+	return r.blocks
 }
 
-func (r *Routine) NewBasicBlock() *BasicBlock {
-	return &BasicBlock{
-		Routine:      r,
-		Instructions: []Instruction{},
-		Terminator:   nil,
-	}
-}
-
-func (r *Routine) NewLoop() *Loop {
-	loop := &Loop{}
-
-	loop.Header = r.NewBasicBlock()
-	loop.Header.Loop = loop
-
-	loop.Body = map[*BasicBlock]bool{}
-
-	return loop
-}
-
-// BasicBlocks returns a slice of all of the basic blocks in this routine
-// in a predictable order where predecessors appear before their successors
-// unless a loop is present, and where a loop is present the result is
-// deterministic with each block appearing exactly once.
+// EntryBlock returns the routine's entry block.
 //
-// Unreachable blocks are not included in the result, due to how this
-// function traverses the control flow graph.
-func (r *Routine) BasicBlocks() []*BasicBlock {
-	emitted := map[*BasicBlock]bool{}
-	blockStack := []*BasicBlock{}
-	blocks := []*BasicBlock{}
-
-	current := r.Entry
-	for current != nil {
-		blocks = append(blocks, current)
-		emitted[current] = true
-
-		blockStack = append(blockStack, current.Successors()...)
-
-		for {
-			if len(blockStack) > 0 {
-				current = blockStack[len(blockStack)-1]
-				blockStack = blockStack[:len(blockStack)-1]
-				if !emitted[current] {
-					break
-				}
-			} else {
-				current = nil
-				break
-			}
-		}
+// All well-formed routines have an entry block, but this method may return
+// nil for a routine that is still being constructed.
+func (r *Routine) EntryBlock() *BasicBlock {
+	if len(r.blocks) < 1 {
+		return nil
 	}
-
-	return blocks
+	return r.blocks[0]
 }

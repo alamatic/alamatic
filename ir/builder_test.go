@@ -1,5 +1,6 @@
 package ir
 
+/*
 import (
 	"testing"
 )
@@ -132,3 +133,4 @@ block07:
 		t.Fatalf("block4loops[1] == %#v; want %#v", block4loops[1], loop0)
 	}
 }
+*/
